@@ -1,0 +1,18 @@
+mysql-user : cointipbot
+mysql-pass : randompass1234
+mysql-host : localhost
+mysql-port : 3306
+mysql-db: cointipbot
+
+bitcoind-rpclogin : bitcoinrpc
+bitcoind-rpcpass : randompass1234
+bitcoind-rpchost : localhost
+bitcoind-rpcport : 8332
+bitcoind-walletpass : verysecurepass1234
+
+reddit-username : mycointipbotuser
+reddit-pass : randompass1234
+reddit-useragent : /u/mycointipbotuser
+reddit-botsubreddit : mycointipbotsubreddit
+
+admin-email : admin@example.com
