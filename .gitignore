@@ -37,3 +37,4 @@ nosetests.xml
 # cointipbot
 settings.yaml
 config.yaml
+pifkoin*
