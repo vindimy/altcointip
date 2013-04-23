@@ -112,6 +112,9 @@ class CointipBot(object):
         """
         _config = self._parse_config(config_filename)
         _mysqlcon = self._connect_db(_config)
+        if not _config['bitcoind-enabled'] and not _config['litecoind-enabled'] and not _config['ppcoind-enabled']:
+            logger.error("Error: please enable at least one type of coin")
+            sys.exit(1)
         if _config['bitcoind-enabled']:
             _bitcoindcon = self._connect_bitcoin(_config)
         if _config['litecoind-enabled']:
@@ -119,4 +122,5 @@ class CointipBot(object):
         if _config['ppcoind-enabled']:
             _ppcoindcon = self._connect_ppcoin(_config)
         _redditcon = self._connect_reddit(_config)
+
 

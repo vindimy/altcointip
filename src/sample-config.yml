@@ -1,16 +1,21 @@
+# MySQL configuration
 mysql-user : cointipbot
 mysql-pass : randompass1234
 mysql-host : localhost
 mysql-port : 3306
 mysql-db: cointipbot
 
+# Enable/disable coin types: set to true or false
+# Configuration for each coin type will be read from its config file (such as bitcoin.conf)
 bitcoind-enabled : true
 litecoind-enabled : true
 ppcoind-enabled : true
 
+# Reddit configuration
 reddit-username : mycointipbotuser
 reddit-pass : randompass1234
 reddit-useragent : /u/mycointipbotuser
 reddit-botsubreddit : mycointipbotsubreddit
 
+# Other configuration
 admin-email : admin@example.com
