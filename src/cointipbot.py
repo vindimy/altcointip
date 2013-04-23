@@ -18,7 +18,7 @@ class CointipBot(object):
     Main class for cointip bot
     """
 
-    _DEFAULT_CONFIG_FILENAME = './config.yaml'
+    _DEFAULT_CONFIG_FILENAME = './config.yml'
     _mysqlcon = None
     _bitcoindcon = None
     _litecoindcon = None
@@ -30,8 +30,7 @@ class CointipBot(object):
         Returns a Python object with CointipBot configuration
 
         :param filename:
-            The filename from which the configuration should be read.  Defaults
-            to ``./config.yaml``.
+            The filename from which the configuration should be read.
         """
         try:
             config = yaml.load(open(filename))
@@ -47,7 +46,7 @@ class CointipBot(object):
         """
         Returns a database connection object
         """
-        dsn = "mysql+mysqldb://" + config['mysql-user'] + ":" + config['mysql-pass'] + "@" + config['mysql-host'] + "/" + config['mysql-db']
+        dsn = "mysql+mysqldb://" + str(config['mysql-user']) + ":" + str(config['mysql-pass']) + "@" + str(config['mysql-host']) + ":" + str(config['mysql-port']) + "/" + str(config['mysql-db'])
         dbobj = ctbutil.db.CointipBotDatabase(dsn)
         try:
             conn = dbobj.connect()
