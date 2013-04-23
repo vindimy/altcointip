@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
-import ctbutil
+from ctb import ctb_db, ctb_reddit, ctb_misc
 
 import sys
 import logging
 import yaml
 import sqlalchemy
 import praw
+import time
 from pifkoin.bitcoind import Bitcoind, BitcoindException
 
 logger = logging.getLogger('cointipbot')
@@ -19,6 +20,7 @@ class CointipBot(object):
     """
 
     _DEFAULT_CONFIG_FILENAME = './config.yml'
+    _DEFAULT_SLEEP_TIME = 60*3
     _mysqlcon = None
     _bitcoindcon = None
     _litecoindcon = None
@@ -47,7 +49,7 @@ class CointipBot(object):
         Returns a database connection object
         """
         dsn = "mysql+mysqldb://" + str(config['mysql-user']) + ":" + str(config['mysql-pass']) + "@" + str(config['mysql-host']) + ":" + str(config['mysql-port']) + "/" + str(config['mysql-db'])
-        dbobj = ctbutil.db.CointipBotDatabase(dsn)
+        dbobj = ctb_db.CointipBotDatabase(dsn)
         try:
             conn = dbobj.connect()
         except sqlalchemy.SQLAlchemyError, e:
@@ -123,4 +125,21 @@ class CointipBot(object):
             _ppcoindcon = self._connect_ppcoin(_config)
         _redditcon = self._connect_reddit(_config)
 
+    def main():
+        """
+        Main loop
+        """
+        while (True):
+            # Refresh exchange rates
+            ctb_misc._refresh_exchange_rate(_mysqlcon)
+            # Check personal messages
+            ctb_reddit._check_inbox(_redditcon, _mysqlcon)
+            # Check subreddit comments for tips
+            ctb_reddit._check_subreddits(_redditcon, _mysqlcon)
+            # Process transactions
+            ctb_misc._process_transactions(_mysqlcon)
+            # Process outgoing messages
+            ctb_reddit._send_messages(_redditcon, _mysqlcon)
+            # Sleep
+            time.sleep(_DEFAULT_SLEEP_TIME)
 

@@ -36,4 +36,7 @@ nosetests.xml
 
 # cointipbot
 config.yml
+
+# cointipbot external libs
 pifkoin*
+urllib3*
