@@ -4,11 +4,9 @@ mysql-host : localhost
 mysql-port : 3306
 mysql-db: cointipbot
 
-bitcoind-rpclogin : bitcoinrpc
-bitcoind-rpcpass : randompass1234
-bitcoind-rpchost : localhost
-bitcoind-rpcport : 8332
-bitcoind-walletpass : verysecurepass1234
+bitcoind-enabled : true
+litecoind-enabled : true
+ppcoind-enabled : true
 
 reddit-username : mycointipbotuser
 reddit-pass : randompass1234
