@@ -2,14 +2,8 @@
 
 from ctb import ctb_db, ctb_action
 
-import sys
-import logging
-import gettext
-import locale
-import yaml
-import sqlalchemy
-import praw
-import time
+import gettext, locale, logging, sys, time
+import praw, re, sqlalchemy, yaml
 from pifkoin.bitcoind import Bitcoind, BitcoindException
 
 logger = logging.getLogger('cointipbot')
@@ -139,10 +133,17 @@ class CointipBot(object):
         """
         # Localization
         self._init_localization()
+
         # Configuration file
         self._config = self._parse_config(config_filename)
+        if 'reddit-batch-limit' in self._config:
+            self._REDDIT_BATCH_LIMIT = self._config['reddit-batch-limit']
+        if 'bot-sleep-time' in self._config:
+            self._DEFAULT_SLEEP_TIME = self._config['sleep-time']
+
         # MySQL
         self._mysqlcon = self._connect_db(self._config)
+
         # Coin daemons
         if not self._config['bitcoind-enabled'] and not self._config['litecoind-enabled'] and not self._config['ppcoind-enabled']:
             logger.error("Error: please enable at least one type of coin")
@@ -153,8 +154,12 @@ class CointipBot(object):
             self._litecoindcon = self._connect_litecoind(self._config)
         if self._config['ppcoind-enabled']:
             self._ppcoindcon = self._connect_ppcoin(self._config)
+
         # Reddit
         self._redditcon = self._connect_reddit(self._config)
+
+    def _refresh_exchange_rate(self):
+        return None
 
     def _check_inbox(self):
         """
@@ -180,7 +185,7 @@ class CointipBot(object):
                 m.mark_as_read()
                 continue
             # Attempt to evaluate message
-            action = self._eval_message(m)
+            action = ctb_action._eval_message(m)
             # Perform action if necessary
             if action != None:
                 try:
@@ -194,7 +199,20 @@ class CointipBot(object):
         logger.debug("check_inbox() DONE")
         return True
 
-    def _eval_message(self, _message):
+    def _check_subreddits(self):
+        logger.debug("_check_subreddits()")
+        return None
+
+    def _process_transactions(self):
+        logger.debug("_process_transactions()")
+        return None
+
+    def _send_messages(self):
+        logger.debug("_send_messages()")
+        return None
+
+    def _clean_up(self):
+        logger.debug("_clean_up()")
         return None
 
     def main(self):
@@ -203,17 +221,23 @@ class CointipBot(object):
         """
         while (True):
             logger.debug("Beginning main() iteration...")
-            # Refresh exchange rates
-            #ctb_misc._refresh_exchange_rate(_mysqlcon)
-            # Check personal messages
-            self._check_inbox()
-            # Check subreddit comments for tips
-            #self._check_subreddits(_redditcon, _mysqlcon)
-            # Process transactions
-            #ctb_misc._process_transactions(_mysqlcon)
-            # Process outgoing messages
-            #ctb_reddit._send_messages(_redditcon, _mysqlcon)
-            # Sleep
-            logger.debug("Sleeping for "+str(self._DEFAULT_SLEEP_TIME)+" seconds")
-            time.sleep(self._DEFAULT_SLEEP_TIME)
+            try:
+                # Refresh exchange rates
+                self._refresh_exchange_rate()
+                # Check personal messages
+                self._check_inbox()
+                # Check subreddit comments for tips
+                self._check_subreddits()
+                # Process transactions
+                self._process_transactions()
+                # Process outgoing messages
+                self._send_messages()
+                # Sleep
+                logger.debug("Sleeping for "+str(self._DEFAULT_SLEEP_TIME)+" seconds")
+                time.sleep(self._DEFAULT_SLEEP_TIME)
+            except Exception, e:
+                logger.error("Caught exception in main() loop: %s", str(e))
+                # Clean up
+                self._clean_up()
+                sys.exit(1)
 
