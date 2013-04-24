@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ctb import ctb_db, ctb_reddit, ctb_misc
+from ctb import ctb_db, ctb_action
 
 import sys
 import logging
@@ -21,7 +21,10 @@ class CointipBot(object):
     Main class for cointip bot
     """
     _DEFAULT_CONFIG_FILENAME = './config.yml'
-    _DEFAULT_SLEEP_TIME = 60*3
+    _DEFAULT_SLEEP_TIME = 60*0.5
+    _REDDIT_BATCH_LIMIT=10
+
+    _config = None
     _mysqlcon = None
     _bitcoindcon = None
     _litecoindcon = None
@@ -137,39 +140,80 @@ class CointipBot(object):
         # Localization
         self._init_localization()
         # Configuration file
-        _config = self._parse_config(config_filename)
+        self._config = self._parse_config(config_filename)
         # MySQL
-        _mysqlcon = self._connect_db(_config)
+        self._mysqlcon = self._connect_db(self._config)
         # Coin daemons
-        if not _config['bitcoind-enabled'] and not _config['litecoind-enabled'] and not _config['ppcoind-enabled']:
+        if not self._config['bitcoind-enabled'] and not self._config['litecoind-enabled'] and not self._config['ppcoind-enabled']:
             logger.error("Error: please enable at least one type of coin")
             sys.exit(1)
-        if _config['bitcoind-enabled']:
-            _bitcoindcon = self._connect_bitcoin(_config)
-        if _config['litecoind-enabled']:
-            _litecoindcon = self._connect_litecoind(_config)
-        if _config['ppcoind-enabled']:
-            _ppcoindcon = self._connect_ppcoin(_config)
+        if self._config['bitcoind-enabled']:
+            self._bitcoindcon = self._connect_bitcoin(self._config)
+        if self._config['litecoind-enabled']:
+            self._litecoindcon = self._connect_litecoind(self._config)
+        if self._config['ppcoind-enabled']:
+            self._ppcoindcon = self._connect_ppcoin(self._config)
         # Reddit
-        _redditcon = self._connect_reddit(_config)
+        self._redditcon = self._connect_reddit(self._config)
 
-    def main():
+    def _check_inbox(self):
+        """
+        Evaluate new messages in inbox
+        """
+        logger.debug("_check_inbox()")
+        # Try to fetch some messages
+        try:
+            messages = self._redditcon.get_unread(limit=self._REDDIT_BATCH_LIMIT)
+        except Exception, e:
+            logger.error("_check_inbox(): couldn't fetch messages: %s", str(e))
+            return False
+        # Process messages
+        for m in messages:
+            # Ignore replies to bot's comments
+            if m.was_comment:
+                logger.debug("_check_inbox(): ignoring reply to bot's comments")
+                m.mark_as_read()
+                continue
+            # Ignore self messages
+            if m.author.name.lower() == self._config['reddit-user'].lower():
+                logger.debug("_check_inbox(): ignoring message from self")
+                m.mark_as_read()
+                continue
+            # Attempt to evaluate message
+            action = self._eval_message(m)
+            # Perform action if necessary
+            if action != None:
+                try:
+                    action.do()
+                    logger.debug("_check_inbox(): executed action %s from message_id %s", action.type(), str(m.id))
+                except Exception, e:
+                    logger.error("_check_inbox(): error executing action %s from message_id %s: %s", action.type(), str(m.id), str(e))
+                    return False
+            # Mark message as read
+            m.mark_as_read()
+        logger.debug("check_inbox() DONE")
+        return True
+
+    def _eval_message(self, _message):
+        return None
+
+    def main(self):
         """
         Main loop
         """
         while (True):
             logger.debug("Beginning main() iteration...")
             # Refresh exchange rates
-            ctb_misc._refresh_exchange_rate(_mysqlcon)
+            #ctb_misc._refresh_exchange_rate(_mysqlcon)
             # Check personal messages
-            ctb_reddit._check_inbox(_redditcon, _mysqlcon)
+            self._check_inbox()
             # Check subreddit comments for tips
-            ctb_reddit._check_subreddits(_redditcon, _mysqlcon)
+            #self._check_subreddits(_redditcon, _mysqlcon)
             # Process transactions
-            ctb_misc._process_transactions(_mysqlcon)
+            #ctb_misc._process_transactions(_mysqlcon)
             # Process outgoing messages
-            ctb_reddit._send_messages(_redditcon, _mysqlcon)
+            #ctb_reddit._send_messages(_redditcon, _mysqlcon)
             # Sleep
-            logger.debug("Sleeping for "+sr(_DEFAULT_SLEEP_TIME)+" seconds")
-            time.sleep(_DEFAULT_SLEEP_TIME)
+            logger.debug("Sleeping for "+str(self._DEFAULT_SLEEP_TIME)+" seconds")
+            time.sleep(self._DEFAULT_SLEEP_TIME)
 
