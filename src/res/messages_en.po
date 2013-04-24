@@ -1,0 +1,21 @@
+# messages.pot for cointipbot.py
+# Copyright (C) 2013 vindimy
+# vindimy <me@dmitriy.us>, 2013.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"POT-Creation-Date: 2013-04-24 03:24+UTC\n"
+"PO-Revision-Date: 2013-04-21 00:00+UTC\n"
+"Last-Translator: vindimy <me@dmitriy.us>\n"
+"Language-Team: en <me@dmitriy.us>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: cointipbot.py:44
+msgid "Testing localization..."
+msgstr "Testing localization: it works"
+

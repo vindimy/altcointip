@@ -4,6 +4,8 @@ from ctb import ctb_db, ctb_reddit, ctb_misc
 
 import sys
 import logging
+import gettext
+import locale
 import yaml
 import sqlalchemy
 import praw
@@ -18,7 +20,6 @@ class CointipBot(object):
     """
     Main class for cointip bot
     """
-
     _DEFAULT_CONFIG_FILENAME = './config.yml'
     _DEFAULT_SLEEP_TIME = 60*3
     _mysqlcon = None
@@ -26,6 +27,21 @@ class CointipBot(object):
     _litecoindcon = None
     _ppcoindcon = None
     _redditcon = None
+
+    def _init_localization(self):
+        """
+        Prepare localization
+        """
+        locale.setlocale(locale.LC_ALL, '')
+        filename = "res/messages_%s.mo" % locale.getlocale()[0][0:2]
+        try:
+            logger.debug("Opening message file %s for locale %s", filename, locale.getlocale()[0])
+            trans = gettext.GNUTranslations(open(filename, "rb"))
+        except IOError:
+            logger.debug("Locale not found (file %s, locale %s). Using default messages", filename, locale.getlocale()[0])
+            trans = gettext.NullTranslations()
+        trans.install()
+        logger.debug(_("Testing localization..."))
 
     def _parse_config(self, filename=_DEFAULT_CONFIG_FILENAME):
         """
@@ -118,8 +134,13 @@ class CointipBot(object):
         Constructor.
         Parses configuration file and initializes bot.
         """
+        # Localization
+        self._init_localization()
+        # Configuration file
         _config = self._parse_config(config_filename)
+        # MySQL
         _mysqlcon = self._connect_db(_config)
+        # Coin daemons
         if not _config['bitcoind-enabled'] and not _config['litecoind-enabled'] and not _config['ppcoind-enabled']:
             logger.error("Error: please enable at least one type of coin")
             sys.exit(1)
@@ -129,6 +150,7 @@ class CointipBot(object):
             _litecoindcon = self._connect_litecoind(_config)
         if _config['ppcoind-enabled']:
             _ppcoindcon = self._connect_ppcoin(_config)
+        # Reddit
         _redditcon = self._connect_reddit(_config)
 
     def main():
