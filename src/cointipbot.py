@@ -34,6 +34,7 @@ class CointipBot(object):
         :param filename:
             The filename from which the configuration should be read.
         """
+        logger.debug("Parsing config file...")
         try:
             config = yaml.load(open(filename))
         except yaml.YAMLError, e:
@@ -48,6 +49,7 @@ class CointipBot(object):
         """
         Returns a database connection object
         """
+        logger.debug("Connecting to MySQL...")
         dsn = "mysql+mysqldb://" + str(config['mysql-user']) + ":" + str(config['mysql-pass']) + "@" + str(config['mysql-host']) + ":" + str(config['mysql-port']) + "/" + str(config['mysql-db'])
         dbobj = ctb_db.CointipBotDatabase(dsn)
         try:
@@ -62,6 +64,7 @@ class CointipBot(object):
         """
         Returns a bitcoind connection object
         """
+        logger.debug("Connecting to bitcoind...")
         try:
             conn = Bitcoind('~/.bitcoin/bitcoin.conf')
         except BitcoindException, e:
@@ -74,6 +77,7 @@ class CointipBot(object):
         """
         Returns a litecoind connection object
         """
+        logger.debug("Connecting to litecoind...")
         try:
             conn = Bitcoind('~/.litecoin/litecoin.conf')
         except BitcoindException, e:
@@ -86,6 +90,7 @@ class CointipBot(object):
         """
         Returns a ppcoind connection object
         """
+        logger.debug("Connecting to ppcoind...")
         try:
             conn = Bitcoind('~/.ppcoin/bitcoin.conf')
         except BitcoindException, e:
@@ -98,6 +103,7 @@ class CointipBot(object):
         """
         Returns a praw connection object
         """
+        logger.debug("Connecting to Reddit...")
         try:
             conn = praw.Reddit(user_agent = config['reddit-useragent'])
             conn.login(config['reddit-user'], config['reddit-pass'])
@@ -130,6 +136,7 @@ class CointipBot(object):
         Main loop
         """
         while (True):
+            logger.debug("Beginning main() iteration...")
             # Refresh exchange rates
             ctb_misc._refresh_exchange_rate(_mysqlcon)
             # Check personal messages
@@ -141,5 +148,6 @@ class CointipBot(object):
             # Process outgoing messages
             ctb_reddit._send_messages(_redditcon, _mysqlcon)
             # Sleep
+            logger.debug("Sleeping for "+sr(_DEFAULT_SLEEP_TIME)+" seconds")
             time.sleep(_DEFAULT_SLEEP_TIME)
 
