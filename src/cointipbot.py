@@ -197,7 +197,7 @@ class CointipBot(object):
                     logger.error("_check_inbox(): error executing action %s from message_id %s: %s", action._TYPE, str(m.id), str(e))
                     return False
             # Mark message as read
-            #m.mark_as_read()
+            m.mark_as_read()
         logger.debug("check_inbox() DONE")
         return True
 

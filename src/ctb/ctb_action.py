@@ -172,6 +172,7 @@ def _eval_comment(_comment):
         m = rg.search(_comment.body)
         if m:
             # Match found
+            _logger.debug("_eval_comment(): match found (type givetip)")
             # Extract matched fields into variables
             _to_user = m.group(r['u']) if r['u'] > 0 else None
             _to_addr = m.group(r['l']) if r['l'] > 0 else None
@@ -180,7 +181,7 @@ def _eval_comment(_comment):
             # If destination not mentioned, find parent submission's author
             if not _to_user and not _to_addr:
                 # set _to_user to author of parent comment
-                _to_user = "cointipbot" #TODO
+                _to_user = _get_parent_comment_author(_comment).name
             # Check if from_user == to_user
             if _comment.author.name.lower() == _to_user.lower():
                 return None
@@ -196,3 +197,18 @@ def _eval_comment(_comment):
                                 to_curr=_to_curr)
     # No match found
     return None
+
+    def _get_parent_comment_author(_comment):
+        """
+        Return author of _comment's parent comment
+        """
+        parentpermalink = _comment.permalink.replace(_comment.id, _comment.parent_id[3:])
+        commentlinkid = _comment.link_id[3:]
+        commentid = _comment.id
+        parentid = _comment.parent_id[3:]
+        authorid = _comment.author.name
+        if (commentlinkid==parentid):
+            parentcomment = _reddit.get_submission(parentpermalink)
+        else:
+            parentcomment = _reddit.get_submission(parentpermalink).comments[0]
+        return parentcomment.author
