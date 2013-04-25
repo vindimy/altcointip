@@ -8,7 +8,7 @@ from pifkoin.bitcoind import Bitcoind, BitcoindException
 
 logger = logging.getLogger('cointipbot')
 logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger('cointipbot').setLevel(logging.DEBUG)
 
 class CointipBot(object):
     """
@@ -131,7 +131,8 @@ class CointipBot(object):
         Constructor.
         Parses configuration file and initializes bot.
         """
-        # Localization
+        # Localization. After this, all output to user is localizable
+        # through use of _() function.
         self._init_localization()
 
         # Configuration file
@@ -185,17 +186,18 @@ class CointipBot(object):
                 m.mark_as_read()
                 continue
             # Attempt to evaluate message
-            action = ctb_action._eval_message(m)
+            action = ctb_action._eval_message(m, logger)
             # Perform action if necessary
             if action != None:
+                logger.debug("_check_inbox(): calling action.do() (type %s)...", action._TYPE)
                 try:
                     action.do()
-                    logger.debug("_check_inbox(): executed action %s from message_id %s", action.type(), str(m.id))
+                    logger.debug("_check_inbox(): executed action %s from message_id %s", action._TYPE, str(m.id))
                 except Exception, e:
-                    logger.error("_check_inbox(): error executing action %s from message_id %s: %s", action.type(), str(m.id), str(e))
+                    logger.error("_check_inbox(): error executing action %s from message_id %s: %s", action._TYPE, str(m.id), str(e))
                     return False
             # Mark message as read
-            m.mark_as_read()
+            #m.mark_as_read()
         logger.debug("check_inbox() DONE")
         return True
 
