@@ -1,43 +1,45 @@
-import re
+import logging, re
+
+lg = logging.getLogger('cointipbot')
 
 class CtbAction(object):
     """
     Action class for cointip bot
     """
 
-    logger=None
-
     _TYPE=None
     _SUB_TIME=None
     _MSG_ID=None
+    _MSG_LINK=None
     _FROM_USER=None
     _TO_USER=None
     _TO_AMNT=None
     _TO_ADDR=None
     _TO_CURR=None
 
-    def __init__(self, logger=None, atype=None, sub_time=None, msg_id=None, from_user=None, to_user=None, to_amnt=None, to_addr=None, to_curr=None):
+    def __init__(self, atype=None, sub_time=None, msg_id=None, msg_link=None, from_user=None, to_user=None, to_amnt=None, to_addr=None, to_curr=None):
         """
         Initialize CtbAction object with given parameters
         and run basic checks
         """
         # Assign values to fields
-        self._logger=logger
         self._TYPE=atype
         self._SUB_TIME=sub_time
         self._MSG_ID=msg_id
+        self._MSG_LINK=msg_link
         self._FROM_USER=from_user
         self._TO_USER=to_user
         self._TO_AMNT=to_amnt
         self._TO_ADDR=to_addr
         self._TO_CURR=to_curr
+
         # Do some checks
         if self._TYPE not in ['info', 'register', 'givetip']:
             raise Exception("CtbAction::__init__(type=?): proper type is required")
         if self._TYPE == 'givetip':
-            if not self._SUB_TIME or not self._MSG_ID or not self._FROM_USER or not self._TO_AMNT or not self._TO_CURR:
+            if not self._SUB_TIME or not self._MSG_ID or not self._MSG_LINK or not self._FROM_USER or not self._TO_AMNT or not self._TO_CURR:
                 raise Exception("CtbAction::__init__(type=givetip): one of required values is missing")
-            if not (bool(len(self._TO_USER)) ^ bool(len(self._TO_ADDR))):
+            if not (bool(self._TO_USER) ^ bool(self._TO_ADDR)):
                 raise Exception("CtbAction::__init__(type=givetip): _TO_USER xor _TO_ADDR must be set")
         if self._TYPE == 'info':
             if not self._FROM_USER:
@@ -47,16 +49,32 @@ class CtbAction(object):
                 raise Exception("CtbAction::__init__(type=register): _FROM_USER value is missing")
 
     def do(self):
-        self._logger.debug("CtbAction::do()")
+        lg.debug("CtbAction::do()")
         return None
 
+def _get_parent_comment_author(_comment, _reddit):
+    """
+    Return author of _comment's parent comment
+    """
+    lg.debug("> _get_parent_comment_author()")
+    parentpermalink = _comment.permalink.replace(_comment.id, _comment.parent_id[3:])
+    commentlinkid = _comment.link_id[3:]
+    commentid = _comment.id
+    parentid = _comment.parent_id[3:]
+    authorid = _comment.author.name
+    if (commentlinkid==parentid):
+        parentcomment = _reddit.get_submission(parentpermalink)
+    else:
+        parentcomment = _reddit.get_submission(parentpermalink).comments[0]
+    lg.debug("< _get_parent_comment_author() -> %s", parentcomment.author)
+    return parentcomment.author
 
-def _eval_message(_message, _logger):
+def _eval_message(_message, _reddit):
     """
     Evaluate message body and return a CtbAction
     object if successful
     """
-    _logger.debug("_eval_message()")
+    lg.debug("> _eval_message()")
     # rlist is a list of regular expressions to test _message against
     #   't': example text that will match
     #   'p': regular expression
@@ -99,18 +117,18 @@ def _eval_message(_message, _logger):
     # Do the matching
     for r in rlist:
         rg = re.compile(r['p'], re.IGNORECASE|re.DOTALL)
-        _logger.debug("matching '%s' with '%s'", _message.body, r['p'])
+        lg.debug("matching '%s' with '%s'", _message.body, r['p'])
         m = rg.search(_message.body)
         if m:
             # Match found
-            _logger.debug("_eval_message(): match found (type %s)", r['x'])
+            lg.debug("_eval_message(): match found (type %s)", r['x'])
             # Extract matched fields into variables
             _to_addr = m.group(r['l']) if r['l'] > 0 else None
             _to_amnt = m.group(r['a']) if r['a'] > 0 else None
             _to_curr = m.group(r['c']) if r['c'] > 0 else None
             # Return CtbAction instance with given variables
-            return CtbAction(   logger=_logger,
-                                atype=r['x'],
+            lg.debug("< _eval_message() DONE")
+            return CtbAction(   atype=r['x'],
                                 sub_time=_message.created_utc,
                                 msg_id=_message.id,
                                 from_user=_message.author.name,
@@ -119,14 +137,16 @@ def _eval_message(_message, _logger):
                                 to_amnt=_to_amnt,
                                 to_curr=_to_curr)
     # No match found
-    _logger.debug("_eval_message(): no match found")
+    lg.debug("_eval_message(): no match found")
+    lg.debug("< _eval_message() DONE")
     return None
 
-def _eval_comment(_comment):
+def _eval_comment(_comment, _reddit):
     """
     Evaluate comment body and return a CtbAction
     object if successful
     """
+    lg.debug("> _eval_comment(%s)", _comment.permalink)
     # rlist is a list of regular expressions to test _comment against
     #   't': example text that will match
     #   'p': regular expression
@@ -172,7 +192,7 @@ def _eval_comment(_comment):
         m = rg.search(_comment.body)
         if m:
             # Match found
-            _logger.debug("_eval_comment(): match found (type givetip)")
+            lg.debug("_eval_comment(): match found (type givetip)")
             # Extract matched fields into variables
             _to_user = m.group(r['u']) if r['u'] > 0 else None
             _to_addr = m.group(r['l']) if r['l'] > 0 else None
@@ -181,34 +201,23 @@ def _eval_comment(_comment):
             # If destination not mentioned, find parent submission's author
             if not _to_user and not _to_addr:
                 # set _to_user to author of parent comment
-                _to_user = _get_parent_comment_author(_comment).name
+                _to_user = _get_parent_comment_author(_comment, _reddit).name
             # Check if from_user == to_user
             if _comment.author.name.lower() == _to_user.lower():
                 return None
             # Return CtbAction instance with given variables
-            return CtbAction(   logger=_logger,
-                                atype='givetip',
-                                sub_time=_coment.created_utc,
+            lg.debug("< _eval_comment() DONE")
+            return CtbAction(   atype='givetip',
+                                sub_time=_comment.created_utc,
                                 msg_id=_comment.id,
+                                msg_link=_comment.permalink,
                                 from_user=_comment.author.name,
                                 to_user=_to_user,
                                 to_addr=_to_addr,
                                 to_amnt=_to_amnt,
                                 to_curr=_to_curr)
     # No match found
+    lg.debug("_eval_comment(): no match found")
+    lg.debug("< _eval_comment() DONE")
     return None
 
-    def _get_parent_comment_author(_comment):
-        """
-        Return author of _comment's parent comment
-        """
-        parentpermalink = _comment.permalink.replace(_comment.id, _comment.parent_id[3:])
-        commentlinkid = _comment.link_id[3:]
-        commentid = _comment.id
-        parentid = _comment.parent_id[3:]
-        authorid = _comment.author.name
-        if (commentlinkid==parentid):
-            parentcomment = _reddit.get_submission(parentpermalink)
-        else:
-            parentcomment = _reddit.get_submission(parentpermalink).comments[0]
-        return parentcomment.author

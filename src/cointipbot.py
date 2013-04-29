@@ -6,8 +6,11 @@ import gettext, locale, logging, sys, time
 import praw, re, sqlalchemy, yaml
 from pifkoin.bitcoind import Bitcoind, BitcoindException
 
-logger = logging.getLogger('cointipbot')
-logging.basicConfig()
+lg = logging.getLogger('cointipbot')
+hdlr = logging.StreamHandler()
+fmtr = logging.Formatter("%(levelname)s %(asctime)s %(funcName)s %(lineno)d %(message)s")
+hdlr.setFormatter(fmtr)
+lg.addHandler(hdlr)
 logging.getLogger('cointipbot').setLevel(logging.DEBUG)
 
 class CointipBot(object):
@@ -32,13 +35,13 @@ class CointipBot(object):
         locale.setlocale(locale.LC_ALL, '')
         filename = "res/messages_%s.mo" % locale.getlocale()[0][0:2]
         try:
-            logger.debug("Opening message file %s for locale %s", filename, locale.getlocale()[0])
+            lg.debug("Opening message file %s for locale %s", filename, locale.getlocale()[0])
             trans = gettext.GNUTranslations(open(filename, "rb"))
         except IOError:
-            logger.debug("Locale not found (file %s, locale %s). Using default messages", filename, locale.getlocale()[0])
+            lg.debug("Locale not found (file %s, locale %s). Using default messages", filename, locale.getlocale()[0])
             trans = gettext.NullTranslations()
         trans.install()
-        logger.debug(_("Testing localization..."))
+        lg.debug(_("Testing localization..."))
 
     def _parse_config(self, filename=_DEFAULT_CONFIG_FILENAME):
         """
@@ -47,83 +50,83 @@ class CointipBot(object):
         :param filename:
             The filename from which the configuration should be read.
         """
-        logger.debug("Parsing config file...")
+        lg.debug("Parsing config file...")
         try:
             config = yaml.load(open(filename))
         except yaml.YAMLError, e:
-            logger.error("Error reading config file "+filename)
+            lg.error("Error reading config file "+filename)
             if hasattr(e, 'problem_mark'):
-                logger.error("Error position: (line "+str(e.problem_mark.line+1)+", column "+str(e.problem_mark.column+1));
+                lg.error("Error position: (line "+str(e.problem_mark.line+1)+", column "+str(e.problem_mark.column+1));
             sys.exit(1)
-        logger.info("Config file has been read")
+        lg.info("Config file has been read")
         return config
 
     def _connect_db(self, config):
         """
         Returns a database connection object
         """
-        logger.debug("Connecting to MySQL...")
+        lg.debug("Connecting to MySQL...")
         dsn = "mysql+mysqldb://" + str(config['mysql-user']) + ":" + str(config['mysql-pass']) + "@" + str(config['mysql-host']) + ":" + str(config['mysql-port']) + "/" + str(config['mysql-db'])
         dbobj = ctb_db.CointipBotDatabase(dsn)
         try:
             conn = dbobj.connect()
-        except sqlalchemy.SQLAlchemyError, e:
-            logger.error("Error connecting to database: "+str(e))
+        except Exception, e:
+            lg.error("Error connecting to database: "+str(e))
             sys.exit(1)
-        logger.info("Connected to database")
+        lg.info("Connected to database")
         return conn
 
     def _connect_bitcoind(self, config):
         """
         Returns a bitcoind connection object
         """
-        logger.debug("Connecting to bitcoind...")
+        lg.debug("Connecting to bitcoind...")
         try:
             conn = Bitcoind('~/.bitcoin/bitcoin.conf')
         except BitcoindException, e:
-            logger.error("Error connecting to bitcoind: "+str(e))
+            lg.error("Error connecting to bitcoind: "+str(e))
             sys.exit(1)
-        logger.info("Connected to bitcoind")
+        lg.info("Connected to bitcoind")
         return conn
 
     def _connect_litecoind(self, config):
         """
         Returns a litecoind connection object
         """
-        logger.debug("Connecting to litecoind...")
+        lg.debug("Connecting to litecoind...")
         try:
             conn = Bitcoind('~/.litecoin/litecoin.conf')
         except BitcoindException, e:
-            logger.error("Error connecting to litecoind: "+str(e))
+            lg.error("Error connecting to litecoind: "+str(e))
             sys.exit(1)
-        logger.info("Connected to litecoind")
+        lg.info("Connected to litecoind")
         return conn
 
     def _connect_ppcoind(self, config):
         """
         Returns a ppcoind connection object
         """
-        logger.debug("Connecting to ppcoind...")
+        lg.debug("Connecting to ppcoind...")
         try:
             conn = Bitcoind('~/.ppcoin/bitcoin.conf')
         except BitcoindException, e:
-            logger.error("Error connecting to ppcoind: "+str(e))
+            lg.error("Error connecting to ppcoind: "+str(e))
             sys.exit(1)
-        logger.info("Connected to ppcoind")
+        lg.info("Connected to ppcoind")
         return conn
 
     def _connect_reddit(self, config):
         """
         Returns a praw connection object
         """
-        logger.debug("Connecting to Reddit...")
+        lg.debug("Connecting to Reddit...")
         try:
             conn = praw.Reddit(user_agent = config['reddit-useragent'])
             conn.login(config['reddit-user'], config['reddit-pass'])
         except Exception, e:
-            logger.error("Error connecting to Reddit: "+str(e))
+            lg.error("Error connecting to Reddit: "+str(e))
             sys.exit(1)
-        logger.info("Logged in to Reddit")
+        lg.info("Logged in to Reddit")
         return conn
 
     def __init__(self, config_filename=_DEFAULT_CONFIG_FILENAME):
@@ -147,7 +150,7 @@ class CointipBot(object):
 
         # Coin daemons
         if not self._config['bitcoind-enabled'] and not self._config['litecoind-enabled'] and not self._config['ppcoind-enabled']:
-            logger.error("Error: please enable at least one type of coin")
+            lg.error("Error: please enable at least one type of coin")
             sys.exit(1)
         if self._config['bitcoind-enabled']:
             self._bitcoindcon = self._connect_bitcoin(self._config)
@@ -166,63 +169,156 @@ class CointipBot(object):
         """
         Evaluate new messages in inbox
         """
-        logger.debug("_check_inbox()")
+        lg.debug("> _check_inbox()")
         # Try to fetch some messages
         try:
             messages = self._redditcon.get_unread(limit=self._REDDIT_BATCH_LIMIT)
         except Exception, e:
-            logger.error("_check_inbox(): couldn't fetch messages: %s", str(e))
+            lg.error("_check_inbox(): couldn't fetch messages: %s", str(e))
             return False
         # Process messages
         for m in messages:
             # Ignore replies to bot's comments
             if m.was_comment:
-                logger.debug("_check_inbox(): ignoring reply to bot's comments")
+                lg.debug("_check_inbox(): ignoring reply to bot's comments")
                 m.mark_as_read()
                 continue
             # Ignore self messages
             if m.author.name.lower() == self._config['reddit-user'].lower():
-                logger.debug("_check_inbox(): ignoring message from self")
+                lg.debug("_check_inbox(): ignoring message from self")
                 m.mark_as_read()
                 continue
             # Attempt to evaluate message
-            action = ctb_action._eval_message(m, logger)
+            action = ctb_action._eval_message(m, self._redditcon)
             # Perform action if necessary
             if action != None:
-                logger.debug("_check_inbox(): calling action.do() (type %s)...", action._TYPE)
+                lg.debug("_check_inbox(): calling action.do() (type %s)...", action._TYPE)
                 try:
                     action.do()
-                    logger.debug("_check_inbox(): executed action %s from message_id %s", action._TYPE, str(m.id))
+                    lg.info("_check_inbox(): executed action %s from message_id %s", action._TYPE, str(m.id))
                 except Exception, e:
-                    logger.error("_check_inbox(): error executing action %s from message_id %s: %s", action._TYPE, str(m.id), str(e))
-                    return False
+                    lg.error("_check_inbox(): error executing action %s from message_id %s: %s", action._TYPE, str(m.id), str(e))
+                    raise
             # Mark message as read
             m.mark_as_read()
-        logger.debug("check_inbox() DONE")
+        lg.debug("< check_inbox() DONE")
         return True
 
     def _check_subreddits(self):
-        logger.debug("_check_subreddits()")
-        return None
+        lg.debug("> _check_subreddits()")
+        try:
+            # Get subscribed subreddits
+            my_reddits = self._redditcon.get_my_reddits()
+            my_reddits_list = []
+            for my_reddit in my_reddits:
+                my_reddits_list.append(my_reddit.display_name.lower())
+            lg.debug("_check_subreddits(): subreddits: %s", '+'.join(my_reddits_list))
+            my_reddits_multi = self._redditcon.get_subreddit('+'.join(my_reddits_list))
+        except Exception, e:
+            lg.error("_check_subreddits(): couldn't fetch subreddits: %s", str(e))
+            raise
+
+        # Fetch comments from subreddits
+        try:
+            my_comments = my_reddits_multi.get_comments(limit=self._REDDIT_BATCH_LIMIT)
+        except Exception, e:
+            lg.error("_check_subreddits(): coudln't fetch comments: %s", str(e))
+            raise
+
+        # Process comments until old comment reached
+        self._last_processed_comment_time = self._get_value(param0="last_processed_comment_time")
+        _updated_last_processed_time = 0
+        for c in my_comments:
+            # Stop processing if old comment reached
+            if c.created_utc <= self._last_processed_comment_time:
+                lg.debug("_check_subreddits: old comment reached")
+                break
+            _updated_last_processed_time = c.created_utc if c.created_utc > _updated_last_processed_time else _updated_last_processed_time
+            # Attempt to evaluate comment
+            action = ctb_action._eval_comment(c, self._redditcon)
+            # Perform action if necessary
+            if action != None:
+                lg.debug("_check_subreddits(): calling action.do() (type %s)", action._TYPE)
+                try:
+                    action.do()
+                    lg.info("_check_subreddits(): executed action %s from comment url %s", action._TYPE, c.permalink)
+                except Exception, e:
+                    lg.error("_check_subreddits(): error executing action %s from comment url %s", action._TYPE, c.permalink)
+                    continue
+        self._set_value(param0="last_processed_comment_time", value0=_updated_last_processed_time)
+
+        lg.debug("< _check_subreddits() DONE")
+        return True
 
     def _process_transactions(self):
-        logger.debug("_process_transactions()")
+        lg.debug("> _process_transactions()")
+        lg.debug("< _process_transactions() DONE")
         return None
 
     def _send_messages(self):
-        logger.debug("_send_messages()")
+        lg.debug("> _send_messages()")
+        lg.debug("< _send_messages() DONE")
         return None
 
     def _clean_up(self):
-        logger.debug("_clean_up()")
+        lg.debug("> _clean_up()")
+        lg.debug("< _clean_up() DONE")
         return None
+
+    def _get_value(self, param0=None, param1=None):
+        """
+        Fetch a value from t_values table
+        """
+        lg.debug("> _get_value()")
+        if param0 == None:
+            raise Exception("_get_value(): param0 == None")
+        value = None
+        sql = ""
+        if param1 == None:
+            sql = "SELECT value0 FROM t_values WHERE param0 = '%s' AND param1 IS NULL" % (param0)
+        else:
+            sql = "SELECT value0 FROM t_values WHERE param0 = '%s' AND param1 = '%s'" % (param0, param1)
+        try:
+            mysqlrow = self._mysqlcon.execute(sql).fetchone()
+            if mysqlrow == None:
+                lg.error("_get_value(): query <%s> didn't return any rows", sql)
+                return None
+            value = mysqlrow['value0']
+        except Exception, e:
+            lg.error("_get_value(): error executing query <%s>: %s", sql, str(e))
+            return None
+        lg.debug("< _get_value() DONE")
+        return value
+
+    def _set_value(self, param0=None, param1=None, value0=None):
+        """
+        Set a value in t_values table
+        """
+        lg.debug("> _set_value(%s, %s, %s)", str(param0), str(param1), str(value0))
+        if param0 == None or value0 == None:
+            raise Exception("_set_value(): param0 == None or value0 == None")
+        sql = ""
+        if param1 == None:
+            sql = "REPLACE INTO t_values (param0, param1, value0) VALUES ('%s', NULL, '%s')" % (param0, str(value0))
+        else:
+            sql = "REPLACE INTO t_values (param0, param1, value0) VALUES ('%s', '%s', '%s')" % (param0, param1, str(value0))
+        try:
+            mysqlexec = self._mysqlcon.execute(sql)
+            if mysqlexec.rowcount <= 0:
+                lg.error("_set_value(): query <%s> didn't affect any rows", sql)
+                return False
+        except Exception, e:
+            lg.error("_set_value: error executing query <%s>: %s", sql, str(e))
+            raise
+        lg.debug("< _set_value() DONE")
+        return True
 
     def main(self):
         """
         Main loop
         """
         while (True):
-            logger.debug("Beginning main() iteration...")
+            lg.debug("Beginning main() iteration...")
             try:
                 # Refresh exchange rates
                 self._refresh_exchange_rate()
@@ -235,10 +331,10 @@ class CointipBot(object):
                 # Process outgoing messages
                 self._send_messages()
                 # Sleep
-                logger.debug("Sleeping for "+str(self._DEFAULT_SLEEP_TIME)+" seconds")
+                lg.debug("Sleeping for "+str(self._DEFAULT_SLEEP_TIME)+" seconds")
                 time.sleep(self._DEFAULT_SLEEP_TIME)
             except Exception, e:
-                logger.error("Caught exception in main() loop: %s", str(e))
+                lg.exception("Caught exception in main() loop: %s", str(e))
                 # Clean up
                 self._clean_up()
                 sys.exit(1)
