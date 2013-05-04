@@ -5,12 +5,6 @@ mysql-host : localhost
 mysql-port : 3306
 mysql-db: cointipbot
 
-# Enable/disable coin types: set to true or false
-# Configuration for each coin type will be read from its config file (such as bitcoin.conf)
-bitcoind-enabled : true
-litecoind-enabled : true
-ppcoind-enabled : true
-
 # Reddit configuration
 reddit-username : mycointipbotuser
 reddit-pass : randompass1234
@@ -19,3 +13,24 @@ reddit-botsubreddit : mycointipbotsubreddit
 
 # Other configuration
 admin-email : admin@example.com
+
+# Cryptocoins
+cc:
+  bitcoin:
+    enabled: false
+  litecoin:
+    enabled: true
+    unit: ltc
+    name: litecoin
+    conf-file: '~/.litecoin/litecoin.conf'
+    regex:
+      address: '(L[1-9a-z]{20,40})'
+      units: '(ltc|litecoin|litecoins)'
+  ppcoin:
+    enabled: false
+    unit: ppc
+    name: ppcoin
+    conf-file: '~/.ppcoin/ppcoin.conf'
+    regex:
+      address: '(P[1-9a-z]{20,40})'
+      units: '(ppc|ppcoin|ppcoins)'

@@ -17,7 +17,7 @@ class CtbAction(object):
     _TO_ADDR=None
     _TO_CURR=None
 
-    def __init__(self, atype=None, sub_time=None, msg_id=None, msg_link=None, from_user=None, to_user=None, to_amnt=None, to_addr=None, to_curr=None):
+    def __init__(self, atype=None, sub_time=None, msg_id=None, msg_link=None, from_user=None, to_user=None, to_amnt=None, to_addr=None, coin=None, fiat=None):
         """
         Initialize CtbAction object with given parameters
         and run basic checks
@@ -31,16 +31,19 @@ class CtbAction(object):
         self._TO_USER=to_user
         self._TO_AMNT=to_amnt
         self._TO_ADDR=to_addr
-        self._TO_CURR=to_curr
+        self._COIN=coin
+        self._FIAT=fiat
 
         # Do some checks
         if self._TYPE not in ['accept', 'decline', 'info', 'register', 'givetip']:
             raise Exception("CtbAction::__init__(type=?): proper type is required")
         if self._TYPE == 'givetip':
-            if not self._SUB_TIME or not self._MSG_ID or not self._MSG_LINK or not self._FROM_USER or not self._TO_AMNT or not self._TO_CURR:
+            if not self._SUB_TIME or not self._MSG_ID or not self._MSG_LINK or not self._FROM_USER or not self._TO_AMNT:
                 raise Exception("CtbAction::__init__(type=givetip): one of required values is missing")
             if not (bool(self._TO_USER) ^ bool(self._TO_ADDR)):
                 raise Exception("CtbAction::__init__(type=givetip): _TO_USER xor _TO_ADDR must be set")
+            if not (bool(self._COIN) ^ bool(self._FIAT)):
+                raise Exception("CtbAction::__init__(type=givetip): _COIN xor _FIAT must be set")
         if self._TYPE == 'accept':
             if not self._FROM_USER:
                 raise Exception("CtbAction::__init__(type=accept): _FROM_USER value is missing")
@@ -117,9 +120,14 @@ class CtbAction(object):
 
     def _register(self):
         """
-        Register a new uesr
+        Register a new user
         """
         lg.debug("> CtbAction::_register()")
+        # If user exists, send account info
+        if _check_user_exists(self._FROM_USER) != None:
+            lg.debug("CtbAction::_register(): user already exists; calling _info()")
+            return self._info()
+        # Get new coin addresses
         lg.debug("< CtbAction::_register() DONE")
         return None
 
@@ -140,135 +148,116 @@ def _get_parent_comment_author(_comment, _reddit):
     lg.debug("< _get_parent_comment_author() -> %s", parentcomment.author)
     return parentcomment.author
 
-def _eval_message(_message, _reddit):
+def _eval_message(_message, _reddit, _cc):
     """
     Evaluate message body and return a CtbAction
     object if successful
     """
     lg.debug("> _eval_message()")
     # rlist is a list of regular expressions to test _message against
-    #   't': example text that will match
-    #   'p': regular expression
-    #   'x': action type
-    #   'a': group number to retrieve amount
-    #   'l': group number to retrieve coin address
-    #   'c': group number to retrieve currency type
+    #   'regex': regular expression
+    #   'action': action type
+    #   'coin': unit of cryptocurrency, if applicable
+    #   'rg-amount': group number to retrieve amount, if applicable
+    #   'rg-address': group number to retrieve coin address, if applicable
     rlist = [
-            {'t':     '+register',
-             'p':     '(\\+)(register)',
-             'x':     'register',
-             'a':     -1,
-             'l':     -1,
-             'c':     -1},
-            {'t':     '+info',
-             'p':     '(\\+)(info)',
-             'x':     'info',
-             'a':     -1,
-             'l':     -1,
-             'c':     -1},
-            {'t':     '+withdraw 31uEbMgunupShBVTewXjtqbBv5MndwfXhb 0.25 btc|usd',
-             'p':     '(\\+)' + '(withdraw)' + '(\\s+)' + '([1|3][1-9a-z]{20,40})' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + '(usd|btc)',
-             'x':     'withdraw',
-             'a':     6,
-             'l':     4,
-             'c':     8},
-            {'t':     '+withdraw LhTfsU9x3mL9NY8UTQRqL5CK2gHtj27eX4 0.25 ltc|usd',
-             'p':     '(\\+)' + '(withdraw)' + '(\\s+)' + '(L[1-9a-z]{20,40})' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + '(usd|ltc)',
-             'x':     'withdraw',
-             'a':     6,
-             'l':     4,
-             'c':     8},
-            {'t':     '+withdraw PNywpYi6qMMQLTmE9f4bbM7diatb5Wvt8a 0.25 ppc|usd',
-             'p':     '(\\+)' + '(withdraw)' + '(\\s+)' + '(P[1-9a-z]{20,40})' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + '(usd|ppc)',
-             'x':     'withdraw',
-             'a':     6,
-             'l':     4,
-             'c':     8}
-        ]
+            {'regex':      '(\\+)(register)',
+             'action':     'register',
+             'rg-coin':     None,
+             'rg-amount':  -1,
+             'rg-address': -1},
+            {'regex':      '(\\+)(info)',
+             'action':     'info',
+             'rg-coin':    None,
+             'rg-amount':  -1,
+             'rg-address': -1}
+            ]
+    # Add regex for each configured cryptocoin
+    for c in _cc:
+        if c['enabled']:
+            rlist.append(
+                    # +withdraw ADDR 0.25 units
+                    {'regex':      '(\\+)' + '(withdraw)' + '(\\s+)' + c['regex']['address'] + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + c['regex']['units'],
+                     'action':     'withdraw',
+                     'coin':       c['unit'],
+                     'rg-amount':  6,
+                     'rg-address': 4})
     # Do the matching
     for r in rlist:
-        rg = re.compile(r['p'], re.IGNORECASE|re.DOTALL)
-        lg.debug("matching '%s' with '%s'", _message.body, r['p'])
+        rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
+        lg.debug("matching '%s' with '%s'", _message.body, r['regex'])
         m = rg.search(_message.body)
         if m:
             # Match found
-            lg.debug("_eval_message(): match found (type %s)", r['x'])
+            lg.debug("_eval_message(): match found (type %s)", r['action'])
             # Extract matched fields into variables
-            _to_addr = m.group(r['l']) if r['l'] > 0 else None
-            _to_amnt = m.group(r['a']) if r['a'] > 0 else None
-            _to_curr = m.group(r['c']) if r['c'] > 0 else None
+            _to_addr = m.group(r['rg-address']) if r['rg-address'] > 0 else None
+            _to_amnt = m.group(r['rg-amount']) if r['rg-amount'] > 0 else None
             # Return CtbAction instance with given variables
             lg.debug("< _eval_message() DONE")
-            return CtbAction(   atype=r['x'],
+            return CtbAction(   atype=r['action'],
                                 sub_time=_message.created_utc,
                                 msg_id=_message.id,
                                 from_user=_message.author.name,
                                 to_user=None,
                                 to_addr=_to_addr,
                                 to_amnt=_to_amnt,
-                                to_curr=_to_curr)
+                                coin=r['coin'],
+                                fiat=None)
     # No match found
     lg.debug("_eval_message(): no match found")
     lg.debug("< _eval_message() DONE")
     return None
 
-def _eval_comment(_comment, _reddit):
+def _eval_comment(_comment, _reddit, _cc):
     """
     Evaluate comment body and return a CtbAction
     object if successful
     """
     lg.debug("> _eval_comment(%s)", _comment.permalink)
     # rlist is a list of regular expressions to test _comment against
-    #   't': example text that will match
-    #   'p': regular expression
-    #   'u': group number to retrieve reddit username
-    #   'a': group number to retrieve tip amount
-    #   'l': group number to retrieve coin address
-    #   'c': group number to retrieve currency type
-    rlist = [
-            {'t':     '+givetip 0.25 btc|ltc|ppc|usd',
-             'p':     '(\\+)' + '(givetip)' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + '(usd|btc|ltc|ppc)',
-             'u':     -1,
-             'a':     4,
-             'l':     -1,
-             'c':     6},
-            {'t':     '+givetip @user 0.25 btc|ltc|ppc|usd',
-             'p':     '(\\+)' + '(givetip)' + '(\\s+)' + '(@\w+)' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + '(usd|btc|ltc|ppc)',
-             'u':     4,
-             'a':     6,
-             'l':     -1,
-             'c':     8},
-            {'t':     '+givetip 31uEbMgunupShBVTewXjtqbBv5MndwfXhb 0.25 btc|usd',
-             'p':     '(\\+)' + '(givetip)' + '(\\s+)' + '([1|3][1-9a-z]{20,40})' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + '(usd|btc)',
-             'u':     -1,
-             'a':     6,
-             'l':     4,
-             'c':     8},
-            {'t':     '+givetip LhTfsU9x3mL9NY8UTQRqL5CK2gHtj27eX4 0.25 ltc|usd',
-             'p':     '(\\+)' + '(givetip)' + '(\\s+)' + '(L[1-9a-z]{20,40})' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + '(usd|ltc)',
-             'u':     -1,
-             'a':     6,
-             'l':     4,
-             'c':     8},
-            {'t':     '+givetip PNywpYi6qMMQLTmE9f4bbM7diatb5Wvt8a 0.25 ppc|usd',
-             'p':     '(\\+)' + '(givetip)' + '(\\s+)' + '(P[1-9a-z]{20,40})' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + '(usd|ppc)',
-             'u':     -1,
-             'a':     6,
-             'l':     4,
-             'c':     8}
-        ]
+    #   'regex': regular expression
+    #   'action': action type
+    #   'rg-to-user': group number to retrieve tip receiver username
+    #   'rg-amount': group number to retrieve tip amount
+    #   'rg-address': group number to retrieve tip receiver coin address
+    #   'coin': unit of cryptocurrency
+    rlist = []
+    for c in _cc:
+        if c['enabled']:
+            rlist.append(
+            # +givetip ADDR 0.25 units
+            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + c['regex']['address'] + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + c['regex']['units'],
+             'action':      'givetip',
+             'rg-to-user':  -1,
+             'rg-amount':   6,
+             'rg-address':  4,
+             'coin':        c['unit']},
+            # +givetip 0.25 units
+            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + c['regex']['units'],
+             'action':      'givetip',
+             'rg-to-user':  -1,
+             'rg-amount':   4,
+             'rg-address':  -1,
+             'coin':        c['unit']},
+            # +givetip @user 0.25 units
+            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + '(@\w+)' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + c['regex']['units'],
+             'action':      'givetip',
+             'rg-to-user':  4,
+             'rg-amount':   6,
+             'rg-address':  -1,
+             'coin':        c['unit']})
     # Do the matching
     for r in rlist:
-        rg = re.compile(r['p'], re.IGNORECASE|re.DOTALL)
+        rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
         m = rg.search(_comment.body)
         if m:
             # Match found
             lg.debug("_eval_comment(): match found (type givetip)")
             # Extract matched fields into variables
-            _to_user = m.group(r['u']) if r['u'] > 0 else None
-            _to_addr = m.group(r['l']) if r['l'] > 0 else None
-            _to_amnt = m.group(r['a']) if r['a'] > 0 else None
-            _to_curr = m.group(r['c']) if r['c'] > 0 else None
+            _to_user = m.group(r['rg-to-user']) if r['rg-to-user'] > 0 else None
+            _to_addr = m.group(r['rg-address']) if r['rg-address'] > 0 else None
+            _to_amnt = m.group(r['rg-amount']) if r['rg-amount'] > 0 else None
             # If destination not mentioned, find parent submission's author
             if not _to_user and not _to_addr:
                 # set _to_user to author of parent comment
@@ -286,7 +275,8 @@ def _eval_comment(_comment, _reddit):
                                 to_user=_to_user,
                                 to_addr=_to_addr,
                                 to_amnt=_to_amnt,
-                                to_curr=_to_curr)
+                                coin=r['coin'],
+                                fiat=r['fiat'])
     # No match found
     lg.debug("_eval_comment(): no match found")
     lg.debug("< _eval_comment() DONE")

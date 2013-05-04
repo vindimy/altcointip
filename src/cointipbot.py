@@ -23,10 +23,8 @@ class CointipBot(object):
 
     _config = None
     _mysqlcon = None
-    _bitcoindcon = None
-    _litecoindcon = None
-    _ppcoindcon = None
     _redditcon = None
+    _coincon = {}
 
     def _init_localization(self):
         """
@@ -76,43 +74,17 @@ class CointipBot(object):
         lg.info("Connected to database")
         return conn
 
-    def _connect_bitcoind(self, config):
+    def _connect_coin(self, c):
         """
-        Returns a bitcoind connection object
+        Returns a coin daemon connection object
         """
-        lg.debug("Connecting to bitcoind...")
+        lg.debug("Connecting to %s...", c['name'])
         try:
-            conn = Bitcoind('~/.bitcoin/bitcoin.conf')
+            conn = Bitcoind(c['conf-file'])
         except BitcoindException, e:
-            lg.error("Error connecting to bitcoind: "+str(e))
+            lg.error("Error connecting to %s: %s", c['name'], str(e))
             sys.exit(1)
-        lg.info("Connected to bitcoind")
-        return conn
-
-    def _connect_litecoind(self, config):
-        """
-        Returns a litecoind connection object
-        """
-        lg.debug("Connecting to litecoind...")
-        try:
-            conn = Bitcoind('~/.litecoin/litecoin.conf')
-        except BitcoindException, e:
-            lg.error("Error connecting to litecoind: "+str(e))
-            sys.exit(1)
-        lg.info("Connected to litecoind")
-        return conn
-
-    def _connect_ppcoind(self, config):
-        """
-        Returns a ppcoind connection object
-        """
-        lg.debug("Connecting to ppcoind...")
-        try:
-            conn = Bitcoind('~/.ppcoin/bitcoin.conf')
-        except BitcoindException, e:
-            lg.error("Error connecting to ppcoind: "+str(e))
-            sys.exit(1)
-        lg.info("Connected to ppcoind")
+        lg.info("Connected to %s", c['name'])
         return conn
 
     def _connect_reddit(self, config):
@@ -149,15 +121,14 @@ class CointipBot(object):
         self._mysqlcon = self._connect_db(self._config)
 
         # Coin daemons
-        if not self._config['bitcoind-enabled'] and not self._config['litecoind-enabled'] and not self._config['ppcoind-enabled']:
+        num_coins = 0
+        for c in self._config['cc']:
+            if self._config['cc'][c]['enabled']:
+                self._coincon[self._config['cc'][c]['unit']] = self._connect_coin(self._config['cc'][c])
+                num_coins += 1
+        if not num_coins > 0:
             lg.error("Error: please enable at least one type of coin")
             sys.exit(1)
-        if self._config['bitcoind-enabled']:
-            self._bitcoindcon = self._connect_bitcoin(self._config)
-        if self._config['litecoind-enabled']:
-            self._litecoindcon = self._connect_litecoind(self._config)
-        if self._config['ppcoind-enabled']:
-            self._ppcoindcon = self._connect_ppcoin(self._config)
 
         # Reddit
         self._redditcon = self._connect_reddit(self._config)
@@ -189,7 +160,7 @@ class CointipBot(object):
                 m.mark_as_read()
                 continue
             # Attempt to evaluate message
-            action = ctb_action._eval_message(m, self._redditcon)
+            action = ctb_action._eval_message(m, self._redditcon, self._config['cc'])
             # Perform action if necessary
             if action != None:
                 lg.debug("_check_inbox(): calling action.do() (type %s)...", action._TYPE)
@@ -235,7 +206,7 @@ class CointipBot(object):
                 break
             _updated_last_processed_time = c.created_utc if c.created_utc > _updated_last_processed_time else _updated_last_processed_time
             # Attempt to evaluate comment
-            action = ctb_action._eval_comment(c, self._redditcon)
+            action = ctb_action._eval_comment(c, self._redditcon, self._config['cc'])
             # Perform action if necessary
             if action != None:
                 lg.debug("_check_subreddits(): calling action.do() (type %s)", action._TYPE)
