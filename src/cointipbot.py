@@ -250,16 +250,6 @@ class CointipBot(object):
         lg.debug("< _check_subreddits() DONE")
         return True
 
-    def _process_transactions(self):
-        lg.debug("> _process_transactions()")
-        lg.debug("< _process_transactions() DONE")
-        return None
-
-    def _send_messages(self):
-        lg.debug("> _send_messages()")
-        lg.debug("< _send_messages() DONE")
-        return None
-
     def _clean_up(self):
         lg.debug("> _clean_up()")
         lg.debug("< _clean_up() DONE")
@@ -326,10 +316,6 @@ class CointipBot(object):
                 self._check_inbox()
                 # Check subreddit comments for tips
                 self._check_subreddits()
-                # Process transactions
-                self._process_transactions()
-                # Process outgoing messages
-                self._send_messages()
                 # Sleep
                 lg.debug("Sleeping for "+str(self._DEFAULT_SLEEP_TIME)+" seconds")
                 time.sleep(self._DEFAULT_SLEEP_TIME)

@@ -34,13 +34,19 @@ class CtbAction(object):
         self._TO_CURR=to_curr
 
         # Do some checks
-        if self._TYPE not in ['info', 'register', 'givetip']:
+        if self._TYPE not in ['accept', 'decline', 'info', 'register', 'givetip']:
             raise Exception("CtbAction::__init__(type=?): proper type is required")
         if self._TYPE == 'givetip':
             if not self._SUB_TIME or not self._MSG_ID or not self._MSG_LINK or not self._FROM_USER or not self._TO_AMNT or not self._TO_CURR:
                 raise Exception("CtbAction::__init__(type=givetip): one of required values is missing")
             if not (bool(self._TO_USER) ^ bool(self._TO_ADDR)):
                 raise Exception("CtbAction::__init__(type=givetip): _TO_USER xor _TO_ADDR must be set")
+        if self._TYPE == 'accept':
+            if not self._FROM_USER:
+                raise Exception("CtbAction::__init__(type=accept): _FROM_USER value is missing")
+        if self._TYPE == 'decline':
+            if not self._FROM_USER:
+                raise Exception("CtbAction::__init__(type=decline): _FROM_USER value is missing")
         if self._TYPE == 'info':
             if not self._FROM_USER:
                 raise Exception("CtbAction::__init__(type=info): _FROM_USER value is missing")
@@ -48,8 +54,73 @@ class CtbAction(object):
             if not self._FROM_USER:
                 raise Exception("CtbAction::__init__(type=register): _FROM_USER value is missing")
 
+        # Commit action to database
+        self.save()
+
+    def save(self):
+        """
+        Save action to database
+        """
+        lg.debug("> CtbAction::save()")
+        lg.debug("< CtbAction::save() DONE")
+        return None
+
     def do(self):
-        lg.debug("CtbAction::do()")
+        """
+        Call appropriate function depending on action type
+        """
+        lg.debug("> CtbAction::do()")
+        if self._TYPE == 'accept':
+            return self._accept()
+        if self._TYPE == 'decline':
+            return self._decline()
+        if self._TYPE == 'givetip':
+            return self._givetip()
+        if self._TYPE == 'info':
+            return self._info()
+        if self._TYPE == 'register':
+            return self._register()
+        lg.debug("< CtbAction::do() DONE")
+        return None
+
+    def _accept(self):
+        """
+        Accept pending tip
+        """
+        lg.debug("> CtbAction::_accept()")
+        lg.debug("< CtbAction::_accept() DONE")
+        return None
+
+    def _decline(self):
+        """
+        Decline pending tip
+        """
+        lg.debug("> CtbAction::_decline()")
+        lg.debug("< CtbAction::_decline() DONE")
+        return None
+
+    def _givetip(self):
+        """
+        Initiate tip
+        """
+        lg.debug("> CtbAction::_givetip()")
+        lg.debug("< CtbAction::_givetip() DONE")
+        return None
+
+    def _info(self):
+        """
+        Send user info about account
+        """
+        lg.debug("> CtbAction::_info()")
+        lg.debug("< CtbAction::_info() DONE")
+        return None
+
+    def _register(self):
+        """
+        Register a new uesr
+        """
+        lg.debug("> CtbAction::_register()")
+        lg.debug("< CtbAction::_register() DONE")
         return None
 
 def _get_parent_comment_author(_comment, _reddit):
