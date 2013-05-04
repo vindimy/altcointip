@@ -216,7 +216,10 @@ class CointipBot(object):
                 except Exception, e:
                     lg.error("_check_subreddits(): error executing action %s from comment url %s", action._TYPE, c.permalink)
                     continue
-        self._set_value(param0="last_processed_comment_time", value0=_updated_last_processed_time)
+
+        # Save updated last_processed_time value
+        if _updated_last_processed_time > 0:
+            self._set_value(param0="last_processed_comment_time", value0=_updated_last_processed_time)
 
         lg.debug("< _check_subreddits() DONE")
         return True
@@ -248,7 +251,7 @@ class CointipBot(object):
         except Exception, e:
             lg.error("_get_value(): error executing query <%s>: %s", sql, str(e))
             return None
-        lg.debug("< _get_value() DONE")
+        lg.debug("< _get_value() DONE (%s)", str(value))
         return value
 
     def _set_value(self, param0=None, param1=None, value0=None):

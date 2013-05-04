@@ -123,7 +123,7 @@ class CtbAction(object):
         Register a new user
         """
         lg.debug("> CtbAction::_register()")
-        # If user exists, send account info
+        # If user exists, send user info about account
         if _check_user_exists(self._FROM_USER) != None:
             lg.debug("CtbAction::_register(): user already exists; calling _info()")
             return self._info()
@@ -163,23 +163,23 @@ def _eval_message(_message, _reddit, _cc):
     rlist = [
             {'regex':      '(\\+)(register)',
              'action':     'register',
-             'rg-coin':     None,
              'rg-amount':  -1,
-             'rg-address': -1},
+             'rg-address': -1,
+             'coin':       None},
             {'regex':      '(\\+)(info)',
              'action':     'info',
-             'rg-coin':    None,
              'rg-amount':  -1,
-             'rg-address': -1}
+             'rg-address': -1,
+             'coin':       None}
             ]
     # Add regex for each configured cryptocoin
     for c in _cc:
-        if c['enabled']:
+        if _cc[c]['enabled']:
             rlist.append(
                     # +withdraw ADDR 0.25 units
-                    {'regex':      '(\\+)' + '(withdraw)' + '(\\s+)' + c['regex']['address'] + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + c['regex']['units'],
+                    {'regex':      '(\\+)' + '(withdraw)' + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + _cc[c]['regex']['units'],
                      'action':     'withdraw',
-                     'coin':       c['unit'],
+                     'coin':       _cc[c]['unit'],
                      'rg-amount':  6,
                      'rg-address': 4})
     # Do the matching
@@ -224,32 +224,38 @@ def _eval_comment(_comment, _reddit, _cc):
     #   'coin': unit of cryptocurrency
     rlist = []
     for c in _cc:
-        if c['enabled']:
+        if _cc[c]['enabled']:
             rlist.append(
             # +givetip ADDR 0.25 units
-            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + c['regex']['address'] + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + c['regex']['units'],
+            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + _cc[c]['regex']['units'],
              'action':      'givetip',
              'rg-to-user':  -1,
              'rg-amount':   6,
              'rg-address':  4,
-             'coin':        c['unit']},
+             'coin':        _cc[c]['unit'],
+             'fiat':        None})
+            rlist.append(
             # +givetip 0.25 units
-            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + c['regex']['units'],
+            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + _cc[c]['regex']['units'],
              'action':      'givetip',
              'rg-to-user':  -1,
              'rg-amount':   4,
              'rg-address':  -1,
-             'coin':        c['unit']},
+             'coin':        _cc[c]['unit'],
+             'fiat':        None})
+            rlist.append(
             # +givetip @user 0.25 units
-            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + '(@\w+)' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + c['regex']['units'],
+            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + '(@\w+)' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + _cc[c]['regex']['units'],
              'action':      'givetip',
              'rg-to-user':  4,
              'rg-amount':   6,
              'rg-address':  -1,
-             'coin':        c['unit']})
+             'coin':        _cc[c]['unit'],
+             'fiat':        None})
     # Do the matching
     for r in rlist:
         rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
+        lg.debug("_eval_comment(): matching '%s' using <%s>", _comment.body, r['regex'])
         m = rg.search(_comment.body)
         if m:
             # Match found
@@ -264,6 +270,7 @@ def _eval_comment(_comment, _reddit, _cc):
                 _to_user = _get_parent_comment_author(_comment, _reddit).name
             # Check if from_user == to_user
             if _comment.author.name.lower() == _to_user.lower():
+                lg.debug("_eval_comment(): _comment.author.name == _to_user, ignoring comment")
                 return None
             # Return CtbAction instance with given variables
             lg.debug("< _eval_comment() DONE")
