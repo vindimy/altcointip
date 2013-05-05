@@ -202,15 +202,16 @@ def _check_user_exists(_username, _mysqlcon):
 
 def _delete_user(_username, _mysqlcon):
     """
-    Delete _username from t_users table
+    Delete _username from t_users and t_addrs tables
     """
     lg.debug("> _delete_user(%s)", _username)
     try:
-        sql = "DELETE from t_users WHERE username = '%s'" % (_username)
-        mysqlexec = _mysqlcon.execute(sql)
-        if mysqlexec.rowcount <= 0:
-            lg.error("_delete_user(%s): rowcount <= 0 while executing <%s>", _username, sql)
-            return False
+        sql_arr = ["DELETE from t_users WHERE username = '%s'" % (_username),
+                   "DELETE from t_addrs WHERE username = '%s'" % (_username)]
+        for sql in sql_arr:
+            mysqlexec = _mysqlcon.execute(sql)
+            if mysqlexec.rowcount <= 0:
+                lg.warning("_delete_user(%s): rowcount <= 0 while executing <%s>", _username, sql)
     except Exception, e:
         lg.error("_delete_user(%s): error while executing <%s>: %s", _username, sql, str(e))
         raise
