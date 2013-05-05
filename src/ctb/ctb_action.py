@@ -15,14 +15,17 @@ class CtbAction(object):
     _TO_USER=None
     _TO_AMNT=None
     _TO_ADDR=None
-    _TO_CURR=None
+    _COIN=None
+    _FIAT=None
+    _CTB=None
 
-    def __init__(self, atype=None, sub_time=None, msg_id=None, msg_link=None, from_user=None, to_user=None, to_amnt=None, to_addr=None, coin=None, fiat=None):
+    def __init__(self, atype=None, sub_time=None, msg_id=None, msg_link=None, from_user=None, to_user=None, to_amnt=None, to_addr=None, coin=None, fiat=None, ctb=None):
         """
         Initialize CtbAction object with given parameters
         and run basic checks
         """
         # Assign values to fields
+        # Action properties
         self._TYPE=atype
         self._SUB_TIME=sub_time
         self._MSG_ID=msg_id
@@ -33,29 +36,33 @@ class CtbAction(object):
         self._TO_ADDR=to_addr
         self._COIN=coin
         self._FIAT=fiat
+        # Reference to CointipBot
+        self._CTB=ctb
 
         # Do some checks
-        if self._TYPE not in ['accept', 'decline', 'info', 'register', 'givetip']:
+        if not bool(self._TYPE) or self._TYPE not in ['accept', 'decline', 'info', 'register', 'givetip']:
             raise Exception("CtbAction::__init__(type=?): proper type is required")
         if self._TYPE == 'givetip':
-            if not self._SUB_TIME or not self._MSG_ID or not self._MSG_LINK or not self._FROM_USER or not self._TO_AMNT:
+            if not bool(self._SUB_TIME) or not bool(self._MSG_ID) or not bool(self._MSG_LINK) or not bool(self._FROM_USER) or not bool(self._TO_AMNT):
                 raise Exception("CtbAction::__init__(type=givetip): one of required values is missing")
             if not (bool(self._TO_USER) ^ bool(self._TO_ADDR)):
                 raise Exception("CtbAction::__init__(type=givetip): _TO_USER xor _TO_ADDR must be set")
             if not (bool(self._COIN) ^ bool(self._FIAT)):
                 raise Exception("CtbAction::__init__(type=givetip): _COIN xor _FIAT must be set")
         if self._TYPE == 'accept':
-            if not self._FROM_USER:
+            if not bool(self._FROM_USER):
                 raise Exception("CtbAction::__init__(type=accept): _FROM_USER value is missing")
         if self._TYPE == 'decline':
-            if not self._FROM_USER:
+            if not bool(self._FROM_USER):
                 raise Exception("CtbAction::__init__(type=decline): _FROM_USER value is missing")
         if self._TYPE == 'info':
-            if not self._FROM_USER:
+            if not bool(self._FROM_USER):
                 raise Exception("CtbAction::__init__(type=info): _FROM_USER value is missing")
         if self._TYPE == 'register':
-            if not self._FROM_USER:
+            if not bool(self._FROM_USER):
                 raise Exception("CtbAction::__init__(type=register): _FROM_USER value is missing")
+        if not bool(self._CTB):
+            raise Exception("CtbAction::__init__(): no reference to CointipBot (self._CTB)")
 
         # Commit action to database
         self.save()
@@ -82,7 +89,8 @@ class CtbAction(object):
         if self._TYPE == 'info':
             return self._info()
         if self._TYPE == 'register':
-            return self._register()
+            if self._register():
+                return self._info()
         lg.debug("< CtbAction::do() DONE")
         return None
 
@@ -123,13 +131,91 @@ class CtbAction(object):
         Register a new user
         """
         lg.debug("> CtbAction::_register()")
-        # If user exists, send user info about account
-        if _check_user_exists(self._FROM_USER) != None:
-            lg.debug("CtbAction::_register(): user already exists; calling _info()")
-            return self._info()
+
+        _mysqlcon = self._CTB._mysqlcon
+        _coincon = self._CTB._coincon
+
+        # If user exists, do nothing
+        if _check_user_exists(self._FROM_USER, _mysqlcon):
+            lg.debug("CtbAction::_register(%s): user already exists; ignoring request", self._FROM_USER)
+            return True
+
+        # Add user to database
+        try:
+            sql_adduser = "INSERT INTO t_users (username) VALUES ('%s')" % self._FROM_USER
+            mysqlexec = _mysqlcon.execute(sql_adduser)
+            if mysqlexec.rowcount <= 0:
+                lg.error("CtbAction::_register(%s): rowcount <= 0 while executing <%s>", self._FROM_USER, sql_adduser)
+                return False
+        except Exception, e:
+            lg.error("CtbAction::_register(%s): exception while executing <%s>: %s", self._FROM_USER, sql_adduser, str(e))
+            return False
+
         # Get new coin addresses
+        new_addrs = {}
+        for c in _coincon:
+            try:
+                new_addrs[c] = _coincon[c].getnewaddress(self._FROM_USER)
+                lg.debug("CtbAction::_register(%s): got new %s address %s", self._FROM_USER, c, new_addrs[c])
+            except Exception, e:
+                lg.error("CtbAction::_register(%s): error getting new address for coin %s: %s", self._FROM_USER, c, str(e))
+                return False
+
+        # Add coin addresses to database
+        for c in new_addrs:
+            try:
+                sql_addr = "INSERT INTO t_addrs (username, coin, address) VALUES ('%s', '%s', '%s')" % (self._FROM_USER, c, new_addrs[c])
+                mysqlexec = _mysqlcon.execute(sql_addr)
+                if mysqlexec.rowcount <= 0:
+                    lg.error("CtbAction::_register(%s): rowcount <= 0 while executing <%s>", self._FROM_USER, sql_addr)
+                    # Undo change to database
+                    _delete_user(self._FROM_USER, _mysqlcon)
+                    return False
+            except Exception, e:
+                lg.error("CtbAction::_register(%s): exception while executing <%s>: %s", self._FROM_USER, sql_addr, str(e))
+                # Undo change to database
+                _delete_user(self._FROM_USER, _mysqlcon)
+                return False
+
         lg.debug("< CtbAction::_register() DONE")
         return None
+
+def _check_user_exists(_username, _mysqlcon):
+    """
+    Return true if _username is in t_users
+    """
+    lg.debug("> _check_user_exists(%s)", _username)
+    try:
+        sql = "SELECT username FROM t_users WHERE username = '%s'" % (_username)
+        mysqlrow = _mysqlcon.execute(sql).fetchone()
+        if mysqlrow == None:
+            lg.debug("< _check_user_exists(%s) DONE (no)", _username)
+            return False
+        else:
+            lg.debug("< _check_user_exists(%s) DONE (yes)", _username)
+            return True
+    except Exception, e:
+        logger.error("_check_user_exists(%s): error while executing <%s>: %s", _username, sql, str(e))
+        raise
+    logger.debug("_check_user_exists(%s): returning None (shouldn't happen)")
+    return None
+
+def _delete_user(_username, _mysqlcon):
+    """
+    Delete _username from t_users table
+    """
+    lg.debug("> _delete_user(%s)", _username)
+    try:
+        sql = "DELETE from t_users WHERE username = '%s'" % (_username)
+        mysqlexec = _mysqlcon.execute(sql)
+        if mysqlexec.rowcount <= 0:
+            lg.error("_delete_user(%s): rowcount <= 0 while executing <%s>", _username, sql)
+            return False
+    except Exception, e:
+        lg.error("_delete_user(%s): error while executing <%s>: %s", _username, sql, str(e))
+        raise
+    lg.debug("< _delete_user(%s) DONE", _username)
+    return True
 
 def _get_parent_comment_author(_comment, _reddit):
     """
@@ -148,7 +234,7 @@ def _get_parent_comment_author(_comment, _reddit):
     lg.debug("< _get_parent_comment_author() -> %s", parentcomment.author)
     return parentcomment.author
 
-def _eval_message(_message, _reddit, _cc):
+def _eval_message(_message, _ctb):
     """
     Evaluate message body and return a CtbAction
     object if successful
@@ -173,6 +259,7 @@ def _eval_message(_message, _reddit, _cc):
              'coin':       None}
             ]
     # Add regex for each configured cryptocoin
+    _cc = _ctb._config['cc']
     for c in _cc:
         if _cc[c]['enabled']:
             rlist.append(
@@ -203,18 +290,20 @@ def _eval_message(_message, _reddit, _cc):
                                 to_addr=_to_addr,
                                 to_amnt=_to_amnt,
                                 coin=r['coin'],
-                                fiat=None)
+                                fiat=None,
+                                ctb=_ctb)
     # No match found
     lg.debug("_eval_message(): no match found")
     lg.debug("< _eval_message() DONE")
     return None
 
-def _eval_comment(_comment, _reddit, _cc):
+def _eval_comment(_comment, _ctb):
     """
     Evaluate comment body and return a CtbAction
     object if successful
     """
     lg.debug("> _eval_comment(%s)", _comment.permalink)
+    _cc = _ctb._config['cc']
     # rlist is a list of regular expressions to test _comment against
     #   'regex': regular expression
     #   'action': action type
@@ -283,7 +372,8 @@ def _eval_comment(_comment, _reddit, _cc):
                                 to_addr=_to_addr,
                                 to_amnt=_to_amnt,
                                 coin=r['coin'],
-                                fiat=r['fiat'])
+                                fiat=r['fiat'],
+                                ctb=_ctb)
     # No match found
     lg.debug("_eval_comment(): no match found")
     lg.debug("< _eval_comment() DONE")

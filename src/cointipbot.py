@@ -141,26 +141,32 @@ class CointipBot(object):
         Evaluate new messages in inbox
         """
         lg.debug("> _check_inbox()")
+
         # Try to fetch some messages
         try:
             messages = self._redditcon.get_unread(limit=self._REDDIT_BATCH_LIMIT)
         except Exception, e:
             lg.error("_check_inbox(): couldn't fetch messages: %s", str(e))
             return False
+
         # Process messages
         for m in messages:
+
             # Ignore replies to bot's comments
             if m.was_comment:
                 lg.debug("_check_inbox(): ignoring reply to bot's comments")
                 m.mark_as_read()
                 continue
+
             # Ignore self messages
             if m.author.name.lower() == self._config['reddit-user'].lower():
                 lg.debug("_check_inbox(): ignoring message from self")
                 m.mark_as_read()
                 continue
+
             # Attempt to evaluate message
-            action = ctb_action._eval_message(m, self._redditcon, self._config['cc'])
+            action = ctb_action._eval_message(m, self)
+
             # Perform action if necessary
             if action != None:
                 lg.debug("_check_inbox(): calling action.do() (type %s)...", action._TYPE)
@@ -170,15 +176,18 @@ class CointipBot(object):
                 except Exception, e:
                     lg.error("_check_inbox(): error executing action %s from message_id %s: %s", action._TYPE, str(m.id), str(e))
                     raise
+
             # Mark message as read
             m.mark_as_read()
+
         lg.debug("< check_inbox() DONE")
         return True
 
     def _check_subreddits(self):
         lg.debug("> _check_subreddits()")
+
+        # Get subscribed subreddits
         try:
-            # Get subscribed subreddits
             my_reddits = self._redditcon.get_my_reddits()
             my_reddits_list = []
             for my_reddit in my_reddits:
@@ -200,13 +209,16 @@ class CointipBot(object):
         self._last_processed_comment_time = self._get_value(param0="last_processed_comment_time")
         _updated_last_processed_time = 0
         for c in my_comments:
+
             # Stop processing if old comment reached
             if c.created_utc <= self._last_processed_comment_time:
                 lg.debug("_check_subreddits: old comment reached")
                 break
             _updated_last_processed_time = c.created_utc if c.created_utc > _updated_last_processed_time else _updated_last_processed_time
+
             # Attempt to evaluate comment
-            action = ctb_action._eval_comment(c, self._redditcon, self._config['cc'])
+            action = ctb_action._eval_comment(c, self)
+
             # Perform action if necessary
             if action != None:
                 lg.debug("_check_subreddits(): calling action.do() (type %s)", action._TYPE)

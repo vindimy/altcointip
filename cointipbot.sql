@@ -1,8 +1,15 @@
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
-DROP TABLE IF EXISTS `t_mrcvd`;
-CREATE TABLE `t_mrcvd` (
+CREATE TABLE IF NOT EXISTS `t_addrs` (
+  `username` varchar(30) NOT NULL,
+  `coin` varchar(3) NOT NULL,
+  `address` varchar(34) NOT NULL,
+  PRIMARY KEY (`username`,`coin`),
+  UNIQUE KEY `address` (`address`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `t_mrcvd` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `username` varchar(30) NOT NULL,
   `action` int(11) unsigned NOT NULL DEFAULT '0',
@@ -12,8 +19,7 @@ CREATE TABLE `t_mrcvd` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
-DROP TABLE IF EXISTS `t_msent`;
-CREATE TABLE `t_msent` (
+CREATE TABLE IF NOT EXISTS `t_msent` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `username` varchar(30) NOT NULL,
   `action` int(11) unsigned NOT NULL DEFAULT '0',
@@ -23,23 +29,19 @@ CREATE TABLE `t_msent` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
-DROP TABLE IF EXISTS `t_users`;
-CREATE TABLE `t_users` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+CREATE TABLE IF NOT EXISTS `t_users` (
   `username` varchar(30) NOT NULL,
-  `address_btc` varchar(34) DEFAULT NULL,
-  `address_ltc` varchar(34) DEFAULT NULL,
-  `address_ppc` varchar(34) DEFAULT NULL,
   `joindate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `giftamount` float DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `username` (`username`,`address_btc`,`address_ltc`,`address_ppc`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+  `giftamount` float DEFAULT '0',
+  PRIMARY KEY (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-DROP TABLE IF EXISTS `t_values`;
-CREATE TABLE `t_values` (
+CREATE TABLE IF NOT EXISTS `t_values` (
   `param0` varchar(64) NOT NULL,
   `param1` varchar(64) DEFAULT NULL,
   `value0` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`param0`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO `t_values` (`param0`, `param1`, `value0`) VALUES('last_processed_comment_time', NULL, 0);
+

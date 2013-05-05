@@ -18,10 +18,18 @@ admin-email : admin@example.com
 cc:
   bitcoin:
     enabled: false
+    unit: btc
+    name: bitcoin
+    minconf: 1
+    confile: '~/.bitcoin/bitcoin.conf'
+    regex:
+      address: '([1|3][1-9a-z]{20,40})'
+      units: '(btc|bitcoin|bitcoins)'
   litecoin:
-    enabled: true
+    enabled: false
     unit: ltc
     name: litecoin
+    minconf: 3
     conf-file: '~/.litecoin/litecoin.conf'
     regex:
       address: '(L[1-9a-z]{20,40})'
@@ -30,6 +38,7 @@ cc:
     enabled: false
     unit: ppc
     name: ppcoin
+    minconf: 6
     conf-file: '~/.ppcoin/ppcoin.conf'
     regex:
       address: '(P[1-9a-z]{20,40})'
