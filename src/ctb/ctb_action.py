@@ -155,16 +155,20 @@ class CtbAction(object):
         new_addrs = {}
         for c in _coincon:
             try:
-                new_addrs[c] = _coincon[c].getnewaddress(self._FROM_USER)
-                lg.debug("CtbAction::_register(%s): got new %s address %s", self._FROM_USER, c, new_addrs[c])
+                # Generate new address for user
+                new_addrs[c] = _coincon[c].getaccountaddress(self._FROM_USER)
+                if not bool(new_addrs[c]):
+                    new_addrs[c] = _coincon[c].getnewaddress(self._FROM_USER)
+                lg.debug("CtbAction::_register(%s): got %s address %s", self._FROM_USER, c, new_addrs[c])
             except Exception, e:
-                lg.error("CtbAction::_register(%s): error getting new address for coin %s: %s", self._FROM_USER, c, str(e))
+                lg.error("CtbAction::_register(%s): error getting %s address: %s", self._FROM_USER, c, str(e))
+                _delete_user(self._FROM_USER, _mysqlcon)
                 return False
 
         # Add coin addresses to database
         for c in new_addrs:
             try:
-                sql_addr = "INSERT INTO t_addrs (username, coin, address) VALUES ('%s', '%s', '%s')" % (self._FROM_USER, c, new_addrs[c])
+                sql_addr = "REPLACE INTO t_addrs (username, coin, address) VALUES ('%s', '%s', '%s')" % (self._FROM_USER, c, new_addrs[c])
                 mysqlexec = _mysqlcon.execute(sql_addr)
                 if mysqlexec.rowcount <= 0:
                     lg.error("CtbAction::_register(%s): rowcount <= 0 while executing <%s>", self._FROM_USER, sql_addr)
