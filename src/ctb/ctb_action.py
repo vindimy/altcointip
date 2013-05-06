@@ -123,8 +123,55 @@ class CtbAction(object):
         Send user info about account
         """
         lg.debug("> CtbAction::_info()")
+
+        _mysqlcon = self._CTB._mysqlcon
+        _coincon = self._CTB._coincon
+        _cc = self._CTB._config['cc']
+        _redditcon = self._CTB._redditcon
+
+        # Check if user exists
+        if not _check_user_exists(self._FROM_USER, _mysqlcon):
+            return False
+
+        # Gather data for info message
+        info = []
+        for c in _coincon:
+            coin_info = {}
+            coin_info['coin'] = c
+            try:
+                coin_info['address'] = _coincon[c].getaccountaddress(self._FROM_USER)
+                coin_info['balance'] = _coincon[c].getbalance(self._FROM_USER)
+                info.append(coin_info)
+            except Exception, e:
+                lg.error("CtbAction::_info(%s): error retrieving %s coin_info: %s", self._FROM_USER, c, str(e))
+                return False
+
+        # Confirm coin addresses against MySQL
+        for i in info:
+            sql = "SELECT address FROM t_addrs WHERE username = '%s' AND coin = '%s'" % (self._FROM_USER, i['coin'])
+            mysqlrow = _mysqlcon.execute(sql).fetchone()
+            if mysqlrow == None:
+                raise Exception("CtbAction::_info(%s): no results from <%s> when expecting %s", self._FROM_USER, sql, i['address'])
+            addr = mysqlrow['address']
+            # Compare addr to that returned by coin daemon
+            if not addr == i['address']:
+                raise Exception("CtbAction::_info(%s): %s addresses don't match (%s in database vs %s in coin daemon)", self._FROM_USER, i['coin'], addr, i['address'])
+
+        # Format info message
+        msg = "coin|address|balance\n:---|:---|---:\n"
+        for i in info:
+            balance_str = ('%f' % i['balance']).rstrip('0').rstrip('.')
+            msg += i['coin'] + '|' + i['address'] + '|' + balance_str + "\n"
+
+        # Send info message
+        try:
+            _redditcon.get_redditor(self._FROM_USER).send_message("+info", msg)
+        except Exception, e:
+            lg.error("CtbAction::_info(%s): error sending message", self._FROM_USER)
+            return False
+
         lg.debug("< CtbAction::_info() DONE")
-        return None
+        return True
 
     def _register(self):
         """
