@@ -140,34 +140,28 @@ class CtbAction(object):
             coin_info = {}
             coin_info['coin'] = c
             try:
-                coin_info['address'] = _coincon[c].getaccountaddress(self._FROM_USER)
                 coin_info['balance'] = _coincon[c].getbalance(self._FROM_USER)
-                coin_info['balance-un'] = _coincon[c].getbalance(self._FROM_USER, 0)
                 info.append(coin_info)
             except Exception, e:
                 lg.error("CtbAction::_info(%s): error retrieving %s coin_info: %s", self._FROM_USER, c, str(e))
-                return False
+                raise
 
-        # Confirm coin addresses against MySQL
+        # Get coin addresses from MySQL
         for i in info:
             sql = "SELECT address FROM t_addrs WHERE username = '%s' AND coin = '%s'" % (self._FROM_USER, i['coin'])
             mysqlrow = _mysqlcon.execute(sql).fetchone()
             if mysqlrow == None:
-                raise Exception("CtbAction::_info(%s): no results from <%s> when expecting %s", self._FROM_USER, sql, i['address'])
-            addr = mysqlrow['address']
-            # Compare addr to that returned by coin daemon
-            if not addr == i['address']:
-                raise Exception("CtbAction::_info(%s): %s addresses don't match (%s in database vs %s in coin daemon)", self._FROM_USER, i['coin'], addr, i['address'])
+                raise Exception("CtbAction::_info(%s): no result from <%s>" % (self._FROM_USER, sql))
+            i['address'] = mysqlrow['address']
 
         # Format info message
         msg = "Hello %s! Here's your account info.\n\n" % self._FROM_USER
-        msg += "coin|address|balance |balance (+unconfirmed)\n:---|:---|---:|---:\n"
+        msg += "coin|address|balance\n:---|:---|---:\n"
         for i in info:
             balance_str = ('%f' % i['balance']).rstrip('0').rstrip('.')
-            balance_un_str = ('%f' % i['balance-un']).rstrip('0').rstrip('.')
             address_str = '[%s](' + _cc[i['coin']]['explorer']['address'] + '%s)'
             address_str_fmtd = address_str % (i['address'], i['address'])
-            msg += i['coin'] + '|' + address_str_fmtd + '|' + balance_str + '|' + balance_un_str + "\n"
+            msg += i['coin'] + '|' + address_str_fmtd + '|' + balance_str + "\n"
         msg += "\nUse addresses above to deposit coins into your account."
 
         # Send info message
