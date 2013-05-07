@@ -131,6 +131,7 @@ class CtbAction(object):
 
         # Check if user exists
         if not _check_user_exists(self._FROM_USER, _mysqlcon):
+            _redditcon.get_redditor(self._FROM_USER).send_message("+info", "I'm sorry, we've never met. Please +register first!")
             return False
 
         # Gather data for info message
@@ -141,6 +142,7 @@ class CtbAction(object):
             try:
                 coin_info['address'] = _coincon[c].getaccountaddress(self._FROM_USER)
                 coin_info['balance'] = _coincon[c].getbalance(self._FROM_USER)
+                coin_info['balance-un'] = _coincon[c].getbalance(self._FROM_USER, 0)
                 info.append(coin_info)
             except Exception, e:
                 lg.error("CtbAction::_info(%s): error retrieving %s coin_info: %s", self._FROM_USER, c, str(e))
@@ -158,10 +160,15 @@ class CtbAction(object):
                 raise Exception("CtbAction::_info(%s): %s addresses don't match (%s in database vs %s in coin daemon)", self._FROM_USER, i['coin'], addr, i['address'])
 
         # Format info message
-        msg = "coin|address|balance\n:---|:---|---:\n"
+        msg = "Hello %s! Here's your account info.\n\n" % self._FROM_USER
+        msg += "coin|address|balance |balance (+unconfirmed)\n:---|:---|---:|---:\n"
         for i in info:
             balance_str = ('%f' % i['balance']).rstrip('0').rstrip('.')
-            msg += i['coin'] + '|' + i['address'] + '|' + balance_str + "\n"
+            balance_un_str = ('%f' % i['balance-un']).rstrip('0').rstrip('.')
+            address_str = '[%s](' + _cc[i['coin']]['explorer']['address'] + '%s)'
+            address_str_fmtd = address_str % (i['address'], i['address'])
+            msg += i['coin'] + '|' + address_str_fmtd + '|' + balance_str + '|' + balance_un_str + "\n"
+        msg += "\nUse addresses above to deposit coins into your account."
 
         # Send info message
         try:
