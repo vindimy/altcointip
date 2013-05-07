@@ -6,12 +6,17 @@ import gettext, locale, logging, sys, time
 import praw, re, sqlalchemy, yaml
 from pifkoin.bitcoind import Bitcoind, BitcoindException
 
+# Configure CointipBot logger
 lg = logging.getLogger('cointipbot')
 hdlr = logging.StreamHandler()
 fmtr = logging.Formatter("%(levelname)s %(asctime)s %(funcName)s %(lineno)d %(message)s")
 hdlr.setFormatter(fmtr)
 lg.addHandler(hdlr)
-logging.getLogger('cointipbot').setLevel(logging.DEBUG)
+lg.setLevel(logging.DEBUG)
+# Configure Bitcoin logger
+bt = logging.getLogger('bitcoin')
+bt.addHandler(hdlr)
+bt.setLevel(logging.DEBUG)
 
 class CointipBot(object):
     """
@@ -85,6 +90,10 @@ class CointipBot(object):
             lg.error("Error connecting to %s: %s", c['name'], str(e))
             sys.exit(1)
         lg.info("Connected to %s", c['name'])
+        # Set tx fee
+        lg.info("Setting tx fee of %f", c['txfee'])
+        conn.settxfee(c['txfee'])
+        # Done
         return conn
 
     def _connect_reddit(self, config):
@@ -224,10 +233,10 @@ class CointipBot(object):
                 lg.debug("_check_subreddits(): calling action.do() (type %s)", action._TYPE)
                 try:
                     action.do()
-                    lg.info("_check_subreddits(): executed action %s from comment url %s", action._TYPE, c.permalink)
+                    lg.info("_check_subreddits(): executed %s from %s", action._TYPE, c.permalink)
                 except Exception, e:
-                    lg.error("_check_subreddits(): error executing action %s from comment url %s", action._TYPE, c.permalink)
-                    continue
+                    lg.exception("_check_subreddits(): error doing %s from %s", action._TYPE, c.permalink)
+                    raise
 
         # Save updated last_processed_time value
         if _updated_last_processed_time > 0:
