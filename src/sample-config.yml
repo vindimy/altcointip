@@ -25,6 +25,7 @@ cc:
     unit: btc
     name: bitcoin
     confile: '~/.bitcoin/bitcoin.conf'
+    minconf: 2
     txmin: 0.05
     txfee: 0.0005
     walletpassphrase: mypass1
@@ -39,6 +40,7 @@ cc:
     unit: ltc
     name: litecoin
     conf-file: '~/.litecoin/litecoin.conf'
+    minconf: 2
     txmin: 0.1
     txfee: 0.01
     walletpassphrase: mypass1
@@ -53,6 +55,7 @@ cc:
     unit: ppc
     name: ppcoin
     conf-file: '~/.ppcoin/ppcoin.conf'
+    minconf: 2
     txmin: 0.1
     txfee: 0.01
     walletpassphrase: mypass1
