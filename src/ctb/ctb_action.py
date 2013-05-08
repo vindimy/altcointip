@@ -1,4 +1,7 @@
+import ctb_misc
+
 import logging, re
+from urllib2 import HTTPError
 
 lg = logging.getLogger('cointipbot')
 
@@ -118,11 +121,11 @@ class CtbAction(object):
 
         if self._TYPE == 'givetip':
             # Check if _FROM_USER has registered
-            if not _check_user_exists(self._FROM_USER, _mysqlcon):
+            if not ctb_misc._check_user_exists(self._FROM_USER, _mysqlcon):
                 msg = "I'm sorry %s, we've never met. Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (self._FROM_USER, self._CTB._config['reddit-user'])
                 lg.debug("CtbAction::_validate(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
+                ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip", msg)
                 return False
 
             # Verify that _FROM_USER has coin address
@@ -132,7 +135,7 @@ class CtbAction(object):
                 msg = "I'm sorry %s, you don't seem to have %s address." % (self._FROM_USER, self._COIN.upper())
                 lg.debug("CtbAction::_validate(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
+                ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip", msg)
                 return False
             else:
                 self._FROM_ADDR = mysqlrow['address']
@@ -142,7 +145,7 @@ class CtbAction(object):
                 msg = "I'm sorry, your tip of %f %s is below minimum (%f)." % (self._TO_AMNT, self._COIN.upper(), _cc[self._COIN]['txmin'])
                 lg.debug("CtbAction::_validate(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
+                ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip", msg)
                 return False
 
             # Verify balance
@@ -151,7 +154,7 @@ class CtbAction(object):
                 msg = "I'm sorry, your balance of %f %s is too small (there's a %f network transaction fee)." % (balance_avail, self._COIN.upper(), _cc[self._COIN]['txfee'])
                 lg.debug("CtbAction::_validate(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
+                ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip", msg)
                 return False
 
             if bool(self._TO_USER):
@@ -165,13 +168,13 @@ class CtbAction(object):
                     msg = "I'm sorry, %s doesn't have a %s address registered. I'll tell him/her to get one." % (self._TO_USER, self._COIN.upper())
                     lg.debug("CtbAction::_validate(): " + msg)
                     msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                    _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
+                    ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip", msg)
 
                     # Send notice to _TO_USER
                     msg = "Hey %s, /u/%s tried to send you a %f %s tip, but you don't have a %s address registered." % (self._TO_USER, self._FROM_USER, self._TO_AMNT, self._COIN.upper(), self._COIN.upper())
                     lg.debug("CtbAction::_validate(): " + msg)
                     msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                    _redditcon.get_redditor(self._TO_USER).send_message("+givetip", msg)
+                    ctb_misc._reddit_say(_redditcon, self._MSG, self._TO_USER, "+givetip", msg)
 
                     # Save transaction as pending
                     self.save('pending')
@@ -185,7 +188,7 @@ class CtbAction(object):
                 msg = "I'm sorry, %s address %s appears to be invalid (is there a typo?)." % (self._COIN.upper(), self._TO_ADDR)
                 lg.debug("CtbAction::_validate(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
+                ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip", msg)
                 return False
 
             if bool(self._TO_USER):
@@ -222,7 +225,7 @@ class CtbAction(object):
         if bool(self._TO_USER):
             # Process tip to user
 
-            if _check_user_exists(self._TO_USER, _mysqlcon):
+            if ctb_misc._check_user_exists(self._TO_USER, _mysqlcon):
                 # if _TO_USER has registered, simply process the tip
 
                 # Process transaction
@@ -241,7 +244,7 @@ class CtbAction(object):
 
                     # Send notice to _FROM_USER
                     msg = "Hey %s, something went wrong, and your tip of %f %s to /u/%s has failed to process." % (self._FROM_USER, self._TO_AMNT, self._COIN.upper(), self._TO_USER)
-                    _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
+                    ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip", msg)
 
                     # Return
                     lg.debug("< CtbAction::_givetip() DONE")
@@ -258,13 +261,13 @@ class CtbAction(object):
                     lg.debug("CtbAction::_givetip(): " + msg)
                     msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                     msg += "\n* [transaction details](%s)" % (_cc[self._COIN]['explorer']['transaction'] + tx)
-                    _redditcon.get_redditor(self._TO_USER).send_message("+givetip", msg)
+                    ctb_misc._reddit_say(_redditcon, self._MSG, self._TO_USER, "+givetip", msg)
 
                     # Post verification comment
                     amnt = ('%f' % self._TO_AMNT).rstrip('0').rstrip('.')
                     cmnt = "* __[Verified](%s)__: /u/%s -> /u/%s, __%s %s__" % (_cc[self._COIN]['explorer']['transaction'] + tx, self._FROM_USER, self._TO_USER, amnt, self._COIN.upper())
                     lg.debug("CtbAction::_givetip(): " + cmnt)
-                    self._MSG.reply(cmnt)
+                    ctb_misc._reddit_say(_redditcon, self._MSG, None, None, cmnt)
                 except Exception, e:
                     # Couldn't post to Reddit
                     lg.error("CtbAction::_givetip(): error communicating with Reddit: %s" % str(e))
@@ -283,7 +286,7 @@ class CtbAction(object):
                 msg = "Hey %s, you have received a %s tip of %f from /u/%s. To accept, reply with +accept now." % (self._TO_USER, self._COIN.upper(), self._TO_AMNT, self._FROM_USER)
                 lg.debug("CtbAction::_givetip(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                _redditcon.get_redditor(self._TO_USER).send_message("+givetip", msg)
+                ctb_misc._reddit_say(_redditcon, self._MSG, self._TO_USER, "+givetip", msg)
 
                 lg.debug("< CtbAction::_givetip() DONE")
                 return True
@@ -306,7 +309,7 @@ class CtbAction(object):
 
                 # Send notice to _FROM_USER
                 msg = "Hey %s, something went wrong, and your tip of %f %s to %s has failed to process." % (self._FROM_USER, self._TO_AMNT, self._COIN.upper(), self._TO_ADDR)
-                _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
+                ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip", msg)
 
                 lg.debug("< CtbAction::_givetip() DONE")
                 return False
@@ -321,7 +324,7 @@ class CtbAction(object):
                 ex = _cc[self._COIN]['explorer']
                 cmnt = "* [Verified](%s): /u/%s -> [%s](%s), %f %s" % (ex['transaction'] + tx, self._FROM_USER, self._TO_ADDR, ex['address'] + self._TO_ADDR, self._TO_AMNT, self._COIN.upper())
                 lg.debug("CtbAction::_givetip(): " + cmnt)
-                self._MSG.reply(cmnt)
+                ctb_misc._reddit_say(_redditcon, self._MSG, None, None, cmnt)
             except Exception, e:
                 # Couldn't post to Reddit
                 lg.error("CtbAction::_givetip(): error communicating with Reddit: %s" % str(e))
@@ -345,9 +348,9 @@ class CtbAction(object):
         _redditcon = self._CTB._redditcon
 
         # Check if user exists
-        if not _check_user_exists(self._FROM_USER, _mysqlcon):
+        if not ctb_misc._check_user_exists(self._FROM_USER, _mysqlcon):
             msg = "I'm sorry %s, we've never met. Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (self._FROM_USER, self._CTB._config['reddit-user'])
-            _redditcon.get_redditor(self._FROM_USER).send_message("+info", msg)
+            ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+info", msg)
             return False
 
         # Gather data for info message
@@ -382,7 +385,7 @@ class CtbAction(object):
 
         # Send info message
         try:
-            _redditcon.get_redditor(self._FROM_USER).send_message("+info", msg)
+            ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+info", msg)
         except Exception, e:
             lg.error("CtbAction::_info(%s): error sending message", self._FROM_USER)
             return False
@@ -400,7 +403,7 @@ class CtbAction(object):
         _coincon = self._CTB._coincon
 
         # If user exists, do nothing
-        if _check_user_exists(self._FROM_USER, _mysqlcon):
+        if ctb_misc._check_user_exists(self._FROM_USER, _mysqlcon):
             lg.debug("CtbAction::_register(%s): user already exists; ignoring request", self._FROM_USER)
             return True
 
@@ -448,60 +451,6 @@ class CtbAction(object):
         lg.debug("< CtbAction::_register() DONE")
         return True
 
-def _check_user_exists(_username, _mysqlcon):
-    """
-    Return true if _username is in t_users
-    """
-    lg.debug("> _check_user_exists(%s)", _username)
-    try:
-        sql = "SELECT username FROM t_users WHERE username = '%s'" % (_username)
-        mysqlrow = _mysqlcon.execute(sql).fetchone()
-        if mysqlrow == None:
-            lg.debug("< _check_user_exists(%s) DONE (no)", _username)
-            return False
-        else:
-            lg.debug("< _check_user_exists(%s) DONE (yes)", _username)
-            return True
-    except Exception, e:
-        logger.error("_check_user_exists(%s): error while executing <%s>: %s", _username, sql, str(e))
-        raise
-    logger.debug("_check_user_exists(%s): returning None (shouldn't happen)")
-    return None
-
-def _delete_user(_username, _mysqlcon):
-    """
-    Delete _username from t_users and t_addrs tables
-    """
-    lg.debug("> _delete_user(%s)", _username)
-    try:
-        sql_arr = ["DELETE from t_users WHERE username = '%s'" % (_username),
-                   "DELETE from t_addrs WHERE username = '%s'" % (_username)]
-        for sql in sql_arr:
-            mysqlexec = _mysqlcon.execute(sql)
-            if mysqlexec.rowcount <= 0:
-                lg.warning("_delete_user(%s): rowcount <= 0 while executing <%s>", _username, sql)
-    except Exception, e:
-        lg.error("_delete_user(%s): error while executing <%s>: %s", _username, sql, str(e))
-        raise
-    lg.debug("< _delete_user(%s) DONE", _username)
-    return True
-
-def _get_parent_comment_author(_comment, _reddit):
-    """
-    Return author of _comment's parent comment
-    """
-    lg.debug("> _get_parent_comment_author()")
-    parentpermalink = _comment.permalink.replace(_comment.id, _comment.parent_id[3:])
-    commentlinkid = _comment.link_id[3:]
-    commentid = _comment.id
-    parentid = _comment.parent_id[3:]
-    authorid = _comment.author.name
-    if (commentlinkid==parentid):
-        parentcomment = _reddit.get_submission(parentpermalink)
-    else:
-        parentcomment = _reddit.get_submission(parentpermalink).comments[0]
-    lg.debug("< _get_parent_comment_author() -> %s", parentcomment.author)
-    return parentcomment.author
 
 def _eval_message(_message, _ctb):
     """
@@ -623,7 +572,7 @@ def _eval_comment(_comment, _ctb):
             # If destination not mentioned, find parent submission's author
             if not _to_user and not _to_addr:
                 # set _to_user to author of parent comment
-                _to_user = _get_parent_comment_author(_comment, _ctb._redditcon).name
+                _to_user = ctb_misc._get_parent_comment_author(_comment, _ctb._redditcon).name
             # Check if from_user == to_user
             if bool(_to_user) and _comment.author.name.lower() == _to_user.lower():
                 lg.debug("_eval_comment(): _comment.author.name == _to_user, ignoring comment")

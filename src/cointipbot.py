@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-from ctb import ctb_db, ctb_action
+from ctb import ctb_db, ctb_action, ctb_misc
 
 import gettext, locale, logging, sys, time
 import praw, re, sqlalchemy, yaml
 from pifkoin.bitcoind import Bitcoind, BitcoindException
+from urllib2 import HTTPError
 
 # Configure CointipBot logger
 lg = logging.getLogger('cointipbot')
@@ -142,9 +143,6 @@ class CointipBot(object):
         # Reddit
         self._redditcon = self._connect_reddit(self._config)
 
-    def _refresh_exchange_rate(self):
-        return None
-
     def _check_inbox(self):
         """
         Evaluate new messages in inbox
@@ -154,6 +152,10 @@ class CointipBot(object):
         # Try to fetch some messages
         try:
             messages = self._redditcon.get_unread(limit=self._REDDIT_BATCH_LIMIT)
+        except HTTPError, e:
+            lg.warning("_check_inbox(): Reddit is down, skipping processing...")
+            time.sleep(60)
+            return False
         except Exception, e:
             lg.error("_check_inbox(): couldn't fetch messages: %s", str(e))
             return False
@@ -163,15 +165,31 @@ class CointipBot(object):
 
             # Ignore replies to bot's comments
             if m.was_comment:
-                lg.debug("_check_inbox(): ignoring reply to bot's comments")
-                m.mark_as_read()
-                continue
+                try:
+                    lg.debug("_check_inbox(): ignoring reply to bot's comments")
+                    m.mark_as_read()
+                    continue
+                except HTTPError, e:
+                    lg.warning("_check_inbox(): Reddit is down, skipping processing...")
+                    time.sleep(60)
+                    return False
+                except Exception, e:
+                    lg.error("_check_inbox(): couldn't mark message as read: %s", str(e))
+                    return False
 
             # Ignore self messages
             if m.author.name.lower() == self._config['reddit-user'].lower():
-                lg.debug("_check_inbox(): ignoring message from self")
-                m.mark_as_read()
-                continue
+                try:
+                    lg.debug("_check_inbox(): ignoring message from self")
+                    m.mark_as_read()
+                    continue
+                except HTTPError, e:
+                    lg.warning("_check_inbox(): Reddit is down, skipping processing...")
+                    time.sleep(60)
+                    return False
+                except Exception, e:
+                    lg.error("_check_inbox(): couldn't mark message as read: %s", str(e))
+                    return False
 
             # Attempt to evaluate message
             action = ctb_action._eval_message(m, self)
@@ -187,7 +205,15 @@ class CointipBot(object):
                     raise
 
             # Mark message as read
-            m.mark_as_read()
+            try:
+                m.mark_as_read()
+            except HTTPError, e:
+                lg.warning("_check_inbox(): Reddit is down, skipping processing...")
+                time.sleep(60)
+                return False
+            except Exception, e:
+                lg.error("_check_inbox(): couldn't mark message as read: %s", str(e))
+                return False
 
         lg.debug("< check_inbox() DONE")
         return True
@@ -203,6 +229,10 @@ class CointipBot(object):
                 my_reddits_list.append(my_reddit.display_name.lower())
             lg.debug("_check_subreddits(): subreddits: %s", '+'.join(my_reddits_list))
             my_reddits_multi = self._redditcon.get_subreddit('+'.join(my_reddits_list))
+        except HTTPError, e:
+            lg.warning("_check_subreddits(): Reddit is down, skipping processing...")
+            time.sleep(60)
+            return False
         except Exception, e:
             lg.error("_check_subreddits(): couldn't fetch subreddits: %s", str(e))
             raise
@@ -210,12 +240,16 @@ class CointipBot(object):
         # Fetch comments from subreddits
         try:
             my_comments = my_reddits_multi.get_comments(limit=self._REDDIT_BATCH_LIMIT)
+        except HTTPError, e:
+            lg.warning("_check_subreddits(): Reddit is down, skipping processing...")
+            time.sleep(60)
+            return False
         except Exception, e:
             lg.error("_check_subreddits(): coudln't fetch comments: %s", str(e))
             raise
 
         # Process comments until old comment reached
-        self._last_processed_comment_time = self._get_value(param0="last_processed_comment_time")
+        self._last_processed_comment_time = ctb_misc._get_value(conn=self._mysqlcon, param0="last_processed_comment_time")
         _updated_last_processed_time = 0
         for c in my_comments:
 
@@ -240,7 +274,7 @@ class CointipBot(object):
 
         # Save updated last_processed_time value
         if _updated_last_processed_time > 0:
-            self._set_value(param0="last_processed_comment_time", value0=_updated_last_processed_time)
+            ctb_misc._set_value(conn=self._mysqlcon, param0="last_processed_comment_time", value0=_updated_last_processed_time)
 
         lg.debug("< _check_subreddits() DONE")
         return True
@@ -250,54 +284,6 @@ class CointipBot(object):
         lg.debug("< _clean_up() DONE")
         return None
 
-    def _get_value(self, param0=None, param1=None):
-        """
-        Fetch a value from t_values table
-        """
-        lg.debug("> _get_value()")
-        if param0 == None:
-            raise Exception("_get_value(): param0 == None")
-        value = None
-        sql = ""
-        if param1 == None:
-            sql = "SELECT value0 FROM t_values WHERE param0 = '%s' AND param1 IS NULL" % (param0)
-        else:
-            sql = "SELECT value0 FROM t_values WHERE param0 = '%s' AND param1 = '%s'" % (param0, param1)
-        try:
-            mysqlrow = self._mysqlcon.execute(sql).fetchone()
-            if mysqlrow == None:
-                lg.error("_get_value(): query <%s> didn't return any rows", sql)
-                return None
-            value = mysqlrow['value0']
-        except Exception, e:
-            lg.error("_get_value(): error executing query <%s>: %s", sql, str(e))
-            return None
-        lg.debug("< _get_value() DONE (%s)", str(value))
-        return value
-
-    def _set_value(self, param0=None, param1=None, value0=None):
-        """
-        Set a value in t_values table
-        """
-        lg.debug("> _set_value(%s, %s, %s)", str(param0), str(param1), str(value0))
-        if param0 == None or value0 == None:
-            raise Exception("_set_value(): param0 == None or value0 == None")
-        sql = ""
-        if param1 == None:
-            sql = "REPLACE INTO t_values (param0, param1, value0) VALUES ('%s', NULL, '%s')" % (param0, str(value0))
-        else:
-            sql = "REPLACE INTO t_values (param0, param1, value0) VALUES ('%s', '%s', '%s')" % (param0, param1, str(value0))
-        try:
-            mysqlexec = self._mysqlcon.execute(sql)
-            if mysqlexec.rowcount <= 0:
-                lg.error("_set_value(): query <%s> didn't affect any rows", sql)
-                return False
-        except Exception, e:
-            lg.error("_set_value: error executing query <%s>: %s", sql, str(e))
-            raise
-        lg.debug("< _set_value() DONE")
-        return True
-
     def main(self):
         """
         Main loop
@@ -306,7 +292,7 @@ class CointipBot(object):
             lg.debug("Beginning main() iteration...")
             try:
                 # Refresh exchange rates
-                self._refresh_exchange_rate()
+                ctb_misc._refresh_exchange_rate(self)
                 # Check personal messages
                 self._check_inbox()
                 # Check subreddit comments for tips
