@@ -1,6 +1,24 @@
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
+CREATE TABLE IF NOT EXISTS `t_action` (
+  `type` enum('givetip','withdraw') NOT NULL,
+  `state` enum('completed','pending','failed') NOT NULL,
+  `created_utc` int(11) unsigned NOT NULL,
+  `from_user` varchar(30) NOT NULL,
+  `from_addr` varchar(34) NOT NULL,
+  `to_user` varchar(30) DEFAULT NULL,
+  `to_addr` varchar(34) DEFAULT NULL,
+  `to_amnt` float unsigned NOT NULL,
+  `txid` varchar(64) DEFAULT NULL,
+  `coin` varchar(3) NOT NULL,
+  `fiat` varchar(3) DEFAULT NULL,
+  `msg_id` varchar(10) NOT NULL,
+  `msg_link` varchar(200) DEFAULT NULL,
+  PRIMARY KEY (`type`,`created_utc`,`msg_id`),
+  UNIQUE KEY `msg_id` (`msg_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 CREATE TABLE IF NOT EXISTS `t_addrs` (
   `username` varchar(30) NOT NULL,
   `coin` varchar(3) NOT NULL,
@@ -9,31 +27,12 @@ CREATE TABLE IF NOT EXISTS `t_addrs` (
   UNIQUE KEY `address` (`address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `t_mrcvd` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `username` varchar(30) NOT NULL,
-  `action` int(11) unsigned NOT NULL DEFAULT '0',
-  `amount` float unsigned NOT NULL DEFAULT '0',
-  `date` date NOT NULL,
-  `processed` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
-
-CREATE TABLE IF NOT EXISTS `t_msent` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `username` varchar(30) NOT NULL,
-  `action` int(11) unsigned NOT NULL DEFAULT '0',
-  `amount` float unsigned NOT NULL DEFAULT '0',
-  `date` int(11) NOT NULL,
-  `processed` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
-
 CREATE TABLE IF NOT EXISTS `t_users` (
   `username` varchar(30) NOT NULL,
   `joindate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `giftamount` float DEFAULT '0',
-  PRIMARY KEY (`username`)
+  PRIMARY KEY (`username`),
+  UNIQUE KEY `username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `t_values` (

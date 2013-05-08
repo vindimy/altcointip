@@ -65,13 +65,39 @@ class CtbAction(object):
         # Set some helpful properties
         self._FROM_USER = self._MSG.author.name.lower()
 
-    def save(self, state=None, errmsg=None):
+    def save(self, state=None):
         """
         Save action to database
         """
-        lg.debug("> CtbAction::save()")
+        lg.debug("> CtbAction::save(%s)", state)
+
+        conn = self._CTB._mysqlcon
+        sql = "REPLACE INTO t_action (type, state, created_utc, from_user, from_addr, to_user, to_addr, to_amnt, txid, coin, fiat, msg_id, msg_link)"
+        sql += " values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+
+        try:
+            mysqlexec = conn.execute(sql,
+                    (self._TYPE,
+                     state,
+                     self._MSG.created_utc,
+                     self._FROM_USER,
+                     self._FROM_ADDR,
+                     self._TO_USER,
+                     self._TO_ADDR,
+                     self._TO_AMNT,
+                     self._TXID,
+                     self._COIN,
+                     self._FIAT,
+                     self._MSG.id,
+                     self._MSG.permalink if self._TYPE == 'givetip' else None))
+            if mysqlexec.rowcount <= 0:
+                raise Exception("query didn't affect any rows")
+        except Exception, e:
+            lg.error("CtbAction::save(%s): error executing query <%s>: %s", state, sql % (self._TYPE, state, self._MSG.created_utc, self._FROM_USER, self._FROM_ADDR, self._TO_USER, self._TO_ADDR, self._TO_AMNT, self._TXID, self._COIN, self._FIAT, self._MSG.id, self._MSG.permalink if self._TYPE == 'givetip' else None), str(e))
+            raise
+
         lg.debug("< CtbAction::save() DONE")
-        return None
+        return True
 
     def do(self):
         """
@@ -149,7 +175,7 @@ class CtbAction(object):
                 return False
 
             # Verify balance
-            balance_avail = _coincon[self._COIN].getbalance(self._FROM_USER)
+            balance_avail = _coincon[self._COIN].getbalance(self._FROM_USER, _cc[self._COIN]['minconf'])
             if not balance_avail >= self._TO_AMNT + _cc[self._COIN]['txfee']:
                 msg = "I'm sorry, your balance of %f %s is too small (there's a %f network transaction fee)." % (balance_avail, self._COIN.upper(), _cc[self._COIN]['txfee'])
                 lg.debug("CtbAction::_validate(): " + msg)
@@ -218,8 +244,9 @@ class CtbAction(object):
             return False
 
         # Check if action has been processed
-        if bool(_load_action(self._FROM_USER, self._MSG.id)):
+        if bool(_load_action(type=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, _ctb=self._CTB)):
             # Found action in database, returning
+            lg.warning("CtbAction::_givetip(): action already in database; ignoring")
             return False
 
         if bool(self._TO_USER):
@@ -233,12 +260,12 @@ class CtbAction(object):
                     lg.debug("CtbAction::_givetip(): sending %f %s to %s...", self._TO_AMNT, self._COIN.upper(), self._TO_ADDR)
                     if bool(_cc[self._COIN]['walletpassphrase']):
                         res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 10)
-                    tx = _coincon[self._COIN].sendfrom(self._FROM_USER, self._TO_ADDR, self._TO_AMNT, self._MSG.id)
+                    self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER, self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['minconf'])
                 except Exception, e:
                     # Transaction failed
 
                     # Save transaction to database
-                    self.save('failed', str(e))
+                    self.save('failed')
 
                     # Send notice to _FROM_USER
                     msg = "Hey %s, something went wrong, and your tip of %f %s to /u/%s has failed to process." % (self._FROM_USER, self._TO_AMNT, self._COIN.upper(), self._TO_USER)
@@ -296,12 +323,12 @@ class CtbAction(object):
                 lg.debug("CtbAction::_givetip(): sending %f %s to %s...", self._TO_AMNT, self._COIN, self._TO_ADDR)
                 if bool(_cc[self._COIN]['walletpassphrase']):
                     res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 10)
-                tx = _coincon[self._COIN].sendfrom(self._FROM_USER, self._TO_ADDR, self._TO_AMNT, self._MSG.id)
+                self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER, self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['minconf'])
             except Exception, e:
                 # Transaction failed
 
                 # Save transaction to database
-                self.save('failed', str(e))
+                self.save('failed')
 
                 # Send notice to _FROM_USER
                 msg = "Hey %s, something went wrong, and your tip of %f %s to %s has failed to process." % (self._FROM_USER, self._TO_AMNT, self._COIN.upper(), self._TO_ADDR)
@@ -319,7 +346,8 @@ class CtbAction(object):
             try:
                 # Post verification comment
                 ex = _cc[self._COIN]['explorer']
-                cmnt = "* [Verified](%s): /u/%s -> [%s](%s), %f %s" % (ex['transaction'] + tx, self._FROM_USER, self._TO_ADDR, ex['address'] + self._TO_ADDR, self._TO_AMNT, self._COIN.upper())
+                amnt = ('%f' % self._TO_AMNT).rstrip('0').rstrip('.')
+                cmnt = "* __[Verified](%s)__: /u/%s -> [%s](%s), __%s %s__" % (ex['transaction'] + tx, self._FROM_USER, self._TO_ADDR, ex['address'] + self._TO_ADDR, amnt, self._COIN.upper())
                 lg.debug("CtbAction::_givetip(): " + cmnt)
                 ctb_misc._reddit_say(_redditcon, self._MSG, None, None, cmnt)
             except Exception, e:
@@ -356,7 +384,8 @@ class CtbAction(object):
             coin_info = {}
             coin_info['coin'] = c
             try:
-                coin_info['balance'] = _coincon[c].getbalance(self._FROM_USER)
+                coin_info['balance'] = _coincon[c].getbalance(self._FROM_USER, _cc[c]['minconf'])
+                coin_info['ubalance'] = _coincon[c].getbalance(self._FROM_USER, 0)
                 info.append(coin_info)
             except Exception, e:
                 lg.error("CtbAction::_info(%s): error retrieving %s coin_info: %s", self._FROM_USER, c, str(e))
@@ -372,12 +401,13 @@ class CtbAction(object):
 
         # Format info message
         msg = "Hello %s! Here's your account info.\n\n" % self._FROM_USER
-        msg += "coin|address|balance\n:---|:---|---:\n"
+        msg += "coin|address|balance|unconfirmed\n:---|:---|---:|---:\n"
         for i in info:
             balance_str = ('%f' % i['balance']).rstrip('0').rstrip('.')
+            ubalance_str = ('%f' % (i['ubalance'] - i['balance'])).rstrip('0').rstrip('.')
             address_str = '[%s](' + _cc[i['coin']]['explorer']['address'] + '%s)'
             address_str_fmtd = address_str % (i['address'], i['address'])
-            msg += i['coin'] + '|' + address_str_fmtd + '|' + balance_str + "\n"
+            msg += i['coin'] + '|' + address_str_fmtd + '|__' + balance_str + "__|" + ubalance_str + "\n"
         msg += "\nUse addresses above to deposit coins into your account."
 
         # Send info message
@@ -588,3 +618,35 @@ def _eval_comment(_comment, _ctb):
     lg.debug("< _eval_comment() DONE")
     return None
 
+def _load_action(type=None, msg_id=None, created_utc=None, _ctb=None):
+    """
+    Query database and return CtbAction object if found
+    """
+    lg.debug("> _load_action()")
+
+    conn = _ctb._mysqlcon
+    reddit = _ctb._redditcon
+
+    sql = "SELECT * FROM t_action WHERE type = %s AND msg_id = %s AND created_utc = %s"
+    try:
+        mysqlrow = conn.execute(sql, (type, msg_id, int(created_utc))).fetchone()
+        if mysqlrow == None:
+            # Action not found
+            return None
+        else:
+            _msg = reddit.get_submission(mysqlrow['msg_link'])
+            lg.debug("< _load_action() DONE")
+            return CtbAction(  atype=type,
+                               msg=_msg,
+                               to_user=mysqlrow['to_user'],
+                               to_addr=mysqlrow['to_addr'] if not bool(mysqlrow['to_user']) else None,
+                               to_amnt=mysqlrow['to_amnt'],
+                               coin=mysqlrow['coin'],
+                               fiat=mysqlrow['fiat'],
+                               ctb=_ctb)
+    except Exception, e:
+        lg.error("_load_action(): error executing <%s>: %s", sql % (type, msg_id, created_utc), str(e))
+        raise
+
+    lg.debug("< _load_action() DONE (should not get here)")
+    return None
