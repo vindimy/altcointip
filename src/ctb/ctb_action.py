@@ -198,7 +198,7 @@ class CtbAction(object):
 
             # Check if _TO_USER has registered
             if (bool(self._TO_USER)):
-                if not ctb_misc._check_user_exists(self._TO_USER, _mysqlcon):
+                if not ctb_misc._check_user_exists(self._TO_USER.name, _mysqlcon):
                     # _TO_USER not registered, save action as pending
                     self.save('pending')
                     # Send notice to _FROM_USER
@@ -311,12 +311,12 @@ class CtbAction(object):
                 msg = "Hey %s, you have received a __%f %s__ tip from /u/%s." % (self._TO_USER.name, self._TO_AMNT, self._COIN.upper(), self._FROM_USER.name)
                 lg.debug("CtbAction::_givetip(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                msg += "\n* [transaction details](%s)" % (_cc[self._COIN]['explorer']['transaction'] + tx)
-                ctb_misc._reddit_say(_redditcon, self._MSG, self._TO_USER, "+givetip succeeded", msg)
+                msg += "\n* [transaction details](%s)" % (_cc[self._COIN]['explorer']['transaction'] + self._TXID)
+                ctb_misc._reddit_say(_redditcon, self._MSG, self._TO_USER, "+givetip received", msg)
 
                 # Post verification comment
                 amnt = ('%f' % self._TO_AMNT).rstrip('0').rstrip('.')
-                cmnt = "* __[Verified](%s)__: /u/%s -> /u/%s, __%s %s__" % (_cc[self._COIN]['explorer']['transaction'] + tx, self._FROM_USER.name, self._TO_USER.name, amnt, self._COIN.upper())
+                cmnt = "* __[Verified](%s)__: /u/%s -> /u/%s, __%s %s__" % (_cc[self._COIN]['explorer']['transaction'] + self._TXID, self._FROM_USER.name, self._TO_USER.name, amnt, self._COIN.upper())
                 lg.debug("CtbAction::_givetip(): " + cmnt)
                 ctb_misc._reddit_say(_redditcon, self._MSG, None, None, cmnt)
             except Exception, e:
@@ -358,7 +358,7 @@ class CtbAction(object):
                 # Post verification comment
                 ex = _cc[self._COIN]['explorer']
                 amnt = ('%f' % self._TO_AMNT).rstrip('0').rstrip('.')
-                cmnt = "* __[Verified](%s)__: /u/%s -> [%s](%s), __%s %s__" % (ex['transaction'] + tx, self._FROM_USER.name, self._TO_ADDR, ex['address'] + self._TO_ADDR, amnt, self._COIN.upper())
+                cmnt = "* __[Verified](%s)__: /u/%s -> [%s](%s), __%s %s__" % (ex['transaction'] + self._TXID, self._FROM_USER.name, self._TO_ADDR, ex['address'] + self._TO_ADDR, amnt, self._COIN.upper())
                 lg.debug("CtbAction::_givetip(): " + cmnt)
                 ctb_misc._reddit_say(_redditcon, self._MSG, None, None, cmnt)
             except Exception, e:
@@ -610,7 +610,7 @@ def _eval_comment(_comment, _ctb):
             if (bool(_to_user)):
                 _to_user_obj = ctb_misc._get_reddit_user(_to_user, _ctb._redditcon)
                 if not bool(_to_user_obj):
-                    lg.warning("_eval_comment(): couldn't fetch reddit user %s, _to_user")
+                    lg.warning("_eval_comment(): couldn't fetch reddit user %s", _to_user)
                     return None
             # Check if from_user == to_user
             if bool(_to_user) and _comment.author.name.lower() == _to_user.lower():
