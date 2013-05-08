@@ -1,4 +1,5 @@
 import logging
+from urllib2 import HTTPError
 
 lg = logging.getLogger('cointipbot')
 
@@ -10,24 +11,28 @@ def _reddit_say(redditcon, cmnt, to, subj, txt):
     Send a message to user or reply to a comment on Reddit
     Retry if Reddit is down
     """
+    lg.debug("> _reddit_say()")
     sleep_for = 10
 
     while True:
         try:
             if bool(to) and bool(subj) and bool(txt):
-                lg.debug("_reddit_say(): sending message")
-                redditcon.get_redditor(to).send_message(subj, txt)
+                lg.debug("_reddit_say(): sending message to %s", to.name)
+                to.send_message(subj, txt)
             elif bool(cmnt) and bool(txt):
-                lg.debug("_reddit_say(): sending comment")
+                lg.debug("_reddit_say(): sending comment to %s", cmnt.id)
                 cmnt.reply(txt)
             break
         except HTTPError, e:
-            lg.warning("_reddit_say(): Reddit is down, sleeping for %d seconds...", sleep_for)
-            time.sleep(sleep_for)
-            sleep_for *= 2
+            if (str(e)=="HTTP Error 504: Gateway Time-out" or str(e)=="timed out"):
+                lg.warning("_reddit_say(): Reddit is down, sleeping for %d seconds...", sleep_for)
+                time.sleep(sleep_for)
+                sleep_for *= 2 if sleep_for < 600 else 600
+                pass
         except Exception, e:
             raise
 
+    lg.debug("< _reddit_say() DONE")
     return True
 
 def _check_user_exists(_username, _mysqlcon):
@@ -49,6 +54,19 @@ def _check_user_exists(_username, _mysqlcon):
         raise
     logger.debug("_check_user_exists(%s): returning None (shouldn't happen)")
     return None
+
+def _get_reddit_user(_username, _redditcon):
+    """
+    Return user object if _username is a valid Reddit user,
+    otherwise return None
+    """
+    lg.debug("> _get_reddit_user(%s)", _username)
+    try:
+        r = _redditcon.get_redditor(_username)
+        lg.debug("< _get_reddit_user(%s) DONE", _username)
+        return r
+    except Exception, e:
+        return None
 
 def _delete_user(_username, _mysqlcon):
     """
