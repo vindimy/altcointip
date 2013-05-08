@@ -14,6 +14,10 @@ reddit-botsubreddit : mycointipbotsubreddit
 # Other configuration
 admin-email : admin@example.com
 
+# Regex              
+regex:
+  amount: '([0-9]{1,7}(?:\.[0-9]{0,5})?)'
+
 # Cryptocoins
 cc:
   btc:
@@ -23,6 +27,7 @@ cc:
     confile: '~/.bitcoin/bitcoin.conf'
     txmin: 0.05
     txfee: 0.0005
+    walletpassphrase: mypass1
     explorer:
       address: 'http://blockchain.info/address/'
       transaction: 'http://blockchain.info/tx/'
@@ -36,6 +41,7 @@ cc:
     conf-file: '~/.litecoin/litecoin.conf'
     txmin: 0.1
     txfee: 0.01
+    walletpassphrase: mypass1
     explorer:
       address: 'http://explorer.litecoin.net/address/'
       transaction: 'http://explorer.litecoin.net/tx/'
@@ -49,6 +55,7 @@ cc:
     conf-file: '~/.ppcoin/ppcoin.conf'
     txmin: 0.1
     txfee: 0.01
+    walletpassphrase: mypass1
     explorer:
       address: 'http://www.cryptocoinexplorer.com:2750/address/'
       transaction: 'http://www.cryptocoinexplorer.com:2750/tx/'

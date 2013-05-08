@@ -16,6 +16,7 @@ class CtbAction(object):
     _TO_USER=None
     _TO_AMNT=None
     _TO_ADDR=None
+    _TXID=None
 
     _COIN=None
     _FIAT=None
@@ -31,9 +32,9 @@ class CtbAction(object):
         # Action properties
         self._TYPE=atype
         self._TO_USER=to_user
-        self._TO_AMNT=float(to_amnt) if not to_amnt == None else None
+        self._TO_AMNT=float(to_amnt) if bool(to_amnt) else None
         self._TO_ADDR=to_addr
-        self._COIN=coin
+        self._COIN=coin.lower() if bool(coin) else None
         self._FIAT=fiat
         # Reference to Reddit message/comment
         self._MSG=msg
@@ -118,17 +119,19 @@ class CtbAction(object):
         if self._TYPE == 'givetip':
             # Check if _FROM_USER has registered
             if not _check_user_exists(self._FROM_USER, _mysqlcon):
-                msg = "I'm sorry %s, we've never met. Please +register first!" % (self._FROM_USER)
+                msg = "I'm sorry %s, we've never met. Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (self._FROM_USER, self._CTB._config['reddit-user'])
                 lg.debug("CtbAction::_validate(): " + msg)
-                _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", "I'm sorry %s, we've never met. Please +register first!" % (self._FROM_USER))
+                msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
+                _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
                 return False
 
             # Verify that _FROM_USER has coin address
             sql = "SELECT address from t_addrs WHERE username = '%s' AND coin = '%s'" % (self._FROM_USER, self._COIN)
             mysqlrow = _mysqlcon.execute(sql).fetchone()
             if mysqlrow == None:
-                msg = "I'm sorry %s, you don't seem to have %s address." % (self._FROM_USER, self._COIN)
+                msg = "I'm sorry %s, you don't seem to have %s address." % (self._FROM_USER, self._COIN.upper())
                 lg.debug("CtbAction::_validate(): " + msg)
+                msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                 _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
                 return False
             else:
@@ -136,16 +139,18 @@ class CtbAction(object):
 
             # Verify minimum transaction size
             if self._TO_AMNT < _cc[self._COIN]['txmin']:
-                msg = "I'm sorry, your tip of %f %s is below minimum (%f)." % (self._TO_AMNT, self._COIN, _cc[self._COIN]['txmin'])
+                msg = "I'm sorry, your tip of %f %s is below minimum (%f)." % (self._TO_AMNT, self._COIN.upper(), _cc[self._COIN]['txmin'])
                 lg.debug("CtbAction::_validate(): " + msg)
+                msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                 _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
                 return False
 
             # Verify balance
             balance_avail = _coincon[self._COIN].getbalance(self._FROM_USER)
             if not balance_avail >= self._TO_AMNT + _cc[self._COIN]['txfee']:
-                msg = "I'm sorry, your balance of %f %s is too small (there's a %f network transaction fee)." % (balance_avail, self._COIN, _cc[self._COIN]['txfee'])
+                msg = "I'm sorry, your balance of %f %s is too small (there's a %f network transaction fee)." % (balance_avail, self._COIN.upper(), _cc[self._COIN]['txfee'])
                 lg.debug("CtbAction::_validate(): " + msg)
+                msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                 _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
                 return False
 
@@ -157,13 +162,15 @@ class CtbAction(object):
                     # Couldn't find _TO_USER's address
 
                     # Send notice to _FROM_USER
-                    msg = "I'm sorry, %s doesn't have a %s address registered. I'll tell him/her to get one." % (self._TO_USER, self._COIN)
+                    msg = "I'm sorry, %s doesn't have a %s address registered. I'll tell him/her to get one." % (self._TO_USER, self._COIN.upper())
                     lg.debug("CtbAction::_validate(): " + msg)
+                    msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                     _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
 
                     # Send notice to _TO_USER
-                    msg = "Hey %s, /u/%s tried to send you a %f %s tip, but you don't have a %s address registered." % (self._TO_USER, self._FROM_USER, self._TO_AMNT, self._COIN, self._COIN)
+                    msg = "Hey %s, /u/%s tried to send you a %f %s tip, but you don't have a %s address registered." % (self._TO_USER, self._FROM_USER, self._TO_AMNT, self._COIN.upper(), self._COIN.upper())
                     lg.debug("CtbAction::_validate(): " + msg)
+                    msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                     _redditcon.get_redditor(self._TO_USER).send_message("+givetip", msg)
 
                     # Save transaction as pending
@@ -175,7 +182,10 @@ class CtbAction(object):
             # Validate _TO_ADDR
             addr_valid = _coincon[self._COIN].validateaddress(self._TO_ADDR)
             if not addr_valid['isvalid']:
-                lg.error("CtbAction::_validate(): invalid %s address %s for user %s" % (self._COIN, self._TO_ADDR, self._TO_USER))
+                msg = "I'm sorry, %s address %s appears to be invalid (is there a typo?)." % (self._COIN.upper(), self._TO_ADDR)
+                lg.debug("CtbAction::_validate(): " + msg)
+                msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
+                _redditcon.get_redditor(self._FROM_USER).send_message("+givetip", msg)
                 return False
 
             if bool(self._TO_USER):
@@ -201,6 +211,12 @@ class CtbAction(object):
 
         # Validate action
         if not self._validate():
+            # Couldn't validate action, returning
+            return False
+
+        # Check if action has been processed
+        if bool(_load_action(self._FROM_USER, self._MSG.id)):
+            # Found action in database, returning
             return False
 
         if bool(self._TO_USER):
@@ -211,8 +227,9 @@ class CtbAction(object):
 
                 # Process transaction
                 try:
-                    lg.debug("CtbAction::_givetip(): sending %f %s to %s...", self._TO_AMNT, self._COIN, self._TO_ADDR)
-                    tx = _coincon[self._COIN].sendtoaddress(self._TO_ADDR, self._TO_AMNT, self._MSG.id)
+                    lg.debug("CtbAction::_givetip(): sending %f %s to %s...", self._TO_AMNT, self._COIN.upper(), self._TO_ADDR)
+                    res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 10)
+                    tx = _coincon[self._COIN].sendfrom(self._FROM_USER, self._TO_ADDR, self._TO_AMNT, self._MSG.id)
                 except Exception, e:
                     # Transaction failed
 
@@ -220,7 +237,7 @@ class CtbAction(object):
                     self.save('failed', str(e))
 
                     # Log error
-                    lg.error("CtbAction::_givetip(): tx of %f %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, self._FROM_ADDR, self._TO_ADDR, str(e)))
+                    lg.error("CtbAction::_givetip(): tx of %f %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN.upper(), self._FROM_ADDR, self._TO_ADDR, str(e)))
 
                     # Send notice to _FROM_USER
                     msg = "Hey %s, something went wrong, and your tip of %f %s to /u/%s has failed to process." % (self._FROM_USER, self._TO_AMNT, self._COIN.upper(), self._TO_USER)
@@ -237,14 +254,15 @@ class CtbAction(object):
 
                 try:
                     # Send confirmation to _TO_USER
-                    msg = "Hey %s, you have received a %s tip of %f from /u/%s." % (self._TO_USER, self._COIN.upper(), self._TO_AMNT, self._FROM_USER)
+                    msg = "Hey %s, you have received a __%f %s__ tip from /u/%s." % (self._TO_USER, self._TO_AMNT, self._COIN.upper(), self._FROM_USER)
                     lg.debug("CtbAction::_givetip(): " + msg)
                     msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                     msg += "\n* [transaction details](%s)" % (_cc[self._COIN]['explorer']['transaction'] + tx)
                     _redditcon.get_redditor(self._TO_USER).send_message("+givetip", msg)
 
                     # Post verification comment
-                    cmnt = "* [Verified](%s): /u/%s -> /u/%s, %f %s" % (_cc[self._COIN]['explorer']['transaction'] + tx, self._FROM_USER, self._TO_USER, self._TO_AMNT, self._COIN.upper())
+                    amnt = ('%f' % self._TO_AMNT).rstrip('0').rstrip('.')
+                    cmnt = "* __[Verified](%s)__: /u/%s -> /u/%s, __%s %s__" % (_cc[self._COIN]['explorer']['transaction'] + tx, self._FROM_USER, self._TO_USER, amnt, self._COIN.upper())
                     lg.debug("CtbAction::_givetip(): " + cmnt)
                     self._MSG.reply(cmnt)
                 except Exception, e:
@@ -275,7 +293,8 @@ class CtbAction(object):
 
             try:
                 lg.debug("CtbAction::_givetip(): sending %f %s to %s...", self._TO_AMNT, self._COIN, self._TO_ADDR)
-                tx = _coincon[self._COIN].sendtoaddress(self._TO_ADDR, self._TO_AMNT, self._MSG.id)
+                res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 10)
+                tx = _coincon[self._COIN].sendfrom(self._FROM_USER, self._TO_ADDR, self._TO_AMNT, self._MSG.id)
             except Exception, e:
                 # Transaction failed
 
@@ -327,7 +346,8 @@ class CtbAction(object):
 
         # Check if user exists
         if not _check_user_exists(self._FROM_USER, _mysqlcon):
-            _redditcon.get_redditor(self._FROM_USER).send_message("+info", "I'm sorry, we've never met. Please +register first!")
+            msg = "I'm sorry %s, we've never met. Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (self._FROM_USER, self._CTB._config['reddit-user'])
+            _redditcon.get_redditor(self._FROM_USER).send_message("+info", msg)
             return False
 
         # Gather data for info message
@@ -426,7 +446,7 @@ class CtbAction(object):
                 return False
 
         lg.debug("< CtbAction::_register() DONE")
-        return None
+        return True
 
 def _check_user_exists(_username, _mysqlcon):
     """
@@ -513,7 +533,7 @@ def _eval_message(_message, _ctb):
         if _cc[c]['enabled']:
             rlist.append(
                     # +withdraw ADDR 0.25 units
-                    {'regex':      '(\\+)' + '(withdraw)' + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + _cc[c]['regex']['units'],
+                    {'regex':      '(\\+)' + '(withdraw)' + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
                      'action':     'withdraw',
                      'coin':       _cc[c]['unit'],
                      'rg-amount':  6,
@@ -563,7 +583,7 @@ def _eval_comment(_comment, _ctb):
         if _cc[c]['enabled']:
             rlist.append(
             # +givetip ADDR 0.25 units
-            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + _cc[c]['regex']['units'],
+            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
              'action':      'givetip',
              'rg-to-user':  -1,
              'rg-amount':   6,
@@ -572,7 +592,7 @@ def _eval_comment(_comment, _ctb):
              'fiat':        None})
             rlist.append(
             # +givetip 0.25 units
-            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + _cc[c]['regex']['units'],
+            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
              'action':      'givetip',
              'rg-to-user':  -1,
              'rg-amount':   4,
@@ -581,7 +601,7 @@ def _eval_comment(_comment, _ctb):
              'fiat':        None})
             rlist.append(
             # +givetip @user 0.25 units
-            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + '(@\w+)' + '(\\s+)' + '(\\d*\\.\\d+)(?![0-9\\.])' + '(\\s+)' + _cc[c]['regex']['units'],
+            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + '(@\w+)' + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
              'action':      'givetip',
              'rg-to-user':  4,
              'rg-amount':   6,
