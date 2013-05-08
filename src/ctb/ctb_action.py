@@ -231,7 +231,8 @@ class CtbAction(object):
                 # Process transaction
                 try:
                     lg.debug("CtbAction::_givetip(): sending %f %s to %s...", self._TO_AMNT, self._COIN.upper(), self._TO_ADDR)
-                    res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 10)
+                    if bool(_cc[self._COIN]['walletpassphrase']):
+                        res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 10)
                     tx = _coincon[self._COIN].sendfrom(self._FROM_USER, self._TO_ADDR, self._TO_AMNT, self._MSG.id)
                 except Exception, e:
                     # Transaction failed
@@ -239,16 +240,13 @@ class CtbAction(object):
                     # Save transaction to database
                     self.save('failed', str(e))
 
-                    # Log error
-                    lg.error("CtbAction::_givetip(): tx of %f %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN.upper(), self._FROM_ADDR, self._TO_ADDR, str(e)))
-
                     # Send notice to _FROM_USER
                     msg = "Hey %s, something went wrong, and your tip of %f %s to /u/%s has failed to process." % (self._FROM_USER, self._TO_AMNT, self._COIN.upper(), self._TO_USER)
                     ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip", msg)
 
-                    # Return
-                    lg.debug("< CtbAction::_givetip() DONE")
-                    return False
+                    # Log error
+                    lg.error("CtbAction::_givetip(): tx of %f %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN.upper(), self._FROM_ADDR, self._TO_ADDR, str(e)))
+                    raise
 
                 # Transaction succeeded
 
@@ -296,7 +294,8 @@ class CtbAction(object):
 
             try:
                 lg.debug("CtbAction::_givetip(): sending %f %s to %s...", self._TO_AMNT, self._COIN, self._TO_ADDR)
-                res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 10)
+                if bool(_cc[self._COIN]['walletpassphrase']):
+                    res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 10)
                 tx = _coincon[self._COIN].sendfrom(self._FROM_USER, self._TO_ADDR, self._TO_AMNT, self._MSG.id)
             except Exception, e:
                 # Transaction failed
@@ -304,15 +303,13 @@ class CtbAction(object):
                 # Save transaction to database
                 self.save('failed', str(e))
 
-                # Log error
-                lg.error("CtbAction::_givetip(): tx of %f %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, self._FROM_ADDR, self._TO_ADDR, str(e)))
-
                 # Send notice to _FROM_USER
                 msg = "Hey %s, something went wrong, and your tip of %f %s to %s has failed to process." % (self._FROM_USER, self._TO_AMNT, self._COIN.upper(), self._TO_ADDR)
                 ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip", msg)
 
-                lg.debug("< CtbAction::_givetip() DONE")
-                return False
+                # Log error
+                lg.error("CtbAction::_givetip(): tx of %f %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, self._FROM_ADDR, self._TO_ADDR, str(e)))
+                raise
 
             # Transaction succeeded
 
@@ -388,7 +385,7 @@ class CtbAction(object):
             ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+info", msg)
         except Exception, e:
             lg.error("CtbAction::_info(%s): error sending message", self._FROM_USER)
-            return False
+            raise
 
         lg.debug("< CtbAction::_info() DONE")
         return True
@@ -416,7 +413,7 @@ class CtbAction(object):
                 return False
         except Exception, e:
             lg.error("CtbAction::_register(%s): exception while executing <%s>: %s", self._FROM_USER, sql_adduser, str(e))
-            return False
+            raise
 
         # Get new coin addresses
         new_addrs = {}
@@ -429,8 +426,8 @@ class CtbAction(object):
                 lg.debug("CtbAction::_register(%s): got %s address %s", self._FROM_USER, c, new_addrs[c])
             except Exception, e:
                 lg.error("CtbAction::_register(%s): error getting %s address: %s", self._FROM_USER, c, str(e))
-                _delete_user(self._FROM_USER, _mysqlcon)
-                return False
+                ctb_misc._delete_user(self._FROM_USER, _mysqlcon)
+                raise
 
         # Add coin addresses to database
         for c in new_addrs:
@@ -438,15 +435,13 @@ class CtbAction(object):
                 sql_addr = "REPLACE INTO t_addrs (username, coin, address) VALUES ('%s', '%s', '%s')" % (self._FROM_USER, c, new_addrs[c])
                 mysqlexec = _mysqlcon.execute(sql_addr)
                 if mysqlexec.rowcount <= 0:
-                    lg.error("CtbAction::_register(%s): rowcount <= 0 while executing <%s>", self._FROM_USER, sql_addr)
                     # Undo change to database
-                    _delete_user(self._FROM_USER, _mysqlcon)
-                    return False
+                    ctb_misc._delete_user(self._FROM_USER, _mysqlcon)
+                    raise Exception("CtbAction::_register(%s): rowcount <= 0 while executing <%s>" % (self._FROM_USER, sql_addr))
             except Exception, e:
-                lg.error("CtbAction::_register(%s): exception while executing <%s>: %s", self._FROM_USER, sql_addr, str(e))
                 # Undo change to database
-                _delete_user(self._FROM_USER, _mysqlcon)
-                return False
+                ctb_misc._delete_user(self._FROM_USER, _mysqlcon)
+                raise
 
         lg.debug("< CtbAction::_register() DONE")
         return True
@@ -490,7 +485,7 @@ def _eval_message(_message, _ctb):
     # Do the matching
     for r in rlist:
         rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
-        lg.debug("matching '%s' with '%s'", _message.body, r['regex'])
+        #lg.debug("matching '%s' with '%s'", _message.body, r['regex'])
         m = rg.search(_message.body)
         if m:
             # Match found
