@@ -3,7 +3,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE IF NOT EXISTS `t_action` (
   `type` enum('givetip','withdraw') NOT NULL,
-  `state` enum('completed','pending','failed') NOT NULL,
+  `state` enum('completed','pending','failed','declined') NOT NULL,
   `created_utc` int(11) unsigned NOT NULL,
   `from_user` varchar(30) NOT NULL,
   `from_addr` varchar(34) NOT NULL,
@@ -31,16 +31,14 @@ CREATE TABLE IF NOT EXISTS `t_users` (
   `username` varchar(30) NOT NULL,
   `joindate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `giftamount` float DEFAULT '0',
-  PRIMARY KEY (`username`),
-  UNIQUE KEY `username` (`username`)
+  PRIMARY KEY (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `t_values` (
   `param0` varchar(64) NOT NULL,
-  `param1` varchar(64) DEFAULT NULL,
   `value0` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`param0`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-INSERT INTO `t_values` (`param0`, `param1`, `value0`) VALUES('last_processed_comment_time', NULL, 0);
+INSERT INTO `t_values` (`param0`, `value0`) VALUES('last_processed_comment_time', 0);
 
