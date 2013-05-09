@@ -40,8 +40,8 @@ cc:
     unit: ltc
     name: litecoin
     conf-file: '~/.litecoin/litecoin.conf'
-    minconf: 2
-    txmin: 0.1
+    minconf: 3
+    txmin: 0.25
     txfee: 0.01
     walletpassphrase: mypass1
     explorer:
@@ -55,8 +55,8 @@ cc:
     unit: ppc
     name: ppcoin
     conf-file: '~/.ppcoin/ppcoin.conf'
-    minconf: 2
-    txmin: 0.1
+    minconf: 3
+    txmin: 0.5
     txfee: 0.01
     walletpassphrase: mypass1
     explorer:
