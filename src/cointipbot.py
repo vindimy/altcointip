@@ -10,7 +10,7 @@ from urllib2 import HTTPError
 # Configure CointipBot logger
 lg = logging.getLogger('cointipbot')
 hdlr = logging.StreamHandler()
-fmtr = logging.Formatter("%(levelname)s %(asctime)s %(funcName)s %(lineno)d %(message)s")
+fmtr = logging.Formatter("%(levelname)s %(asctime)s %(message)s")
 hdlr.setFormatter(fmtr)
 lg.addHandler(hdlr)
 lg.setLevel(logging.DEBUG)
