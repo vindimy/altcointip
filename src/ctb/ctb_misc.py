@@ -1,3 +1,5 @@
+import ctb_user
+
 import logging
 from urllib2 import HTTPError
 
@@ -6,22 +8,18 @@ lg = logging.getLogger('cointipbot')
 def _refresh_exchange_rate(ctb=None):
 	return None
 
-def _reddit_say(redditcon, cmnt, to, subj, txt):
+def _reddit_reply(msg, txt):
     """
-    Send a message to user or reply to a comment on Reddit
+    Reply to a comment on Reddit
     Retry if Reddit is down
     """
-    lg.debug("> _reddit_say()")
+    lg.debug("> _reddit_reply(%s)", cmnt.id)
+
     sleep_for = 10
 
     while True:
         try:
-            if bool(to) and bool(subj) and bool(txt):
-                lg.debug("_reddit_say(): sending message to %s", to.name)
-                to.send_message(subj, txt)
-            elif bool(cmnt) and bool(txt):
-                lg.debug("_reddit_say(): sending comment to %s", cmnt.id)
-                cmnt.reply(txt)
+            msg.reply(txt)
             break
         except HTTPError, e:
             if (str(e)=="HTTP Error 504: Gateway Time-out" or str(e)=="timed out"):
@@ -32,62 +30,10 @@ def _reddit_say(redditcon, cmnt, to, subj, txt):
         except Exception, e:
             raise
 
-    lg.debug("< _reddit_say() DONE")
+    lg.debug("< _reddit_reply(%s) DONE", cmnt.id)
     return True
 
-def _check_user_exists(_username, _mysqlcon):
-    """
-    Return true if _username is in t_users
-    """
-    lg.debug("> _check_user_exists(%s)", _username)
-    try:
-        sql = "SELECT username FROM t_users WHERE username = %s"
-        mysqlrow = _mysqlcon.execute(sql, (_username.lower())).fetchone()
-        if mysqlrow == None:
-            lg.debug("< _check_user_exists(%s) DONE (no)", _username)
-            return False
-        else:
-            lg.debug("< _check_user_exists(%s) DONE (yes)", _username)
-            return True
-    except Exception, e:
-        lg.error("_check_user_exists(%s): error while executing <%s>: %s", _username, sql % _username.lower(), str(e))
-        raise
-    lg.debug("_check_user_exists(%s): returning None (shouldn't happen)")
-    return None
-
-def _get_reddit_user(_username, _redditcon):
-    """
-    Return user object if _username is a valid Reddit user,
-    otherwise return None
-    """
-    lg.debug("> _get_reddit_user(%s)", _username)
-    try:
-        r = _redditcon.get_redditor(_username)
-        lg.debug("< _get_reddit_user(%s) DONE (yes)", _username)
-        return r
-    except Exception, e:
-        lg.debug("< _get_reddit_user(%s) DONE (no)", _username)
-        return None
-
-def _delete_user(_username, _mysqlcon):
-    """
-    Delete _username from t_users and t_addrs tables
-    """
-    lg.debug("> _delete_user(%s)", _username)
-    try:
-        sql_arr = ["DELETE from t_users WHERE username = %s",
-                   "DELETE from t_addrs WHERE username = %s"]
-        for sql in sql_arr:
-            mysqlexec = _mysqlcon.execute(sql, _username.lower())
-            if mysqlexec.rowcount <= 0:
-                lg.warning("_delete_user(%s): rowcount <= 0 while executing <%s>", _username, sql % _username.lower())
-    except Exception, e:
-        lg.error("_delete_user(%s): error while executing <%s>: %s", _username, sql % _username.lower(), str(e))
-        raise
-    lg.debug("< _delete_user(%s) DONE", _username)
-    return True
-
-def _get_parent_comment_author(_comment, _reddit):
+def _reddit_get_parent_author(_comment, _reddit):
     """
     Return author of _comment's parent comment
     """
@@ -102,7 +48,7 @@ def _get_parent_comment_author(_comment, _reddit):
     else:
         parentcomment = _reddit.get_submission(parentpermalink).comments[0]
     lg.debug("< _get_parent_comment_author() -> %s", parentcomment.author)
-    return parentcomment.author
+    return CtbUser(name=parentcomment.author.name, redditobj=parentcomment.author)
 
 def _get_value(conn, param0=None):
     """

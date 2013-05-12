@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS `t_action` (
   `state` enum('completed','pending','failed','declined') NOT NULL,
   `created_utc` int(11) unsigned NOT NULL,
   `from_user` varchar(30) NOT NULL,
-  `from_addr` varchar(34) NOT NULL,
   `to_user` varchar(30) DEFAULT NULL,
   `to_addr` varchar(34) DEFAULT NULL,
   `to_amnt` float unsigned NOT NULL,

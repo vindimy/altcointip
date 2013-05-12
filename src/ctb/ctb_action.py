@@ -1,4 +1,4 @@
-import ctb_misc
+import ctb_user, ctb_misc
 
 import logging, re
 from urllib2 import HTTPError
@@ -10,42 +10,41 @@ class CtbAction(object):
     Action class for cointip bot
     """
 
-    _TYPE=None
-    _STATE=None
-    _ERR_MSG=None
+    _TYPE=None          # 'accept', 'decline', 'history', 'info', 'register', 'givetip', 'withdraw'
+    _STATE=None         # 'completed', 'pending', 'failed', 'declined'
+    _TXID=None          # cryptocoin transaction id, a 64-char string, if applicable
 
-    _FROM_USER=None
-    _FROM_ADDR=None
-    _TO_USER=None
-    _TO_AMNT=None
-    _TO_ADDR=None
-    _TXID=None
+    _FROM_USER=None     # CtbUser instance
+    _TO_USER=None       # CtbUser instance, if applicable
 
-    _COIN=None
-    _FIAT=None
+    _TO_AMNT=None       # float specifying value of 'givetip' and 'withdraw' actions
+    _TO_ADDR=None       # destination cryptocoin address of 'givetip' and 'withdraw' actions, if applicable
 
-    _MSG=None
-    _CTB=None
+    _COIN=None          # coin for this action (for example, 'ltc')
+    _FIAT=None          # fiat for this action (for example, 'usd'), if applicable
+
+    _MSG=None           # Reddit object pointing to originating message/comment
+    _CTB=None           # CointipBot instance
 
     def __init__(self, atype=None, msg=None, to_user=None, to_amnt=None, to_addr=None, coin=None, fiat=None, ctb=None):
         """
-        Initialize CtbAction object with given parameters
-        and run basic checks
+        Initialize CtbAction object with given parameters and run basic checks
         """
-        # Action properties
-        self._TYPE=atype
-        self._TO_USER=to_user
-        self._TO_AMNT=float(to_amnt) if bool(to_amnt) else None
-        self._TO_ADDR=to_addr
-        self._COIN=coin.lower() if bool(coin) else None
-        self._FIAT=fiat
-        # Reference to Reddit message/comment
-        self._MSG=msg
-        # Reference to CointipBot class
-        self._CTB=ctb
+        self._TYPE = atype
+
+        self._TO_AMNT = float(to_amnt) if bool(to_amnt) else None
+        self._COIN = coin.lower() if bool(coin) else None
+        self._FIAT = fiat.lower() if bool(fiat) else None
+
+        self._MSG = msg
+        self._CTB = ctb
+
+        self._TO_ADDR = to_addr
+        self._TO_USER = ctb_user.CtbUser(name=to_user, ctb=ctb) if bool(to_user) else None
+        self._FROM_USER = ctb_user.CtbUser(name=msg.author.name, redditobj=msg.author, ctb=ctb) if bool(msg) else None
 
         # Do some checks
-        if not bool(self._TYPE) or self._TYPE not in ['accept', 'decline', 'info', 'register', 'givetip']:
+        if not bool(self._TYPE) or self._TYPE not in ['accept', 'decline', 'history', 'info', 'register', 'givetip', 'withdraw']:
             raise Exception("CtbAction::__init__(type=?): proper type is required")
 
         if not bool(self._CTB):
@@ -55,17 +54,14 @@ class CtbAction(object):
             raise Exception("CtbAction::__init__(type=%s): no reference to Reddit message/comment", self._TYPE)
 
         if self._TYPE == 'givetip':
-            if not bool(self._MSG) or not bool(self._TO_AMNT):
-                raise Exception("CtbAction::__init__(type=givetip): one of required values is missing")
+            if not bool(self._TO_AMNT):
+                raise Exception("CtbAction::__init__(type=givetip): _TO_AMNT must be set")
             if not (bool(self._TO_USER) ^ bool(self._TO_ADDR)):
                 raise Exception("CtbAction::__init__(type=givetip): _TO_USER xor _TO_ADDR must be set")
             if not (bool(self._COIN) ^ bool(self._FIAT)):
                 raise Exception("CtbAction::__init__(type=givetip): _COIN xor _FIAT must be set")
 
-        # Set some helpful properties
-        self._FROM_USER = self._MSG.author
-
-        lg.debug("CtbAction::__init__(atype=%s, from_user=%s)", self._TYPE, self._FROM_USER.name)
+        lg.debug("CtbAction::__init__(atype=%s, from_user=%s)", self._TYPE, self._FROM_USER._NAME)
 
     def save(self, state=None):
         """
@@ -74,17 +70,16 @@ class CtbAction(object):
         lg.debug("> CtbAction::save(%s)", state)
 
         conn = self._CTB._mysqlcon
-        sql = "REPLACE INTO t_action (type, state, created_utc, from_user, from_addr, to_user, to_addr, to_amnt, txid, coin, fiat, msg_id, msg_link)"
-        sql += " values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        sql = "REPLACE INTO t_action (type, state, created_utc, from_user, to_user, to_addr, to_amnt, txid, coin, fiat, msg_id, msg_link)"
+        sql += " values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
         try:
             mysqlexec = conn.execute(sql,
                     (self._TYPE,
                      state,
                      self._MSG.created_utc,
-                     self._FROM_USER.name.lower(),
-                     self._FROM_ADDR,
-                     self._TO_USER.name.lower() if bool(self._TO_USER) else None,
+                     self._FROM_USER._NAME.lower(),
+                     self._TO_USER._NAME.lower() if bool(self._TO_USER) else None,
                      self._TO_ADDR,
                      self._TO_AMNT,
                      self._TXID,
@@ -99,9 +94,8 @@ class CtbAction(object):
                 self._TYPE,
                 state,
                 self._MSG.created_utc,
-                self._FROM_USER.name.lower(),
-                self._FROM_ADDR,
-                self._TO_USER.name.lower() if bool(self._TO_USER) else None,
+                self._FROM_USER._NAME.lower(),
+                self._TO_USER._NAME.lower() if bool(self._TO_USER) else None,
                 self._TO_ADDR,
                 self._TO_AMNT,
                 self._TXID,
@@ -120,24 +114,27 @@ class CtbAction(object):
         """
         lg.debug("> CtbAction::do()")
         if self._TYPE == 'accept':
-            return self._accept()
+            return self.accept()
         if self._TYPE == 'decline':
-            return self._decline()
+            return self.decline()
         if self._TYPE == 'givetip':
-            return self._givetip()
+            return self.givetip()
+        if self._TYPE == 'history':
+            return self._history()
         if self._TYPE == 'info':
-            return self._info()
+            return self.info()
         if self._TYPE == 'register':
-            if self._register():
-                return self._info()
+            return ( self.register() and self.info() )
+        if self._TYPE == 'withdraw':
+            return self._withdraw()
         lg.debug("< CtbAction::do() DONE")
         return None
 
-    def _accept(self):
+    def accept(self):
         """
         Accept pending tip
         """
-        lg.debug("> CtbAction::_accept()")
+        lg.debug("> CtbAction::accept()")
 
         _mysqlcon = self._CTB._mysqlcon
         _coincon = self._CTB._coincon
@@ -145,73 +142,73 @@ class CtbAction(object):
         _redditcon = self._CTB._redditcon
 
         # Register as new user
-        if not ctb_misc._check_user_exists(self._FROM_USER.name, _mysqlcon):
-            if not self._register():
-                lg.debug("CtbAction::_accept(): _register() failed")
+        if not self._FROM_USER.is_registered():
+            if not self._FROM_USER.register():
+                lg.debug("CtbAction::accept(): self._FROM_USER.register() failed")
                 return None
 
-        actions = _get_actions(atype='givetip', to_user=self._FROM_USER.name, state='pending', _ctb=self._CTB)
+        actions = _get_actions(atype='givetip', to_user=self._FROM_USER._NAME, state='pending', ctb=self._CTB)
         if bool(actions):
             for a in actions:
-                a._givetip(is_pending=True)
+                a.givetip(is_pending=True)
         else:
-            msg = "I'm sorry %s, you don't have any pending tips. Perhaps they've already expired." % self._FROM_USER.name
-            lg.debug("CtbAction::_accept(): %s")
+            msg = "I'm sorry %s, you don't have any pending tips. Perhaps they've already expired." % self._FROM_USER._NAME
+            lg.debug("CtbAction::accept(): %s", msg)
             msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-            ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+accept failed", msg)
+            self._FROM_USER.tell(subj="+accept failed", msg=msg)
 
-        lg.debug("< CtbAction::_accept() DONE")
+        lg.debug("< CtbAction::accept() DONE")
         return None
 
-    def _decline(self):
+    def decline(self):
         """
         Decline pending tips
         """
-        lg.debug("> CtbAction::_decline()")
+        lg.debug("> CtbAction::decline()")
 
         _mysqlcon = self._CTB._mysqlcon
         _coincon = self._CTB._coincon
         _cc = self._CTB._config['cc']
         _redditcon = self._CTB._redditcon
 
-        actions = _get_actions(atype='givetip', to_user=self._FROM_USER.name, state='pending', _ctb=self._CTB)
+        actions = _get_actions(atype='givetip', to_user=self._FROM_USER._NAME, state='pending', ctb=self._CTB)
         if bool(actions):
             for a in actions:
                 # Move coins back into a._FROM_USER account
                 try:
-                    lg.info("CtbAction::_decline(): moving %s %s from %s to %s", str(a._TO_AMNT+_cc[a._COIN]['txfee']), a._COIN, 'pendingtips', a._FROM_USER.name.lower())
-                    m = _coincon[a._COIN].move('pendingtips', a._FROM_USER.name.lower(), a._TO_AMNT+_cc[a._COIN]['txfee'])
+                    lg.info("CtbAction::decline(): moving %s %s from %s to %s", str(a._TO_AMNT + _cc[a._COIN]['txfee']), a._COIN, 'pendingtips', a._FROM_USER._NAME.lower())
+                    m = _coincon[a._COIN].move('pendingtips', a._FROM_USER._NAME.lower(), a._TO_AMNT + _cc[a._COIN]['txfee'])
                 except Exception, e:
-                    lg.error("CtbAction::_decline(): error: %s", str(e))
+                    lg.error("CtbAction::decline(): error: %s", str(e))
                     raise
                 # Save transaction as declined
                 a.save('declined')
                 # Respond to tip comment
                 amnt = ('%f' % a._TO_AMNT).rstrip('0').rstrip('.')
-                cmnt = "* __Declined by receiver__: /u/%s -> /u/%s, __%s %s__" % (a._FROM_USER.name, a._TO_USER.name, amnt, a._COIN.upper())
+                cmnt = "* _Declined by receiver__: /u/%s -> /u/%s, __%s %s__" % (a._FROM_USER._NAME, a._TO_USER._NAME, amnt, a._COIN.upper())
                 cmnt += " [help](%s)" % (_config['reddit-help-url'])
-                lg.debug("CtbAction::_decline(): " + cmnt)
-                ctb_misc._reddit_say(_redditcon, a._MSG, None, None, cmnt)
+                lg.debug("CtbAction::decline(): " + cmnt)
+                ctb_misc._reddit_reply(msg=a._MSG, txt=cmnt)
 
             # Notify self._FROM_USER
-            msg = "Hey %s, your pending tips have been declined." % self._FROM_USER.name
+            msg = "Hello %s, your pending tips have been declined." % self._FROM_USER._NAME
             msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-            lg.debug("CtbAction::_decline(): %s")
-            ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+decline processed", msg)
+            lg.debug("CtbAction::decline(): %s")
+            self._FROM_USER.tell(subj="+decline processed", msg=msg)
         else:
-            msg = "I'm sorry %s, you don't have any pending tips. Perhaps they've already expired." % self._FROM_USER.name
+            msg = "I'm sorry %s, you don't have any pending tips. Perhaps they've already expired." % self._FROM_USER._NAME
             msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-            lg.debug("CtbAction::_decline(): %s")
-            ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+decline failed", msg)
+            lg.debug("CtbAction::decline(): %s")
+            self._FROM_USER.tell(subj="+decline failed", msg=msg)
 
-        lg.debug("< CtbAction::_decline() DONE")
+        lg.debug("< CtbAction::decline() DONE")
         return None
 
-    def _validate(self, ignore_pending=False):
+    def validate(self, ignore_pending=False):
         """
         Validate an action
         """
-        lg.debug("> CtbAction::_validate()")
+        lg.debug("> CtbAction::validate()")
 
         _mysqlcon = self._CTB._mysqlcon
         _coincon = self._CTB._coincon
@@ -221,142 +218,109 @@ class CtbAction(object):
 
         if self._TYPE == 'givetip':
             # Check if _FROM_USER has registered
-            if not ctb_misc._check_user_exists(self._FROM_USER.name, _mysqlcon):
-                msg = "I'm sorry %s, we've never met. Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (self._FROM_USER.name, self._CTB._config['reddit-user'])
-                lg.debug("CtbAction::_validate(): " + msg)
+            if not self._FROM_USER.is_registered():
+                msg = "I'm sorry %s, we've never met. Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (self._FROM_USER._NAME, self._CTB._config['reddit-user'])
+                lg.debug("CtbAction::validate(): %s", msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                 msg += "\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-                ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip failed", msg)
+                self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                 return False
 
             # Verify that _FROM_USER has coin address
-            sql = "SELECT address from t_addrs WHERE username = '%s' AND coin = '%s'" % (self._FROM_USER.name.lower(), self._COIN)
-            mysqlrow = _mysqlcon.execute(sql).fetchone()
-            if mysqlrow == None:
-                msg = "I'm sorry %s, you don't seem to have %s address." % (self._FROM_USER.name, self._COIN.upper())
-                lg.debug("CtbAction::_validate(): " + msg)
+            if not self._FROM_USER.get_addr(coin=self._COIN):
+                msg = "I'm sorry %s, you don't seem to have a %s address." % (self._FROM_USER._NAME, self._COIN.upper())
+                lg.debug("CtbAction::validate(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                 msg += "\n *[%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-                ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip failed", msg)
+                self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                 return False
-            else:
-                self._FROM_ADDR = mysqlrow['address']
 
             # Verify minimum transaction size
             if self._TO_AMNT < _cc[self._COIN]['txmin']:
-                msg = "I'm sorry %s, your tip of %f %s is below minimum (%f)." % (self._FROM_USER.name, self._TO_AMNT, self._COIN.upper(), _cc[self._COIN]['txmin'])
-                lg.debug("CtbAction::_validate(): " + msg)
+                msg = "I'm sorry %s, your tip of %f %s is below minimum (%f)." % (self._FROM_USER._NAME, self._TO_AMNT, self._COIN.upper(), _cc[self._COIN]['txmin'])
+                lg.debug("CtbAction::validate(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                 msg += "\n *[%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-                ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip failed", msg)
+                self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                 return False
 
             # Verify balance
-            balance_avail = _coincon[self._COIN].getbalance(self._FROM_USER.name.lower(), _cc[self._COIN]['minconf'])
-            if not balance_avail >= self._TO_AMNT + _cc[self._COIN]['txfee']:
+            if not self._FROM_USER.get_balance(coin=self._COIN) >= self._TO_AMNT:
                 msg = "I'm sorry, your balance of %f %s is too small (there's a %f network transaction fee)." % (balance_avail, self._COIN.upper(), _cc[self._COIN]['txfee'])
-                lg.debug("CtbAction::_validate(): " + msg)
+                lg.debug("CtbAction::validate(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                 msg += "\n *[%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-                ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip failed", msg)
+                self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                 return False
 
             # Check if _TO_USER has any pending tips from _FROM_USER
             if (bool(self._TO_USER)) and not ignore_pending:
-                if _check_action(atype='givetip', state='pending', to_user=self._TO_USER.name, from_user=self._FROM_USER.name, _ctb=self._CTB):
+                if _check_action(atype='givetip', state='pending', to_user=self._TO_USER._NAME, from_user=self._FROM_USER._NAME, ctb=self._CTB):
                     # Send notice to _FROM_USER
-                    msg = "I'm sorry, /u/%s already has a pending tip from you. Please wait until he/she accepts or declines it." % (self._TO_USER.name)
-                    lg.debug("CtbAction::_validate(): " + msg)
+                    msg = "I'm sorry, /u/%s already has a pending tip from you. Please wait until he/she accepts or declines it." % (self._TO_USER._NAME)
+                    lg.debug("CtbAction::validate(): " + msg)
                     msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                     msg += "\n *[%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-                    ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip failed", msg)
+                    self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                     return False
 
-            # Check if _TO_USER has registered
-            if (bool(self._TO_USER)):
-                if not ctb_misc._check_user_exists(self._TO_USER.name, _mysqlcon):
-                    # _TO_USER not registered
+            # Check if _TO_USER has registered, if applicable
+            if (bool(self._TO_USER)) and not self._TO_USER.is_registered():
+                # _TO_USER not registered:
+                # - move tip into pending account
+                # - save action as 'pending'
+                # - notify _TO_USER to accept tip
 
-                    # Move money into pending account
-                    try:
-                        lg.info("CtbAction::_validate(): moving %s %s from %s to %s", str(self._TO_AMNT+_cc[self._COIN]['txfee']), self._COIN, self._FROM_USER.name.lower(), 'pendingtips')
-                        m = _coincon[self._COIN].move(self._FROM_USER.name.lower(), 'pendingtips', self._TO_AMNT+_cc[self._COIN]['txfee'])
-                    except Exception, e:
-                        lg.error("CtbAction::_validate(): error: %s", str(e))
-                        raise
+                # Move money into pending account
+                try:
+                    lg.info("CtbAction::validate(): moving %s %s from %s to %s", str(self._TO_AMNT+_cc[self._COIN]['txfee']), self._COIN, self._FROM_USER._NAME.lower(), 'pendingtips')
+                    m = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), 'pendingtips', self._TO_AMNT+_cc[self._COIN]['txfee'])
+                except Exception, e:
+                    lg.error("CtbAction::validate(): error: %s", str(e))
+                    raise
 
-                    # Save action as pending
-                    self.save('pending')
+                # Save action as pending
+                self.save('pending')
 
-                    # Send notice to _FROM_USER
-                    msg = "Hey %s, /u/%s doesn't have an account with tip bot yet. I'll tell him/her to register and +accept the tip." % (self._FROM_USER.name, self._TO_USER.name)
-                    lg.debug("CtbAction::_validate(): " + msg)
-                    msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-                    ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip pending acceptance", msg)
-
-                    # Send notice to _TO_USER
-                    msg = "Hey %s, /u/%s sent you a __%f %s__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
-                    msg += "Reply with __[+decline](http://www.reddit.com/message/compose?to=%s&subject=decline&message=%%2Bdecline)__ to decline it."
-                    msg = msg % (self._TO_USER.name, self._FROM_USER.name, self._TO_AMNT, self._COIN.upper(), self._CTB._config['reddit-user'], self._CTB._config['reddit-user'])
-                    lg.debug("CtbAction::_validate(): " + msg)
-                    msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-                    ctb_misc._reddit_say(_redditcon, self._MSG, self._TO_USER, "+givetip pending acceptance", msg)
-
-                    return False
-
-            if bool(self._TO_USER):
-                # get _TO_USER's address
-                sql = "SELECT address from t_addrs WHERE username = '%s' AND coin = '%s'" % (self._TO_USER.name.lower(), self._COIN)
-                mysqlrow = _mysqlcon.execute(sql).fetchone()
-                if mysqlrow == None:
-                    # Couldn't find _TO_USER's address
-
-                    # Send notice to _FROM_USER
-                    msg = "I'm sorry, %s doesn't have a %s address registered. I'll tell him/her to get one." % (self._TO_USER.name, self._COIN.upper())
-                    lg.debug("CtbAction::_validate(): " + msg)
-                    msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                    msg += "\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-                    ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip failed", msg)
-
-                    # Send notice to _TO_USER
-                    msg = "Hey %s, /u/%s tried to send you a %f %s tip, but you don't have a %s address registered."
-                    msg = msg % (self._TO_USER.name, self._FROM_USER.name, self._TO_AMNT, self._COIN.upper(), self._COIN.upper())
-                    lg.debug("CtbAction::_validate(): " + msg)
-                    msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                    msg += "\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-                    ctb_misc._reddit_say(_redditcon, self._MSG, self._TO_USER, "+givetip failed", msg)
-
-                    # Save transaction as failed
-                    self.save('failed')
-                    return False
-
-                self._TO_ADDR = mysqlrow['address']
-
-            # Validate _TO_ADDR
-            addr_valid = _coincon[self._COIN].validateaddress(self._TO_ADDR)
-            if not addr_valid['isvalid']:
-                msg = "I'm sorry, __%s__ address __%s__ appears to be invalid (is there a typo?)." % (self._COIN.upper(), self._TO_ADDR)
-                lg.debug("CtbAction::_validate(): " + msg)
+                # Send notice to _FROM_USER
+                msg = "Hey %s, /u/%s doesn't have an account with tip bot yet. I'll tell him/her to register and +accept the tip." % (self._FROM_USER._NAME, self._TO_USER._NAME)
+                lg.debug("CtbAction::validate(): %s", msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                 msg += "\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-                ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip failed", msg)
+                self._FROM_USER.tell(subj="+givetip pending", msg=msg)
+
+                # Send notice to _TO_USER
+                msg = "Hey %s, /u/%s sent you a __%f %s__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
+                msg += "Reply with __[+decline](http://www.reddit.com/message/compose?to=%s&subject=decline&message=%%2Bdecline)__ to decline it."
+                msg = msg % (self._TO_USER._NAME, self._FROM_USER._NAME, self._TO_AMNT, self._COIN.upper(), self._CTB._config['reddit-user'], self._CTB._config['reddit-user'])
+                lg.debug("CtbAction::validate(): %s", msg)
+                msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
+                msg += "\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+                self._TO_USER.tell(subj="+givetip pending", msg=msg)
+
+                # Action saved as 'pending', return false to avoid processing it
                 return False
 
-            if bool(self._TO_USER):
-                # Ensure _TO_ADDR belongs to _TO_USER
-                if not addr_valid['account'].lower() == self._TO_USER.name.lower():
-                    lg.error("CtbAction::_validate(): %s doesn't think address %s belongs to %s" % (self._COIN, self._TO_ADDR, self._TO_USER.name))
+            # Validate _TO_ADDR, if applicable
+            if bool(self._TO_ADDR):
+                addr_valid = _coincon[self._COIN].validateaddress(self._TO_ADDR)
+                if not addr_valid['isvalid']:
+                    msg = "I'm sorry, __%s__ address __%s__ appears to be invalid (is there a typo?)." % (self._COIN.upper(), self._TO_ADDR)
+                    lg.debug("CtbAction::validate(): " + msg)
+                    msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
+                    msg += "\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+                    self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                     return False
 
         # Action is valid
-        lg.debug("< CtbAction::_validate() DONE")
+        lg.debug("< CtbAction::validate() DONE")
         return True
 
-    def _givetip(self, is_pending=False):
+    def givetip(self, is_pending=False):
         """
         Initiate tip
         """
-        lg.debug("> CtbAction::_givetip()")
+        lg.debug("> CtbAction::givetip()")
 
         _mysqlcon = self._CTB._mysqlcon
         _coincon = self._CTB._coincon
@@ -365,28 +329,26 @@ class CtbAction(object):
         _redditcon = self._CTB._redditcon
 
         # Validate action
-        if not self._validate(ignore_pending=is_pending):
+        if not self.validate(ignore_pending=is_pending):
             # Couldn't validate action, returning
             return False
 
         # Check if action has been processed
-        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, _ctb=self._CTB, ignore_pending=is_pending)):
+        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB, ignore_pending=is_pending)):
             # Found action in database, returning
-            lg.warning("CtbAction::_givetip(): action already in database; ignoring")
+            lg.warning("CtbAction::givetip(): duplicate action (msg_id=%s, created_utc=%s)", self._MSG.id, self._MSG.created_utc)
             return False
 
         if bool(self._TO_USER):
             # Process tip to user
 
             try:
-                if bool(_cc[self._COIN]['walletpassphrase']):
-                    res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 10)
                 if is_pending:
-                    lg.debug("CtbAction::_givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), 'pendingtips', self._TO_ADDR)
-                    self._TXID = _coincon[self._COIN].sendfrom('pendingtips', self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['minconf'])
+                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), 'pendingtips', self._TO_ADDR)
+                    self._TXID = _coincon[self._COIN].move('pendingtips', self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf'])
                 else:
-                    lg.debug("CtbAction::_givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), self._FROM_USER.name.lower(), self._TO_ADDR)
-                    self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER.name.lower(), self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['minconf'])
+                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_ADDR)
+                    self._TXID = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf'])
             except Exception, e:
                 # Transaction failed
 
@@ -394,12 +356,12 @@ class CtbAction(object):
                 self.save('failed')
 
                 # Send notice to _FROM_USER
-                msg = "Hey %s, something went wrong, and your tip of __%f %s__ to /u/%s has failed to process." % (self._FROM_USER.name, self._TO_AMNT, self._COIN.upper(), self._TO_USER.name)
+                msg = "Hey %s, something went wrong, and your tip of __%f %s__ to /u/%s has failed to process." % (self._FROM_USER._NAME, self._TO_AMNT, self._COIN.upper(), self._TO_USER._NAME)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-                ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip failed", msg)
+                self._FROM_USER.tell(subj="+givetip failed", msg=msg)
 
                 # Log error
-                lg.error("CtbAction::_givetip(): tx of %f %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN.upper(), self._FROM_ADDR, self._TO_ADDR, str(e)))
+                lg.error("CtbAction::givetip(): move of %s %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, (self._FROM_USER._NAME if is_pending else 'pendingtips'), self._TO_USER._NAME, str(e)))
                 raise
 
             # Transaction succeeded
@@ -409,35 +371,36 @@ class CtbAction(object):
 
             try:
                 # Send confirmation to _TO_USER
-                msg = "Hey %s, you have received a __%f %s__ tip from /u/%s." % (self._TO_USER.name, self._TO_AMNT, self._COIN.upper(), self._FROM_USER.name)
-                lg.debug("CtbAction::_givetip(): " + msg)
+                msg = "Hey %s, you have received a __%f %s__ tip from /u/%s." % (self._TO_USER._NAME, self._TO_AMNT, self._COIN.upper(), self._FROM_USER._NAME)
+                lg.debug("CtbAction::givetip(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                msg += "\n* [transaction details](%s)" % (_cc[self._COIN]['explorer']['transaction'] + self._TXID)
                 msg += "\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-                ctb_misc._reddit_say(_redditcon, self._MSG, self._TO_USER, "+givetip received", msg)
+                self._TO_USER.tell(subj="+givetip received", msg=msg)
 
                 # Post verification comment
                 amnt = ('%f' % self._TO_AMNT).rstrip('0').rstrip('.')
-                cmnt = "* __[Verified](%s)__: /u/%s -> /u/%s, __%s %s__" % (_cc[self._COIN]['explorer']['transaction'] + self._TXID, self._FROM_USER.name, self._TO_USER.name, amnt, self._COIN.upper())
-                lg.debug("CtbAction::_givetip(): " + cmnt)
+                cmnt = "* __[Verified]__: /u/%s -> /u/%s, __%s %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, amnt, self._COIN.upper())
+                lg.debug("CtbAction::givetip(): " + cmnt)
                 cmnt += " [help](%s)" % (_config['reddit-help-url'])
-                ctb_misc._reddit_say(_redditcon, self._MSG, None, None, cmnt)
+                ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
+
             except Exception, e:
                 # Couldn't post to Reddit
-                lg.error("CtbAction::_givetip(): error communicating with Reddit: %s" % str(e))
+                lg.error("CtbAction::givetip(): error communicating with Reddit: %s" % str(e))
                 raise
 
-            lg.debug("< CtbAction::_givetip() DONE")
+            lg.debug("< CtbAction::givetip() DONE")
             return True
 
         elif bool(self._TO_ADDR):
             # Process tip to address
 
             try:
-                lg.debug("CtbAction::_givetip(): sending %f %s to %s...", self._TO_AMNT, self._COIN, self._TO_ADDR)
+                lg.debug("CtbAction::givetip(): sending %f %s to %s...", self._TO_AMNT, self._COIN, self._TO_ADDR)
                 if bool(_cc[self._COIN]['walletpassphrase']):
-                    res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 10)
-                self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER.name.lower(), self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['minconf'])
+                    res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 2)
+                self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER._NAME.lower(), self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['minconf'])
+
             except Exception, e:
                 # Transaction failed
 
@@ -445,12 +408,10 @@ class CtbAction(object):
                 self.save('failed')
 
                 # Send notice to _FROM_USER
-                msg = "Hey %s, something went wrong, and your tip of %f %s to %s has failed to process." % (self._FROM_USER.name, self._TO_AMNT, self._COIN.upper(), self._TO_ADDR)
+                msg = "Hey %s, something went wrong, and your tip of %f %s to %s has failed to process." % (self._FROM_USER._NAME, self._TO_AMNT, self._COIN.upper(), self._TO_ADDR)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-                ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+givetip failed", msg)
-
-                # Log error
-                lg.error("CtbAction::_givetip(): tx of %f %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, self._FROM_ADDR, self._TO_ADDR, str(e)))
+                self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                lg.error("CtbAction::givetip(): tx of %f %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, self._FROM_USER._NAME, self._TO_ADDR, str(e)))
                 raise
 
             # Transaction succeeded
@@ -462,26 +423,26 @@ class CtbAction(object):
                 # Post verification comment
                 ex = _cc[self._COIN]['explorer']
                 amnt = ('%f' % self._TO_AMNT).rstrip('0').rstrip('.')
-                cmnt = "* __[Verified](%s)__: /u/%s -> [%s](%s), __%s %s__" % (ex['transaction'] + self._TXID, self._FROM_USER.name, self._TO_ADDR, ex['address'] + self._TO_ADDR, amnt, self._COIN.upper())
+                cmnt = "* __[Verified](%s)__: /u/%s -> [%s](%s), __%s %s__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, amnt, self._COIN.upper())
+                lg.debug("CtbAction::givetip(): " + cmnt)
                 cmnt += " [help](%s)" % (_config['reddit-help-url'])
-                lg.debug("CtbAction::_givetip(): " + cmnt)
-                ctb_misc._reddit_say(_redditcon, self._MSG, None, None, cmnt)
+                ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
             except Exception, e:
                 # Couldn't post to Reddit
-                lg.error("CtbAction::_givetip(): error communicating with Reddit: %s" % str(e))
+                lg.error("CtbAction::givetip(): error communicating with Reddit: %s" % str(e))
                 raise
 
-            lg.debug("< CtbAction::_givetip() DONE")
+            lg.debug("< CtbAction::givetip() DONE")
             return True
 
-        lg.debug("< CtbAction::_givetip() DONE")
+        lg.debug("< CtbAction::givetip() DONE")
         return None
 
-    def _info(self):
+    def info(self):
         """
         Send user info about account
         """
-        lg.debug("> CtbAction::_info()")
+        lg.debug("> CtbAction::info()")
 
         _mysqlcon = self._CTB._mysqlcon
         _coincon = self._CTB._coincon
@@ -490,35 +451,36 @@ class CtbAction(object):
         _redditcon = self._CTB._redditcon
 
         # Check if user exists
-        if not ctb_misc._check_user_exists(self._FROM_USER.name, _mysqlcon):
-            msg = "I'm sorry %s, we've never met. Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (self._FROM_USER.name, self._CTB._config['reddit-user'])
+        if not self._FROM_USER.is_registered():
+            msg = "I'm sorry, we've never met. "
+            msg += "Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (self._CTB._config['reddit-user'])
             msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
-            ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+info failed", msg)
+            self._FROM_USER.tell(subj="+info failed", msg=msg)
             return False
 
         # Gather data for info message
         info = []
         for c in _coincon:
-            coin_info = {}
-            coin_info['coin'] = c
+            coininfo = {}
+            coininfo['coin'] = c
             try:
-                coin_info['balance'] = _coincon[c].getbalance(self._FROM_USER.name.lower(), _cc[c]['minconf'])
-                coin_info['ubalance'] = _coincon[c].getbalance(self._FROM_USER.name.lower(), 0)
-                info.append(coin_info)
+                coininfo['balance'] = _coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf'])
+                coininfo['ubalance'] = _coincon[c].getbalance(self._FROM_USER._NAME.lower(), 0)
+                info.append(coininfo)
             except Exception, e:
-                lg.error("CtbAction::_info(%s): error retrieving %s coin_info: %s", self._FROM_USER.name, c, str(e))
+                lg.error("CtbAction::info(%s): error retrieving %s coininfo: %s", self._FROM_USER._NAME, c, str(e))
                 raise
 
         # Get coin addresses from MySQL
         for i in info:
-            sql = "SELECT address FROM t_addrs WHERE username = '%s' AND coin = '%s'" % (self._FROM_USER.name.lower(), i['coin'])
+            sql = "SELECT address FROM t_addrs WHERE username = '%s' AND coin = '%s'" % (self._FROM_USER._NAME.lower(), i['coin'])
             mysqlrow = _mysqlcon.execute(sql).fetchone()
             if mysqlrow == None:
-                raise Exception("CtbAction::_info(%s): no result from <%s>" % (self._FROM_USER.name, sql))
+                raise Exception("CtbAction::info(%s): no result from <%s>" % (self._FROM_USER._NAME, sql))
             i['address'] = mysqlrow['address']
 
         # Format info message
-        msg = "Hello %s! Here's your account info.\n\n" % self._FROM_USER.name
+        msg = "Hello %s! Here's your account info.\n\n" % self._FROM_USER._NAME
         msg += "coin|address|balance|unconfirmed\n:---|:---|---:|---:\n"
         for i in info:
             balance_str = ('%f' % i['balance']).rstrip('0').rstrip('.')
@@ -530,70 +492,29 @@ class CtbAction(object):
         msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
 
         # Send info message
-        try:
-            ctb_misc._reddit_say(_redditcon, self._MSG, self._FROM_USER, "+info", msg)
-        except Exception, e:
-            lg.error("CtbAction::_info(%s): error sending message", self._FROM_USER.name)
-            raise
+        self._FROM_USER.tell(subj="+info", msg=msg)
 
-        lg.debug("< CtbAction::_info() DONE")
+        lg.debug("< CtbAction::info() DONE")
         return True
 
-    def _register(self):
+    def register(self):
         """
         Register a new user
         """
-        lg.debug("> CtbAction::_register()")
+        lg.debug("> CtbAction::register()")
 
         _mysqlcon = self._CTB._mysqlcon
         _coincon = self._CTB._coincon
 
         # If user exists, do nothing
-        if ctb_misc._check_user_exists(self._FROM_USER.name, _mysqlcon):
-            lg.debug("CtbAction::_register(%s): user already exists; ignoring request", self._FROM_USER.name)
+        if self._FROM_USER.is_registered():
+            lg.debug("CtbAction::register(%s): user already exists; ignoring request", self._FROM_USER._NAME)
             return True
 
-        # Add user to database
-        try:
-            sql_adduser = "INSERT INTO t_users (username) VALUES ('%s')" % self._FROM_USER.name.lower()
-            mysqlexec = _mysqlcon.execute(sql_adduser)
-            if mysqlexec.rowcount <= 0:
-                lg.error("CtbAction::_register(%s): rowcount <= 0 while executing <%s>", self._FROM_USER.name, sql_adduser)
-                return False
-        except Exception, e:
-            lg.error("CtbAction::_register(%s): exception while executing <%s>: %s", self._FROM_USER.name, sql_adduser, str(e))
-            raise
+        result = self._FROM_USER.register()
 
-        # Get new coin addresses
-        new_addrs = {}
-        for c in _coincon:
-            try:
-                # Generate new address for user
-                new_addrs[c] = _coincon[c].getaccountaddress(self._FROM_USER.name.lower())
-                if not bool(new_addrs[c]):
-                    new_addrs[c] = _coincon[c].getnewaddress(self._FROM_USER.name.lower())
-                lg.debug("CtbAction::_register(%s): got %s address %s", self._FROM_USER.name, c, new_addrs[c])
-            except Exception, e:
-                lg.error("CtbAction::_register(%s): error getting %s address: %s", self._FROM_USER.name, c, str(e))
-                ctb_misc._delete_user(self._FROM_USER.name, _mysqlcon)
-                raise
-
-        # Add coin addresses to database
-        for c in new_addrs:
-            try:
-                sql_addr = "REPLACE INTO t_addrs (username, coin, address) VALUES ('%s', '%s', '%s')" % (self._FROM_USER.name.lower(), c, new_addrs[c])
-                mysqlexec = _mysqlcon.execute(sql_addr)
-                if mysqlexec.rowcount <= 0:
-                    # Undo change to database
-                    ctb_misc._delete_user(self._FROM_USER.name, _mysqlcon)
-                    raise Exception("CtbAction::_register(%s): rowcount <= 0 while executing <%s>" % (self._FROM_USER.name, sql_addr))
-            except Exception, e:
-                # Undo change to database
-                ctb_misc._delete_user(self._FROM_USER.name, _mysqlcon)
-                raise
-
-        lg.debug("< CtbAction::_register() DONE")
-        return True
+        lg.debug("< CtbAction::register() DONE")
+        return result
 
 
 def _eval_message(_message, _ctb):
@@ -602,6 +523,7 @@ def _eval_message(_message, _ctb):
     object if successful
     """
     lg.debug("> _eval_message()")
+
     # rlist is a list of regular expressions to test _message against
     #   'regex': regular expression
     #   'action': action type
@@ -635,6 +557,7 @@ def _eval_message(_message, _ctb):
              'rg-address': -1,
              'coin':       None}
             ]
+
     # Add regex for each configured cryptocoin
     _cc = _ctb._config['cc']
     for c in _cc:
@@ -646,17 +569,21 @@ def _eval_message(_message, _ctb):
                      'coin':       _cc[c]['unit'],
                      'rg-amount':  6,
                      'rg-address': 4})
+
     # Do the matching
     for r in rlist:
         rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
         #lg.debug("matching '%s' with '%s'", _message.body, r['regex'])
         m = rg.search(_message.body)
-        if m:
+
+        if bool(m):
             # Match found
             lg.debug("_eval_message(): match found (type %s)", r['action'])
+
             # Extract matched fields into variables
             _to_addr = m.group(r['rg-address']) if r['rg-address'] > 0 else None
             _to_amnt = m.group(r['rg-amount']) if r['rg-amount'] > 0 else None
+
             # Return CtbAction instance with given variables
             lg.debug("< _eval_message() DONE")
             return CtbAction(   atype=r['action'],
@@ -667,9 +594,9 @@ def _eval_message(_message, _ctb):
                                 coin=r['coin'],
                                 fiat=None,
                                 ctb=_ctb)
+
     # No match found
-    lg.debug("_eval_message(): no match found")
-    lg.debug("< _eval_message() DONE")
+    lg.debug("< _eval_message() DONE (no)")
     return None
 
 def _eval_comment(_comment, _ctb):
@@ -678,7 +605,9 @@ def _eval_comment(_comment, _ctb):
     object if successful
     """
     lg.debug("> _eval_comment(%s)", _comment.permalink)
+
     _cc = _ctb._config['cc']
+
     # rlist is a list of regular expressions to test _comment against
     #   'regex': regular expression
     #   'action': action type
@@ -687,6 +616,7 @@ def _eval_comment(_comment, _ctb):
     #   'rg-address': group number to retrieve tip receiver coin address
     #   'coin': unit of cryptocurrency
     rlist = []
+
     for c in _cc:
         if _cc[c]['enabled']:
             rlist.append(
@@ -716,58 +646,59 @@ def _eval_comment(_comment, _ctb):
              'rg-address':  -1,
              'coin':        _cc[c]['unit'],
              'fiat':        None})
+
     # Do the matching
     for r in rlist:
         rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
         #lg.debug("_eval_comment(): matching '%s' using <%s>", _comment.body, r['regex'])
         m = rg.search(_comment.body)
+
         if bool(m):
             # Match found
             lg.debug("_eval_comment(): match found (type givetip)")
+
             # Extract matched fields into variables
             _to_user = m.group(r['rg-to-user'])[1:] if r['rg-to-user'] > 0 else None
             _to_addr = m.group(r['rg-address']) if r['rg-address'] > 0 else None
             _to_amnt = m.group(r['rg-amount']) if r['rg-amount'] > 0 else None
-            # If to_user is mentioned, fetch it
-            _to_user_obj = None
-            if (bool(_to_user)):
-                _to_user_obj = ctb_misc._get_reddit_user(_to_user, _ctb._redditcon)
-                if not bool(_to_user_obj):
-                    lg.warning("_eval_comment(): couldn't fetch reddit user %s", _to_user)
-                    return None
-            # Check if from_user == to_user
-            if bool(_to_user) and _comment.author.name.lower() == _to_user.lower():
-                lg.warning("_eval_comment(): _comment.author.name == _to_user, ignoring comment")
-                return None
-            # If destination not mentioned, find parent submission's author
+
+            # If no destination mentioned, find parent submission's author
             if not bool(_to_user) and not bool(_to_addr):
                 # set _to_user to author of parent comment
-                _to_user = ctb_misc._get_parent_comment_author(_comment, _ctb._redditcon).name
+                r = ctb_misc._reddit_get_parent_author(_comment, _ctb._redditcon)
+                _to_user = r.name
+                _to_user_obj = ctb_user.CtbUser(name=r.name, redditobj=r, ctb=_ctb)
+
+            # Check if from_user == to_user
+            if _comment.author.name.lower() == _to_user.lower():
+                lg.warning("_eval_comment(%s): _comment.author.name == _to_user, ignoring comment", _comment.author.name)
+                return None
+
             # Return CtbAction instance with given variables
             lg.debug("_eval_comment(): creating action givetip: msg.id=%s, to=%s, to=%s, to=%s, coin=%s, fiat=%s" % (_comment.id, _to_user, _to_addr, _to_amnt, r['coin'], r['fiat']))
             lg.debug("< _eval_comment() DONE")
             return CtbAction(   atype='givetip',
                                 msg=_comment,
-                                to_user=_to_user_obj,
+                                to_user=_to_user,
                                 to_addr=_to_addr,
                                 to_amnt=_to_amnt,
                                 coin=r['coin'],
                                 fiat=r['fiat'],
                                 ctb=_ctb)
+
     # No match found
-    lg.debug("_eval_comment(): no match found")
-    lg.debug("< _eval_comment() DONE")
+    lg.debug("< _eval_comment() DONE (no)")
     return None
 
-def _check_action(atype=None, state=None, msg_id=None, created_utc=None, from_user=None, to_user=None, _ctb=None, ignore_pending=False):
+def _check_action(atype=None, state=None, msg_id=None, created_utc=None, from_user=None, to_user=None, ctb=None, ignore_pending=False):
     """
     Return True if action with given parameters
     exists in database
     """
     lg.debug("> _check_action(%s)", atype)
 
-    mysqlcon = _ctb._mysqlcon
-    redditcon = _ctb._redditcon
+    mysqlcon = ctb._mysqlcon
+    redditcon = ctb._redditcon
 
     # Build SQL query
     sql = "SELECT * FROM t_action"
@@ -803,19 +734,19 @@ def _check_action(atype=None, state=None, msg_id=None, created_utc=None, from_us
         lg.error("_check_action(): error executing <%s>: %s", sql, str(e))
         raise
 
-    lg.debug("< _check_action() DONE (should not get here)")
+    lg.warning("< _check_action() DONE (should not get here)")
     return None
 
 
-def _get_actions(atype=None, state=None, msg_id=None, created_utc=None, from_user=None, to_user=None, _ctb=None):
+def _get_actions(atype=None, state=None, msg_id=None, created_utc=None, from_user=None, to_user=None, ctb=None):
     """
     Return an array of CtbAction objects from database
     with given attributes
     """
     lg.debug("> _get_actions(%s)", atype)
 
-    mysqlcon = _ctb._mysqlcon
-    redditcon = _ctb._redditcon
+    mysqlcon = ctb._mysqlcon
+    redditcon = ctb._redditcon
 
     # Build SQL query
     sql = "SELECT * FROM t_action"
@@ -843,16 +774,15 @@ def _get_actions(atype=None, state=None, msg_id=None, created_utc=None, from_use
             lg.debug("< _get_actions() DONE (no)")
             return False
         for m in mysqlrows:
-            _msg=redditcon.get_submission(m['msg_link']).comments[0]
-            _to_user = ctb_misc._get_reddit_user(m['to_user'], redditcon) if bool(m['to_user']) else None
+            _msg = redditcon.get_submission(m['msg_link']).comments[0]
             r.append( CtbAction(  atype=atype,
                                   msg=_msg,
-                                  to_user=_to_user,
+                                  to_user=m['to_user'],
                                   to_addr=m['to_addr'] if not bool(m['to_user']) else None,
                                   to_amnt=m['to_amnt'],
                                   coin=m['coin'],
                                   fiat=m['fiat'],
-                                  ctb=_ctb))
+                                  ctb=ctb))
         lg.debug("< _get_actions() DONE (yes)")
         return r
     except Exception, e:
