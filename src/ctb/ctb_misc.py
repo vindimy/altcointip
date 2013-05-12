@@ -13,7 +13,7 @@ def _reddit_reply(msg, txt):
     Reply to a comment on Reddit
     Retry if Reddit is down
     """
-    lg.debug("> _reddit_reply(%s)", cmnt.id)
+    lg.debug("> _reddit_reply(%s)", msg.id)
 
     sleep_for = 10
 
@@ -30,7 +30,7 @@ def _reddit_reply(msg, txt):
         except Exception, e:
             raise
 
-    lg.debug("< _reddit_reply(%s) DONE", cmnt.id)
+    lg.debug("< _reddit_reply(%s) DONE", msg.id)
     return True
 
 def _reddit_get_parent_author(_comment, _reddit):

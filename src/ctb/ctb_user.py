@@ -14,7 +14,6 @@ class CtbUser(object):
     _NAME=None
     _GIFTAMNT=None
     _JOINDATE=None
-    _BALANCE={}
     _ADDR={}
     _TRANS={}
 
@@ -41,21 +40,21 @@ class CtbUser(object):
         if bool(redditobj):
             self._REDDITOBJ = redditobj
 
-    def get_balance(self, coin=None):
+    def get_balance(self, coin=None, kind=None):
         """
         If coin is specified, return float with coin balance for user
         Else, return a dict with balance of each coin for user
         """
         lg.debug("> CtbUser::balance(%s)", self._NAME)
 
-        if not bool(coin):
-            raise Exception("CtbUser::balance(%s): coin not set" % self._NAME)
+        if not bool(coin) or not bool(kind):
+            raise Exception("CtbUser::balance(%s): coin or kind not set" % self._NAME)
 
-        lg.debug("CtbUser::balance(%s): getting %s balance", self._NAME, coin)
-        self._BALANCE[coin] = self._CTB._coincon[coin].getbalance(self._NAME.lower(), self._CC[coin]['minconf'])
+        lg.debug("CtbUser::balance(%s): getting %s %s balance", self._NAME, coin, kind)
+        balance = self._CTB._coincon[coin].getbalance(self._NAME.lower(), self._CC[coin]['minconf'][kind])
 
         lg.debug("< CtbUser::balance(%s) DONE", self._NAME)
-        return self._BALANCE[coin]
+        return balance
 
     def get_addr(self, coin=None):
         """
@@ -94,6 +93,7 @@ class CtbUser(object):
 
         # Return true if _REDDITOBJ is already set
         if bool(self._REDDITOBJ):
+            lg.debug("< CtbUser::is_on_reddit(%s) DONE (yes)", self._NAME)
             return True
 
         sleep_for = 10

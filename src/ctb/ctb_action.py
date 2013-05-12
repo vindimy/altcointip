@@ -138,6 +138,7 @@ class CtbAction(object):
 
         _mysqlcon = self._CTB._mysqlcon
         _coincon = self._CTB._coincon
+        _config = self._CTB._config
         _cc = self._CTB._config['cc']
         _redditcon = self._CTB._redditcon
 
@@ -245,7 +246,7 @@ class CtbAction(object):
                 return False
 
             # Verify balance
-            if not self._FROM_USER.get_balance(coin=self._COIN) >= self._TO_AMNT:
+            if not self._FROM_USER.get_balance(coin=self._COIN, kind='tip') >= self._TO_AMNT:
                 msg = "I'm sorry, your balance of %f %s is too small (there's a %f network transaction fee)." % (balance_avail, self._COIN.upper(), _cc[self._COIN]['txfee'])
                 lg.debug("CtbAction::validate(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
@@ -345,10 +346,10 @@ class CtbAction(object):
             try:
                 if is_pending:
                     lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), 'pendingtips', self._TO_ADDR)
-                    self._TXID = _coincon[self._COIN].move('pendingtips', self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf'])
+                    self._TXID = _coincon[self._COIN].move('pendingtips', self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf']['tip'])
                 else:
                     lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_ADDR)
-                    self._TXID = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf'])
+                    self._TXID = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf']['tip'])
             except Exception, e:
                 # Transaction failed
 
@@ -398,8 +399,8 @@ class CtbAction(object):
             try:
                 lg.debug("CtbAction::givetip(): sending %f %s to %s...", self._TO_AMNT, self._COIN, self._TO_ADDR)
                 if bool(_cc[self._COIN]['walletpassphrase']):
-                    res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 2)
-                self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER._NAME.lower(), self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['minconf'])
+                    res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 1)
+                self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER._NAME.lower(), self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['minconf']['withdraw'])
 
             except Exception, e:
                 # Transaction failed
@@ -464,7 +465,8 @@ class CtbAction(object):
             coininfo = {}
             coininfo['coin'] = c
             try:
-                coininfo['balance'] = _coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf'])
+                coininfo['tbalance'] = _coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['tip'])
+                coininfo['wbalance'] = _coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['withdraw'])
                 coininfo['ubalance'] = _coincon[c].getbalance(self._FROM_USER._NAME.lower(), 0)
                 info.append(coininfo)
             except Exception, e:
@@ -481,13 +483,14 @@ class CtbAction(object):
 
         # Format info message
         msg = "Hello %s! Here's your account info.\n\n" % self._FROM_USER._NAME
-        msg += "coin|address|balance|unconfirmed\n:---|:---|---:|---:\n"
+        msg += "coin|address|balance (tip)|balance (withdraw)|balance (unconfirmed)\n:---|:---|:--:|:--:|:--:\n"
         for i in info:
-            balance_str = ('%f' % i['balance']).rstrip('0').rstrip('.')
-            ubalance_str = ('%f' % (i['ubalance'] - i['balance'])).rstrip('0').rstrip('.')
+            tbalance_str = ('%f' % i['tbalance']).rstrip('0').rstrip('.')
+            wbalance_str = ('%f' % i['wbalance']).rstrip('0').rstrip('.')
+            ubalance_str = ('%f' % (i['ubalance'] - i['tbalance'])).rstrip('0').rstrip('.')
             address_str = '[%s](' + _cc[i['coin']]['explorer']['address'] + '%s)'
             address_str_fmtd = address_str % (i['address'], i['address'])
-            msg += i['coin'] + '|' + address_str_fmtd + '|__' + balance_str + "__|" + ubalance_str + "\n"
+            msg += i['coin'] + '|' + address_str_fmtd + '|__' + tbalance_str + "__|" + wbalance_str + "|" + ubalance_str + "\n"
         msg += "\nUse addresses above to deposit coins into your account."
         msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
 
