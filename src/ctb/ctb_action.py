@@ -1,7 +1,6 @@
 import ctb_user, ctb_misc
 
 import logging, re
-from urllib2 import HTTPError
 
 lg = logging.getLogger('cointipbot')
 
@@ -169,6 +168,7 @@ class CtbAction(object):
 
         _mysqlcon = self._CTB._mysqlcon
         _coincon = self._CTB._coincon
+        _config = self._CTB._config
         _cc = self._CTB._config['cc']
         _redditcon = self._CTB._redditcon
 
@@ -177,8 +177,8 @@ class CtbAction(object):
             for a in actions:
                 # Move coins back into a._FROM_USER account
                 try:
-                    lg.info("CtbAction::decline(): moving %s %s from %s to %s", str(a._TO_AMNT + _cc[a._COIN]['txfee']), a._COIN, 'pendingtips', a._FROM_USER._NAME.lower())
-                    m = _coincon[a._COIN].move('pendingtips', a._FROM_USER._NAME.lower(), a._TO_AMNT + _cc[a._COIN]['txfee'])
+                    lg.info("CtbAction::decline(): moving %s %s from %s to %s", str(a._TO_AMNT), a._COIN, _config['reddit-user'], a._FROM_USER._NAME.lower())
+                    m = _coincon[a._COIN].move(_config['reddit-user'], a._FROM_USER._NAME.lower(), a._TO_AMNT)
                 except Exception, e:
                     lg.error("CtbAction::decline(): error: %s", str(e))
                     raise
@@ -187,7 +187,7 @@ class CtbAction(object):
                 # Respond to tip comment
                 amnt = ('%f' % a._TO_AMNT).rstrip('0').rstrip('.')
                 cmnt = "* _Declined by receiver__: /u/%s -> /u/%s, __%s %s__" % (a._FROM_USER._NAME, a._TO_USER._NAME, amnt, a._COIN.upper())
-                cmnt += " [help](%s)" % (_config['reddit-help-url'])
+                cmnt += " ^^^[[help]](%s)" % (_config['reddit-help-url'])
                 lg.debug("CtbAction::decline(): " + cmnt)
                 ctb_misc._reddit_reply(msg=a._MSG, txt=cmnt)
 
@@ -213,8 +213,8 @@ class CtbAction(object):
 
         _mysqlcon = self._CTB._mysqlcon
         _coincon = self._CTB._coincon
-        _cc = self._CTB._config['cc']
         _config = self._CTB._config
+        _cc = self._CTB._config['cc']
         _redditcon = self._CTB._redditcon
 
         if self._TYPE == 'givetip':
@@ -274,8 +274,8 @@ class CtbAction(object):
 
                 # Move money into pending account
                 try:
-                    lg.info("CtbAction::validate(): moving %s %s from %s to %s", str(self._TO_AMNT+_cc[self._COIN]['txfee']), self._COIN, self._FROM_USER._NAME.lower(), 'pendingtips')
-                    m = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), 'pendingtips', self._TO_AMNT+_cc[self._COIN]['txfee'])
+                    lg.info("CtbAction::validate(): moving %s %s from %s to %s", str(self._TO_AMNT), self._COIN, self._FROM_USER._NAME.lower(), _config['reddit-user'])
+                    m = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), _config['reddit-user'], self._TO_AMNT)
                 except Exception, e:
                     lg.error("CtbAction::validate(): error: %s", str(e))
                     raise
@@ -325,8 +325,8 @@ class CtbAction(object):
 
         _mysqlcon = self._CTB._mysqlcon
         _coincon = self._CTB._coincon
-        _cc = self._CTB._config['cc']
         _config = self._CTB._config
+        _cc = self._CTB._config['cc']
         _redditcon = self._CTB._redditcon
 
         # Validate action
@@ -345,8 +345,8 @@ class CtbAction(object):
 
             try:
                 if is_pending:
-                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), 'pendingtips', self._TO_ADDR)
-                    self._TXID = _coincon[self._COIN].move('pendingtips', self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf']['tip'])
+                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), _config['reddit-user'], self._TO_ADDR)
+                    self._TXID = _coincon[self._COIN].move(_config['reddit-user'], self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf']['tip'])
                 else:
                     lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_ADDR)
                     self._TXID = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf']['tip'])
@@ -362,7 +362,7 @@ class CtbAction(object):
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
 
                 # Log error
-                lg.error("CtbAction::givetip(): move of %s %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, (self._FROM_USER._NAME if is_pending else 'pendingtips'), self._TO_USER._NAME, str(e)))
+                lg.error("CtbAction::givetip(): move of %s %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, (self._FROM_USER._NAME if is_pending else _config['reddit-user']), self._TO_USER._NAME, str(e)))
                 raise
 
             # Transaction succeeded
@@ -382,7 +382,7 @@ class CtbAction(object):
                 amnt = ('%f' % self._TO_AMNT).rstrip('0').rstrip('.')
                 cmnt = "* __[Verified]__: /u/%s -> /u/%s, __%s %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, amnt, self._COIN.upper())
                 lg.debug("CtbAction::givetip(): " + cmnt)
-                cmnt += " [help](%s)" % (_config['reddit-help-url'])
+                cmnt += " ^^^[[help]](%s)" % (_config['reddit-help-url'])
                 ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
 
             except Exception, e:
@@ -426,7 +426,7 @@ class CtbAction(object):
                 amnt = ('%f' % self._TO_AMNT).rstrip('0').rstrip('.')
                 cmnt = "* __[Verified](%s)__: /u/%s -> [%s](%s), __%s %s__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, amnt, self._COIN.upper())
                 lg.debug("CtbAction::givetip(): " + cmnt)
-                cmnt += " [help](%s)" % (_config['reddit-help-url'])
+                cmnt += " ^^^[[help]](%s)" % (_config['reddit-help-url'])
                 ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
             except Exception, e:
                 # Couldn't post to Reddit
@@ -693,7 +693,7 @@ def _eval_comment(_comment, _ctb):
     lg.debug("< _eval_comment() DONE (no)")
     return None
 
-def _check_action(atype=None, state=None, msg_id=None, created_utc=None, from_user=None, to_user=None, ctb=None, ignore_pending=False):
+def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=None, from_user=None, to_user=None, ctb=None, ignore_pending=False):
     """
     Return True if action with given parameters
     exists in database
@@ -706,12 +706,14 @@ def _check_action(atype=None, state=None, msg_id=None, created_utc=None, from_us
     # Build SQL query
     sql = "SELECT * FROM t_action"
     sql_terms = []
-    if bool(atype) or bool(state) or bool(msg_id) or bool(created_utc) or bool(from_user) or bool(to_user) or bool(ignore_pending):
+    if bool(atype) or bool(state) or bool(coin) or bool(msg_id) or bool(created_utc) or bool(from_user) or bool(to_user) or bool(ignore_pending):
         sql += " WHERE "
         if bool(atype):
             sql_terms.append("type = '%s'" % atype)
         if bool(state):
             sql_terms.append("state = '%s'" % state)
+        if bool(coin):
+            sql_terms.append("coin = '%s'" % coin)
         if bool(msg_id):
             sql_terms.append("msg_id = '%s'" % msg_id)
         if bool(created_utc):
@@ -724,7 +726,6 @@ def _check_action(atype=None, state=None, msg_id=None, created_utc=None, from_us
             sql_terms.append("state <> 'pending'")
         sql += ' AND '.join(sql_terms)
 
-    r = []
     try:
         mysqlrows = mysqlcon.execute(sql).fetchall()
         if not bool(mysqlrows):
@@ -741,7 +742,7 @@ def _check_action(atype=None, state=None, msg_id=None, created_utc=None, from_us
     return None
 
 
-def _get_actions(atype=None, state=None, msg_id=None, created_utc=None, from_user=None, to_user=None, ctb=None):
+def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=None, from_user=None, to_user=None, ctb=None):
     """
     Return an array of CtbAction objects from database
     with given attributes
@@ -754,12 +755,14 @@ def _get_actions(atype=None, state=None, msg_id=None, created_utc=None, from_use
     # Build SQL query
     sql = "SELECT * FROM t_action"
     sql_terms = []
-    if bool(atype) or bool(state) or bool(msg_id) or bool(created_utc) or bool(from_user) or bool(to_user):
+    if bool(atype) or bool(state) or bool(coin) or bool(msg_id) or bool(created_utc) or bool(from_user) or bool(to_user):
         sql += " WHERE "
         if bool(atype):
             sql_terms.append("type = '%s'" % atype)
         if bool(state):
             sql_terms.append("state = '%s'" % state)
+        if bool(coin):
+            sql_terms.append("coin = '%s'" % coin)
         if bool(msg_id):
             sql_terms.append("msg_id = '%s'" % msg_id)
         if bool(created_utc):
@@ -775,7 +778,7 @@ def _get_actions(atype=None, state=None, msg_id=None, created_utc=None, from_use
         mysqlrows = mysqlcon.execute(sql).fetchall()
         if not bool(mysqlrows):
             lg.debug("< _get_actions() DONE (no)")
-            return False
+            return r
         for m in mysqlrows:
             _msg = redditcon.get_submission(m['msg_link']).comments[0]
             r.append( CtbAction(  atype=atype,

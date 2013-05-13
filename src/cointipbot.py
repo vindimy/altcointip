@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ctb import ctb_db, ctb_action, ctb_misc
+from ctb import ctb_db, ctb_action, ctb_misc, ctb_user
 
 import gettext, locale, logging, sys, time
 import praw, re, sqlalchemy, yaml
@@ -142,6 +142,47 @@ class CointipBot(object):
 
         # Reddit
         self._redditcon = self._connect_reddit(self._config)
+
+        # Self-checks
+        self._self_checks()
+
+    def _self_checks(self):
+        """
+        Run self-checks before starting the bot
+        """
+        # Ensure bot is a registered user
+        b = ctb_user.CtbUser(name=self._config['reddit-user'], ctb=self)
+        if not b.is_registered():
+            b.register()
+
+        # Ensure (total pending tips) < (CointipBot's balance)
+        for c in self._coincon:
+            ctb_balance = b.get_balance(coin=c, kind='tip')
+            pending_tips = float(0)
+            actions = ctb_action._get_actions(atype='givetip', state='pending', coin=c, ctb=self)
+            for a in actions:
+                pending_tips += a._TO_AMNT
+            if ctb_balance < pending_tips:
+                raise Exception("CointipBot::_self_checks(): CointipBot's balance (%s) < total pending tips (%s)" % (ctb_balance, pending_tips))
+
+        # Ensure coin balances are positive
+        for c in self._coincon:
+            b = self._coincon[c].getbalance()
+            if b < 0:
+                raise Exception("CointipBot::_self_checks(): negative balance of %s: %s" % (c, b))
+
+        # Ensure user accounts are intact and balances are not negative
+        sql = "SELECT username FROM t_users ORDER BY username"
+        for mysqlrow in self._mysqlcon.execute(sql):
+            u = ctb_user.CtbUser(name=mysqlrow['username'], ctb=self)
+            if not u.is_registered():
+                raise Exception("CointipBot::_self_checks(): user %s is_registered() failed" % mysqlrow['username'])
+            for c in self._coincon:
+                if u.get_balance(coin=c, kind='tip') < 0:
+                    raise Exception("CointipBot::_self_checks(): user %s %s balance is negative" % (mysqlrow['username'], c))
+
+        # Done
+        return True
 
     def _check_inbox(self):
         """

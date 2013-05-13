@@ -109,6 +109,8 @@ class CtbUser(object):
                     time.sleep(sleep_for)
                     sleep_for *= 2 if sleep_for < 600 else 600
                     pass
+                else:
+                    raise
             except Exception, e:
                 lg.debug("< CtbUser::is_on_reddit(%s) DONE (no)", self._NAME)
                 return False
@@ -123,14 +125,22 @@ class CtbUser(object):
         lg.debug("> CtbUser::is_registered(%s)", self._NAME)
 
         try:
+            # First, check t_users table
             sql = "SELECT * FROM t_users WHERE username = %s"
             mysqlrow = self._CTB._mysqlcon.execute(sql, (self._NAME.lower())).fetchone()
             if mysqlrow == None:
                 lg.debug("< CtbUser::is_registered(%s) DONE (no)", self._NAME)
                 return False
             else:
-                lg.debug("< CtbUser::is_registered(%s) DONE (yes)", self._NAME)
+                # Next, check t_addrs table
+                sql_coins = "SELECT COUNT(*) AS count FROM t_addrs WHERE username = %s"
+                mysqlrow_coins = self._CTB._mysqlcon.execute(sql_coins, (self._NAME.lower())).fetchone()
+                if int(mysqlrow_coins['count']) != len(self._CTB._coincon):
+                    raise Exception("CtbUser::is_registered(%s): database returns %s coins but %s active" % (mysqlrow_coins['count'], len(self._CTB._coincon)))
+                # Set some properties
                 self._GIFTAMNT = mysqlrow['giftamount']
+                # Done
+                lg.debug("< CtbUser::is_registered(%s) DONE (yes)", self._NAME)
                 return True
         except Exception, e:
             lg.error("CtbUser::is_registered(%s): error while executing <%s>: %s", self._NAME, sql % self._NAME.lower(), str(e))
@@ -164,6 +174,8 @@ class CtbUser(object):
                     time.sleep(sleep_for)
                     sleep_for *= 2 if sleep_for < 600 else 600
                     pass
+                else:
+                    raise
             except Exception, e:
                 raise
 
