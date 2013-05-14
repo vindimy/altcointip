@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS `t_action` (
   `to_user` varchar(30) DEFAULT NULL,
   `to_addr` varchar(34) DEFAULT NULL,
   `to_amnt` float unsigned NOT NULL,
+  `usd_value` float unsigned DEFAULT NULL,
   `txid` varchar(64) DEFAULT NULL,
   `coin` varchar(3) NOT NULL,
   `fiat` varchar(3) DEFAULT NULL,

@@ -1,11 +1,35 @@
-import ctb_user
+import ctb_user, ctb_btce
 
 import logging
 
 lg = logging.getLogger('cointipbot')
 
 def _refresh_exchange_rate(ctb=None):
-	return None
+    """
+    Refresh coin/fiat exchange rate values
+    """
+    lg.debug("> _refresh_exchange_rate()")
+
+    if not bool(ctb):
+        raise Exception("_refresh_exchange_rate(): ctb is not set")
+
+    # Determine pairs to request from BTC-e
+    if not bool(ctb._ticker_pairs):
+        ctb._ticker_pairs = {'btc_usd': 'True'}
+        for c in ctb._coincon:
+            ctb._ticker_pairs[c+'_btc'] = 'True'
+
+    # Create instance of CtbBtce
+    if not bool(ctb._ticker):
+        ctb._ticker = ctb_btce.CtbBtce()
+
+    # Send request and update values
+    ticker_val = ctb._ticker.update(ctb._ticker_pairs)
+    if bool(ticker_val):
+        ctb._ticker_val = ticker_val
+
+    lg.debug("< _refresh_exchange_rate() DONE")
+    return None
 
 def _reddit_reply(msg, txt):
     """

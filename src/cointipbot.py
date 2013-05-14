@@ -31,6 +31,10 @@ class CointipBot(object):
     _redditcon = None
     _coincon = {}
 
+    _ticker = None
+    _ticker_pairs = None
+    _ticket_val = {}
+
     def _init_localization(self):
         """
         Prepare localization
