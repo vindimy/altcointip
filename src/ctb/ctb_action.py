@@ -22,10 +22,12 @@ class CtbAction(object):
     _COIN=None          # coin for this action (for example, 'ltc')
     _FIAT=None          # fiat for this action (for example, 'usd'), if applicable
 
+    _SUBR=None          # subreddit that originated the action, if applicable
+
     _MSG=None           # Reddit object pointing to originating message/comment
     _CTB=None           # CointipBot instance
 
-    def __init__(self, atype=None, msg=None, to_user=None, to_amnt=None, to_addr=None, coin=None, fiat=None, ctb=None):
+    def __init__(self, atype=None, msg=None, to_user=None, to_amnt=None, to_addr=None, coin=None, fiat=None, subr=None, ctb=None):
         """
         Initialize CtbAction object with given parameters and run basic checks
         """
@@ -34,6 +36,7 @@ class CtbAction(object):
         self._TO_AMNT = float(to_amnt) if bool(to_amnt) else None
         self._COIN = coin.lower() if bool(coin) else None
         self._FIAT = fiat.lower() if bool(fiat) else None
+        self._SUBR = subr
 
         self._MSG = msg
         self._CTB = ctb
@@ -69,8 +72,8 @@ class CtbAction(object):
         lg.debug("> CtbAction::save(%s)", state)
 
         conn = self._CTB._mysqlcon
-        sql = "REPLACE INTO t_action (type, state, created_utc, from_user, to_user, to_addr, to_amnt, txid, coin, fiat, msg_id, msg_link)"
-        sql += " values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        sql = "REPLACE INTO t_action (type, state, created_utc, from_user, to_user, to_addr, to_amnt, txid, coin, fiat, subreddit, msg_id, msg_link)"
+        sql += " values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
         try:
             mysqlexec = conn.execute(sql,
@@ -84,6 +87,7 @@ class CtbAction(object):
                      self._TXID,
                      self._COIN,
                      self._FIAT,
+                     self._SUBR,
                      self._MSG.id,
                      self._MSG.permalink if self._TYPE == 'givetip' else None))
             if mysqlexec.rowcount <= 0:
@@ -100,6 +104,7 @@ class CtbAction(object):
                 self._TXID,
                 self._COIN,
                 self._FIAT,
+                self._SUBR,
                 self._MSG.id,
                 self._MSG.permalink if self._TYPE == 'givetip' else None), str(e))
             raise
@@ -689,13 +694,14 @@ def _eval_comment(_comment, _ctb):
                                 to_amnt=_to_amnt,
                                 coin=r['coin'],
                                 fiat=r['fiat'],
+                                subr=_comment.subreddit,
                                 ctb=_ctb)
 
     # No match found
     lg.debug("< _eval_comment() DONE (no)")
     return None
 
-def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=None, from_user=None, to_user=None, ctb=None, ignore_pending=False):
+def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=None, from_user=None, to_user=None, subr=None, ctb=None, ignore_pending=False):
     """
     Return True if action with given parameters
     exists in database
@@ -708,7 +714,7 @@ def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=No
     # Build SQL query
     sql = "SELECT * FROM t_action"
     sql_terms = []
-    if bool(atype) or bool(state) or bool(coin) or bool(msg_id) or bool(created_utc) or bool(from_user) or bool(to_user) or bool(ignore_pending):
+    if bool(atype) or bool(state) or bool(coin) or bool(msg_id) or bool(created_utc) or bool(from_user) or bool(to_user) or bool(subr) or bool(ignore_pending):
         sql += " WHERE "
         if bool(atype):
             sql_terms.append("type = '%s'" % atype)
@@ -724,13 +730,15 @@ def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=No
             sql_terms.append("from_user = '%s'" % from_user.lower())
         if bool(to_user):
             sql_terms.append("to_user = '%s'" % to_user.lower())
+        if bool(subr):
+            sql_terms.append("subreddit = '%s'" % subr)
         if bool(ignore_pending):
             sql_terms.append("state <> 'pending'")
         sql += ' AND '.join(sql_terms)
 
     try:
-        mysqlrows = mysqlcon.execute(sql).fetchall()
-        if not bool(mysqlrows):
+        mysqlexec = mysqlcon.execute(sql)
+        if mysqlexec.rowcount <= 0:
             lg.debug("< _check_action() DONE (no)")
             return False
         else:
@@ -744,7 +752,7 @@ def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=No
     return None
 
 
-def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=None, from_user=None, to_user=None, ctb=None):
+def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=None, from_user=None, to_user=None, subr=None, ctb=None):
     """
     Return an array of CtbAction objects from database
     with given attributes
@@ -757,7 +765,7 @@ def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=Non
     # Build SQL query
     sql = "SELECT * FROM t_action"
     sql_terms = []
-    if bool(atype) or bool(state) or bool(coin) or bool(msg_id) or bool(created_utc) or bool(from_user) or bool(to_user):
+    if bool(atype) or bool(state) or bool(coin) or bool(msg_id) or bool(created_utc) or bool(from_user) or bool(to_user) or bool(subr):
         sql += " WHERE "
         if bool(atype):
             sql_terms.append("type = '%s'" % atype)
@@ -768,28 +776,31 @@ def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=Non
         if bool(msg_id):
             sql_terms.append("msg_id = '%s'" % msg_id)
         if bool(created_utc):
-            sql_terms.append("created_utc = %s" % created_utc)
+            sql_terms.append("created_utc %s" % created_utc)
         if bool(from_user):
             sql_terms.append("from_user = '%s'" % from_user.lower())
         if bool(to_user):
             sql_terms.append("to_user = '%s'" % to_user.lower())
+        if bool(subr):
+            sql_terms.append("subreddit = '%s'" % subr)
         sql += ' AND '.join(sql_terms)
 
     r = []
     try:
-        mysqlrows = mysqlcon.execute(sql).fetchall()
-        if not bool(mysqlrows):
+        mysqlexec = mysqlcon.execute(sql)
+        if mysqlexec.rowcount <= 0:
             lg.debug("< _get_actions() DONE (no)")
             return r
-        for m in mysqlrows:
-            _msg = redditcon.get_submission(m['msg_link']).comments[0]
+        for m in mysqlexec:
+            msg = redditcon.get_submission(m['msg_link']).comments[0]
             r.append( CtbAction(  atype=atype,
-                                  msg=_msg,
+                                  msg=msg,
                                   to_user=m['to_user'],
                                   to_addr=m['to_addr'] if not bool(m['to_user']) else None,
                                   to_amnt=m['to_amnt'],
                                   coin=m['coin'],
                                   fiat=m['fiat'],
+                                  subr=m['subreddit'],
                                   ctb=ctb))
         lg.debug("< _get_actions() DONE (yes)")
         return r

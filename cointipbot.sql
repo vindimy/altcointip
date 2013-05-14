@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS `t_action` (
   `txid` varchar(64) DEFAULT NULL,
   `coin` varchar(3) NOT NULL,
   `fiat` varchar(3) DEFAULT NULL,
+  `subreddit` varchar(30) DEFAULT NULL,
   `msg_id` varchar(10) NOT NULL,
   `msg_link` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`type`,`created_utc`,`msg_id`),
