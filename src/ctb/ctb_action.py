@@ -493,7 +493,7 @@ class CtbAction(object):
             try:
                 # Post verification comment
                 ex = _cc[self._COIN]['explorer']
-                cmnt = "* __[Verified](%s)__: /u/%s -> [%s](%s), __%.6g %s__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, self._TO_AMNT, self._COIN.upper())
+                cmnt = "* __[[Verified](%s)]__: /u/%s -> [%s](%s), __%.6g %s__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, self._TO_AMNT, self._COIN.upper())
                 if bool(self._USD_VAL):
                     cmnt += "&nbsp;__^$%.2g__" % self._USD_VAL
                 lg.debug("CtbAction::givetip(): " + cmnt)
@@ -605,27 +605,27 @@ def _eval_message(_message, _ctb):
     #   'rg-amount': group number to retrieve amount, if applicable
     #   'rg-address': group number to retrieve coin address, if applicable
     rlist = [
-            {'regex':      '(\\+)(register)',
+            {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['register'],
              'action':     'register',
              'rg-amount':  -1,
              'rg-address': -1,
              'coin':       None},
-            {'regex':      '(\\+)(accept)',
+            {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['accept'],
              'action':     'accept',
              'rg-amount':  -1,
              'rg-address': -1,
              'coin':       None},
-            {'regex':      '(\\+)(decline)',
+            {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['decline'],
              'action':     'decline',
              'rg-amount':  -1,
              'rg-address': -1,
              'coin':       None},
-            {'regex':      '(\\+)(history)',
+            {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['history'],
              'action':     'history',
              'rg-amount':  -1,
              'rg-address': -1,
              'coin':       None},
-            {'regex':      '(\\+)(info)',
+            {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['info'],
              'action':     'info',
              'rg-amount':  -1,
              'rg-address': -1,
@@ -638,7 +638,7 @@ def _eval_message(_message, _ctb):
         if _cc[c]['enabled']:
             rlist.append(
                     # +withdraw ADDR 0.25 units
-                    {'regex':      '(\\+)' + '(withdraw)' + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+                    {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['withdraw'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
                      'action':     'withdraw',
                      'coin':       _cc[c]['unit'],
                      'rg-amount':  6,
@@ -695,7 +695,7 @@ def _eval_comment(_comment, _ctb):
         if _cc[c]['enabled']:
             rlist.append(
             # +givetip ADDR 0.25 units
-            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+            {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['tip'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
              'action':      'givetip',
              'rg-to-user':  -1,
              'rg-amount':   6,
@@ -704,7 +704,7 @@ def _eval_comment(_comment, _ctb):
              'fiat':        None})
             rlist.append(
             # +givetip 0.25 units
-            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+            {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['tip'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
              'action':      'givetip',
              'rg-to-user':  -1,
              'rg-amount':   4,
@@ -713,7 +713,7 @@ def _eval_comment(_comment, _ctb):
              'fiat':        None})
             rlist.append(
             # +givetip @user 0.25 units
-            {'regex':       '(\\+)' + '(givetip)' + '(\\s+)' + '(@\w+)' + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+            {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['tip'] + '(\\s+)' + '(@\w+)' + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
              'action':      'givetip',
              'rg-to-user':  4,
              'rg-amount':   6,

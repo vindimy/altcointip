@@ -1,28 +1,36 @@
 # MySQL
 mysql:
-  user : mysqluser
-  pass : mysqlpass
-  host : localhost
-  port : 3306
+  user: mysqluser
+  pass: mysqlpass
+  host: localhost
+  port: 3306
   db: mysqldb
 
 # Reddit
 reddit:
-  user : mybotuser
-  pass : mybotpass
-  batch-limit : 1000
-  useragent : /u/mybotuser
-  help-url : http://www.reddit.com/r/mybotuser/wiki/index
+  user: mybotuser
+  pass: mybotpass
+  batch-limit: 1000
+  useragent: /u/mybotuser
+  help-url: http://www.reddit.com/r/mybotuser/wiki/index
 
 # Other
 misc:
-  qr-service-url : 'https://chart.googleapis.com/chart?cht=qr&choe=UTF-8&chs=300x300&chl='
+  qr-service-url: 'https://chart.googleapis.com/chart?cht=qr&choe=UTF-8&chs=300x300&chl='
   sleep-time: 30
   expire-pending-hours: 48
 
 # Regex
 regex:
   amount: '([0-9]{1,7}(?:\.[0-9]{0,5})?)'
+  keywords:
+    tip: '(givetip|altcointip|alttip|alt)'
+    info: '(info)'
+    register: '(register)'
+    accept: '(accept)'
+    decline: '(decline)'
+    withdraw: '(withdraw)'
+    history: '(history)'
 
 # Cryptocoins
 cc:
