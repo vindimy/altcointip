@@ -69,7 +69,7 @@ class CtbAction(object):
         # Determine USD value of 'givetip' action
         if not bool(self._USD_VAL):
             if self._TYPE == 'givetip':
-                if bool(ctb._ticker_val):
+                if hasattr(ctb, '_ticker_val'):
                     self._USD_VAL = float(to_amnt) * ctb._ticker_val[coin+'_btc']['avg'] * ctb._ticker_val['btc_usd']['avg']
 
         lg.debug("CtbAction::__init__(atype=%s, from_user=%s)", self._TYPE, self._FROM_USER._NAME)
@@ -559,8 +559,8 @@ class CtbAction(object):
             addr_ex_str = addr_ex_str % (i['address'])
             addr_qr_str = '[[qr]](' + _config['misc']['qr-service-url'] + '%s%%3A%s)'
             addr_qr_str = addr_qr_str % (_cc[i['coin']]['name'], i['address'])
-            tbalance_usd = self._CTB._ticker_val[i['coin']+'_btc']['avg'] * self._CTB._ticker_val['btc_usd']['avg'] * float(i['tbalance']) if self._CTB._ticker_val else 0
-            wbalance_usd = self._CTB._ticker_val[i['coin']+'_btc']['avg'] * self._CTB._ticker_val['btc_usd']['avg'] * float(i['wbalance']) if self._CTB._ticker_val else 0
+            tbalance_usd = self._CTB._ticker_val[i['coin']+'_btc']['avg'] * self._CTB._ticker_val['btc_usd']['avg'] * float(i['tbalance']) if hasattr(self._CTB, '_ticker_val') else 0
+            wbalance_usd = self._CTB._ticker_val[i['coin']+'_btc']['avg'] * self._CTB._ticker_val['btc_usd']['avg'] * float(i['wbalance']) if hasattr(self._CTB, '_ticker_val') else 0
             txt += "__%s__|%s&nbsp;^%s&nbsp;%s|__%.6f&nbsp;^$%.2g__|%.6f&nbsp;^$%.2g\n" % (i['coin'], i['address'], addr_ex_str, addr_qr_str, i['tbalance'], tbalance_usd, i['wbalance'], wbalance_usd)
         txt += "\nUse addresses above to deposit coins into your account. Tip and withdraw balances differ while newly deposited coins are confirmed."
         txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])

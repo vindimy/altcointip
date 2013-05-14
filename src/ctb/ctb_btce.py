@@ -29,7 +29,7 @@ class CtbBtce(object):
         while True:
             try:
                 request = urllib2.Request(url)
-                response = json.loads(urllib2.urlopen(request).read())
+                response = json.loads(urllib2.urlopen(request, timeout=3).read())
                 return response
                 break
             except urllib2.URLError:
