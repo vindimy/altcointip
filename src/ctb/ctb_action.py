@@ -191,7 +191,7 @@ class CtbAction(object):
                 a.save('declined')
                 # Respond to tip comment
                 amnt = ('%f' % a._TO_AMNT).rstrip('0').rstrip('.')
-                cmnt = "* _Declined by receiver__: /u/%s -> /u/%s, __%s %s__" % (a._FROM_USER._NAME, a._TO_USER._NAME, amnt, a._COIN.upper())
+                cmnt = "* __[Declined by receiver]__: /u/%s -> /u/%s, __%s %s__" % (a._FROM_USER._NAME, a._TO_USER._NAME, amnt, a._COIN.upper())
                 cmnt += " ^^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::decline(): " + cmnt)
                 ctb_misc._reddit_reply(msg=a._MSG, txt=cmnt)
@@ -208,6 +208,39 @@ class CtbAction(object):
             self._FROM_USER.tell(subj="+decline failed", msg=msg)
 
         lg.debug("< CtbAction::decline() DONE")
+        return None
+
+    def expire(self):
+        """
+        Expire a pending tip
+        """
+        lg.debug("> CtbAction::expire()")
+
+        _mysqlcon = self._CTB._mysqlcon
+        _coincon = self._CTB._coincon
+        _config = self._CTB._config
+        _cc = self._CTB._config['cc']
+        _redditcon = self._CTB._redditcon
+
+        # Move coins back into sefl._FROM_USER account
+        try:
+            lg.info("CtbAction::expire(): moving %s %s from %s to %s", str(self._TO_AMNT), self._COIN, _config['reddit']['user'], self._FROM_USER._NAME.lower())
+            m = _coincon[self._COIN].move(_config['reddit']['user'], self._FROM_USER._NAME.lower(), self._TO_AMNT)
+        except Exception, e:
+            lg.error("CtbAction::expire(): error: %s", str(e))
+            raise
+
+        # Save transaction as declined
+        self.save('declined')
+
+        # Respond to tip comment
+        amnt = ('%f' % self._TO_AMNT).rstrip('0').rstrip('.')
+        cmnt = "* __[Expired]__: /u/%s -> /u/%s, __%s %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, amnt, self._COIN.upper())
+        cmnt += " ^^[[help]](%s)" % (_config['reddit']['help-url'])
+        lg.debug("CtbAction::expire(): " + cmnt)
+        ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
+
+        lg.debug("< CtbAction::expire() DONE")
         return None
 
     def validate(self, ignore_pending=False):
@@ -288,12 +321,12 @@ class CtbAction(object):
                 # Save action as pending
                 self.save('pending')
 
-                # Send notice to _FROM_USER
-                msg = "Hey %s, /u/%s doesn't have an account with tip bot yet. I'll tell him/her to register and +accept the tip." % (self._FROM_USER._NAME, self._TO_USER._NAME)
-                lg.debug("CtbAction::validate(): %s", msg)
-                msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                msg += "\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                self._FROM_USER.tell(subj="+givetip pending", msg=msg)
+                # Respond to tip comment
+                amnt = ('%f' % self._TO_AMNT).rstrip('0').rstrip('.')
+                cmnt = "* __[Pending]__: /u/%s -> /u/%s, __%s %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, amnt, self._COIN.upper())
+                cmnt += " ^^[[help]](%s)" % (_config['reddit']['help-url'])
+                lg.debug("CtbAction::validate(): " + cmnt)
+                ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
 
                 # Send notice to _TO_USER
                 msg = "Hey %s, /u/%s sent you a __%f %s__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
@@ -737,6 +770,7 @@ def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=No
         sql += ' AND '.join(sql_terms)
 
     try:
+        lg.debug("_check_action(): <%s>", sql)
         mysqlexec = mysqlcon.execute(sql)
         if mysqlexec.rowcount <= 0:
             lg.debug("< _check_action() DONE (no)")
@@ -787,6 +821,7 @@ def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=Non
 
     r = []
     try:
+        lg.debug("_get_actions(): <%s>", sql)
         mysqlexec = mysqlcon.execute(sql)
         if mysqlexec.rowcount <= 0:
             lg.debug("< _get_actions() DONE (no)")

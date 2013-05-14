@@ -184,6 +184,21 @@ class CointipBot(object):
         # Done
         return True
 
+    def _expire_pending_tips(self):
+        """
+        Decline any pending tips that have reached expiration time limit
+        """
+        # Calculate timestamp
+        seconds = int(self._config['misc']['expire-pending-hours'] * 3600)
+        created_before = time.mktime(time.gmtime()) - seconds
+
+        # Get expired actions and decline them
+        for a in ctb_action._get_actions(atype='givetip', state='pending', created_utc='< ' + str(created_before), ctb=self):
+            a.expire()
+
+        # Done
+        return True
+
     def _check_inbox(self):
         """
         Evaluate new messages in inbox
@@ -353,6 +368,8 @@ class CointipBot(object):
             try:
                 # Refresh exchange rates
                 ctb_misc._refresh_exchange_rate(self)
+                # Expire pending tips
+                self._expire_pending_tips()
                 # Check personal messages
                 self._check_inbox()
                 # Check subreddit comments for tips
