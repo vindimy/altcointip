@@ -284,13 +284,25 @@ class CtbAction(object):
                 return False
 
             # Verify balance
-            if not self._FROM_USER.get_balance(coin=self._COIN, kind='tip') >= self._TO_AMNT:
-                msg = "I'm sorry, your balance of %f %s is too small (there's a %f network transaction fee)." % (balance_avail, self._COIN.upper(), _cc[self._COIN]['txfee'])
-                lg.debug("CtbAction::validate(): " + msg)
-                msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                msg += "\n *[%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                self._FROM_USER.tell(subj="+givetip failed", msg=msg)
-                return False
+            if bool(self._TO_USER):
+                # Tip to user (requires less confirmations)
+                if not self._FROM_USER.get_balance(coin=self._COIN, kind='tip') >= self._TO_AMNT:
+                    msg = "I'm sorry, your confirmed _tip_ balance of (__%f %s__) is insufficient for this tip." % (balance_avail, self._COIN.upper())
+                    lg.debug("CtbAction::validate(): " + msg)
+                    msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
+                    msg += "\n *[%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
+                    self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                    return False
+            else:
+                # Tip to address (requires more confirmations, like a withdrawal)
+                if not self._FROM_USER.get_balance(coin=self._COIN, kind='withdraw') >= self._TO_AMNT + _cc[self._COIN]['txfee']:
+                    msg = "I'm sorry, your confirmed _withdraw_ balance of (__%f %s__) is insufficient for this tip." % (balance_avail, self._COIN.upper())
+                    msg += " There's a %s %s network transaction fee." % (_cc[self._COIN]['txfee'], self._COIN.upper())
+                    lg.debug("CtbAction::validate(): " + msg)
+                    msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
+                    msg += "\n *[%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
+                    self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                    return False
 
             # Check if _TO_USER has any pending tips from _FROM_USER
             if (bool(self._TO_USER)) and not ignore_pending:
