@@ -1,20 +1,25 @@
-# MySQL configuration
-mysql-user : cointipbot
-mysql-pass : randompass1234
-mysql-host : localhost
-mysql-port : 3306
-mysql-db: cointipbot
+# MySQL
+mysql:
+  user : mysqluser
+  pass : mysqlpass
+  host : localhost
+  port : 3306
+  db: mysqldb
 
-# Reddit configuration
-reddit-username : mycointipbotuser
-reddit-pass : randompass1234
-reddit-useragent : /u/mycointipbotuser
-reddit-botsubreddit : mycointipbotsubreddit
+# Reddit
+reddit:
+  user : mybotuser
+  pass : mybotpass
+  batch-limit : 1000
+  useragent : /u/mybotuser
+  help-url : http://www.reddit.com/r/mybotuser/wiki/index
 
-# Other configuration
-admin-email : admin@example.com
+# Other
+misc:
+  qr-service-url : 'https://chart.googleapis.com/chart?cht=qr&choe=UTF-8&chs=300x300&chl='
+  sleep-time: 30
 
-# Regex              
+# Regex
 regex:
   amount: '([0-9]{1,7}(?:\.[0-9]{0,5})?)'
 

@@ -154,7 +154,7 @@ class CtbAction(object):
         else:
             msg = "I'm sorry %s, you don't have any pending tips. Perhaps they've already expired." % self._FROM_USER._NAME
             lg.debug("CtbAction::accept(): %s", msg)
-            msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+            msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
             self._FROM_USER.tell(subj="+accept failed", msg=msg)
 
         lg.debug("< CtbAction::accept() DONE")
@@ -177,8 +177,8 @@ class CtbAction(object):
             for a in actions:
                 # Move coins back into a._FROM_USER account
                 try:
-                    lg.info("CtbAction::decline(): moving %s %s from %s to %s", str(a._TO_AMNT), a._COIN, _config['reddit-user'], a._FROM_USER._NAME.lower())
-                    m = _coincon[a._COIN].move(_config['reddit-user'], a._FROM_USER._NAME.lower(), a._TO_AMNT)
+                    lg.info("CtbAction::decline(): moving %s %s from %s to %s", str(a._TO_AMNT), a._COIN, _config['reddit']['user'], a._FROM_USER._NAME.lower())
+                    m = _coincon[a._COIN].move(_config['reddit']['user'], a._FROM_USER._NAME.lower(), a._TO_AMNT)
                 except Exception, e:
                     lg.error("CtbAction::decline(): error: %s", str(e))
                     raise
@@ -187,18 +187,18 @@ class CtbAction(object):
                 # Respond to tip comment
                 amnt = ('%f' % a._TO_AMNT).rstrip('0').rstrip('.')
                 cmnt = "* _Declined by receiver__: /u/%s -> /u/%s, __%s %s__" % (a._FROM_USER._NAME, a._TO_USER._NAME, amnt, a._COIN.upper())
-                cmnt += " ^^^[[help]](%s)" % (_config['reddit-help-url'])
+                cmnt += " ^^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::decline(): " + cmnt)
                 ctb_misc._reddit_reply(msg=a._MSG, txt=cmnt)
 
             # Notify self._FROM_USER
             msg = "Hello %s, your pending tips have been declined." % self._FROM_USER._NAME
-            msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+            msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
             lg.debug("CtbAction::decline(): %s")
             self._FROM_USER.tell(subj="+decline processed", msg=msg)
         else:
             msg = "I'm sorry %s, you don't have any pending tips. Perhaps they've already expired." % self._FROM_USER._NAME
-            msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+            msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
             lg.debug("CtbAction::decline(): %s")
             self._FROM_USER.tell(subj="+decline failed", msg=msg)
 
@@ -220,10 +220,10 @@ class CtbAction(object):
         if self._TYPE == 'givetip':
             # Check if _FROM_USER has registered
             if not self._FROM_USER.is_registered():
-                msg = "I'm sorry %s, we've never met. Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (self._FROM_USER._NAME, self._CTB._config['reddit-user'])
+                msg = "I'm sorry %s, we've never met. Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (self._FROM_USER._NAME, self._CTB._config['reddit']['user'])
                 lg.debug("CtbAction::validate(): %s", msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                msg += "\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+                msg += "\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                 return False
 
@@ -232,7 +232,7 @@ class CtbAction(object):
                 msg = "I'm sorry %s, you don't seem to have a %s address." % (self._FROM_USER._NAME, self._COIN.upper())
                 lg.debug("CtbAction::validate(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                msg += "\n *[%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+                msg += "\n *[%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                 return False
 
@@ -241,7 +241,7 @@ class CtbAction(object):
                 msg = "I'm sorry %s, your tip of %f %s is below minimum (%f)." % (self._FROM_USER._NAME, self._TO_AMNT, self._COIN.upper(), _cc[self._COIN]['txmin'])
                 lg.debug("CtbAction::validate(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                msg += "\n *[%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+                msg += "\n *[%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                 return False
 
@@ -250,7 +250,7 @@ class CtbAction(object):
                 msg = "I'm sorry, your balance of %f %s is too small (there's a %f network transaction fee)." % (balance_avail, self._COIN.upper(), _cc[self._COIN]['txfee'])
                 lg.debug("CtbAction::validate(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                msg += "\n *[%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+                msg += "\n *[%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                 return False
 
@@ -261,7 +261,7 @@ class CtbAction(object):
                     msg = "I'm sorry, /u/%s already has a pending tip from you. Please wait until he/she accepts or declines it." % (self._TO_USER._NAME)
                     lg.debug("CtbAction::validate(): " + msg)
                     msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                    msg += "\n *[%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+                    msg += "\n *[%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                     self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                     return False
 
@@ -274,8 +274,8 @@ class CtbAction(object):
 
                 # Move money into pending account
                 try:
-                    lg.info("CtbAction::validate(): moving %s %s from %s to %s", str(self._TO_AMNT), self._COIN, self._FROM_USER._NAME.lower(), _config['reddit-user'])
-                    m = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), _config['reddit-user'], self._TO_AMNT)
+                    lg.info("CtbAction::validate(): moving %s %s from %s to %s", str(self._TO_AMNT), self._COIN, self._FROM_USER._NAME.lower(), _config['reddit']['user'])
+                    m = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), _config['reddit']['user'], self._TO_AMNT)
                 except Exception, e:
                     lg.error("CtbAction::validate(): error: %s", str(e))
                     raise
@@ -287,16 +287,16 @@ class CtbAction(object):
                 msg = "Hey %s, /u/%s doesn't have an account with tip bot yet. I'll tell him/her to register and +accept the tip." % (self._FROM_USER._NAME, self._TO_USER._NAME)
                 lg.debug("CtbAction::validate(): %s", msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                msg += "\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+                msg += "\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._FROM_USER.tell(subj="+givetip pending", msg=msg)
 
                 # Send notice to _TO_USER
                 msg = "Hey %s, /u/%s sent you a __%f %s__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
                 msg += "Reply with __[+decline](http://www.reddit.com/message/compose?to=%s&subject=decline&message=%%2Bdecline)__ to decline it."
-                msg = msg % (self._TO_USER._NAME, self._FROM_USER._NAME, self._TO_AMNT, self._COIN.upper(), self._CTB._config['reddit-user'], self._CTB._config['reddit-user'])
+                msg = msg % (self._TO_USER._NAME, self._FROM_USER._NAME, self._TO_AMNT, self._COIN.upper(), self._CTB._config['reddit']['user'], self._CTB._config['reddit']['user'])
                 lg.debug("CtbAction::validate(): %s", msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                msg += "\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+                msg += "\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._TO_USER.tell(subj="+givetip pending", msg=msg)
 
                 # Action saved as 'pending', return false to avoid processing it
@@ -309,7 +309,7 @@ class CtbAction(object):
                     msg = "I'm sorry, __%s__ address __%s__ appears to be invalid (is there a typo?)." % (self._COIN.upper(), self._TO_ADDR)
                     lg.debug("CtbAction::validate(): " + msg)
                     msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                    msg += "\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+                    msg += "\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                     self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                     return False
 
@@ -345,8 +345,8 @@ class CtbAction(object):
 
             try:
                 if is_pending:
-                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), _config['reddit-user'], self._TO_ADDR)
-                    self._TXID = _coincon[self._COIN].move(_config['reddit-user'], self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf']['tip'])
+                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), _config['reddit']['user'], self._TO_ADDR)
+                    self._TXID = _coincon[self._COIN].move(_config['reddit']['user'], self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf']['tip'])
                 else:
                     lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_ADDR)
                     self._TXID = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf']['tip'])
@@ -358,11 +358,11 @@ class CtbAction(object):
 
                 # Send notice to _FROM_USER
                 msg = "Hey %s, something went wrong, and your tip of __%f %s__ to /u/%s has failed to process." % (self._FROM_USER._NAME, self._TO_AMNT, self._COIN.upper(), self._TO_USER._NAME)
-                msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+                msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
 
                 # Log error
-                lg.error("CtbAction::givetip(): move of %s %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, (self._FROM_USER._NAME if is_pending else _config['reddit-user']), self._TO_USER._NAME, str(e)))
+                lg.error("CtbAction::givetip(): move of %s %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, (self._FROM_USER._NAME if is_pending else _config['reddit']['user']), self._TO_USER._NAME, str(e)))
                 raise
 
             # Transaction succeeded
@@ -375,14 +375,14 @@ class CtbAction(object):
                 msg = "Hey %s, you have received a __%f %s__ tip from /u/%s." % (self._TO_USER._NAME, self._TO_AMNT, self._COIN.upper(), self._FROM_USER._NAME)
                 lg.debug("CtbAction::givetip(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
-                msg += "\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+                msg += "\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._TO_USER.tell(subj="+givetip received", msg=msg)
 
                 # Post verification comment
                 amnt = ('%f' % self._TO_AMNT).rstrip('0').rstrip('.')
                 cmnt = "* __[Verified]__: /u/%s -> /u/%s, __%s %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, amnt, self._COIN.upper())
                 lg.debug("CtbAction::givetip(): " + cmnt)
-                cmnt += " ^^^[[help]](%s)" % (_config['reddit-help-url'])
+                cmnt += " ^^[[help]](%s)" % (_config['reddit']['help-url'])
                 ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
 
             except Exception, e:
@@ -410,7 +410,7 @@ class CtbAction(object):
 
                 # Send notice to _FROM_USER
                 msg = "Hey %s, something went wrong, and your tip of %f %s to %s has failed to process." % (self._FROM_USER._NAME, self._TO_AMNT, self._COIN.upper(), self._TO_ADDR)
-                msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+                msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                 lg.error("CtbAction::givetip(): tx of %f %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, self._FROM_USER._NAME, self._TO_ADDR, str(e)))
                 raise
@@ -426,7 +426,7 @@ class CtbAction(object):
                 amnt = ('%f' % self._TO_AMNT).rstrip('0').rstrip('.')
                 cmnt = "* __[Verified](%s)__: /u/%s -> [%s](%s), __%s %s__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, amnt, self._COIN.upper())
                 lg.debug("CtbAction::givetip(): " + cmnt)
-                cmnt += " ^^^[[help]](%s)" % (_config['reddit-help-url'])
+                cmnt += " ^^[[help]](%s)" % (_config['reddit']['help-url'])
                 ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
             except Exception, e:
                 # Couldn't post to Reddit
@@ -454,8 +454,8 @@ class CtbAction(object):
         # Check if user exists
         if not self._FROM_USER.is_registered():
             msg = "I'm sorry, we've never met. "
-            msg += "Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (self._CTB._config['reddit-user'])
-            msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+            msg += "Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (self._CTB._config['reddit']['user'])
+            msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
             self._FROM_USER.tell(subj="+info failed", msg=msg)
             return False
 
@@ -490,9 +490,11 @@ class CtbAction(object):
             ubalance_str = ('%f' % (i['ubalance'] - i['tbalance'])).rstrip('0').rstrip('.')
             address_str = '[%s](' + _cc[i['coin']]['explorer']['address'] + '%s)'
             address_str_fmtd = address_str % (i['address'], i['address'])
-            msg += i['coin'] + '|' + address_str_fmtd + '|__' + tbalance_str + "__|" + wbalance_str + "|" + ubalance_str + "\n"
+            address_qr_str = '&nbsp;^^[[qr]](' + _config['misc']['qr-service-url'] + '%s%%3A%s)'
+            address_qr_str_fmtd = address_qr_str % (_cc[i['coin']]['name'], i['address'])
+            msg += '__' + i['coin'] + '__' + '|' + address_str_fmtd + address_qr_str_fmtd + '|__' + tbalance_str + "__|" + wbalance_str + "|" + ubalance_str + "\n"
         msg += "\nUse addresses above to deposit coins into your account."
-        msg += "\n\n* [%s help](%s)" % (_config['reddit-user'], _config['reddit-help-url'])
+        msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
 
         # Send info message
         self._FROM_USER.tell(subj="+info", msg=msg)

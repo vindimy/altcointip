@@ -1,7 +1,6 @@
 import ctb_misc
 
 import logging
-from urllib2 import HTTPError
 
 lg = logging.getLogger('cointipbot')
 
@@ -103,8 +102,8 @@ class CtbUser(object):
                 self._REDDITOBJ = self._CTB._redditcon.get_redditor(self._NAME)
                 lg.debug("< CtbUser::is_on_reddit(%s) DONE (yes)", self._NAME)
                 return True
-            except HTTPError, e:
-                if (str(e)=="HTTP Error 504: Gateway Time-out" or str(e)=="timed out"):
+            except praw.HTTPError, e:
+                if e.code in [500, 502, 503, 504]:
                     lg.warning("CtbUser::is_on_reddit(%s): Reddit is down, sleeping for %s seconds...",  self._NAME, str(sleep_for))
                     time.sleep(sleep_for)
                     sleep_for *= 2 if sleep_for < 600 else 600
@@ -168,8 +167,8 @@ class CtbUser(object):
                 lg.debug("CtbUser::tell(%s): sending message", self._NAME)
                 self._REDDITOBJ.send_message(subj, msg)
                 break
-            except HTTPError, e:
-                if (str(e)=="HTTP Error 504: Gateway Time-out" or str(e)=="timed out"):
+            except praw.HTTPError, e:
+                if e.code in [500, 502, 503, 504]:
                     lg.warning("CtbUser::tell(%s): Reddit is down, sleeping for %s seconds...",  self._NAME, str(sleep_for))
                     time.sleep(sleep_for)
                     sleep_for *= 2 if sleep_for < 600 else 600

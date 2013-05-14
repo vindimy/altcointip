@@ -1,7 +1,6 @@
 import ctb_user
 
 import logging
-from urllib2 import HTTPError
 
 lg = logging.getLogger('cointipbot')
 
@@ -16,17 +15,18 @@ def _reddit_reply(msg, txt):
     lg.debug("> _reddit_reply(%s)", msg.id)
 
     sleep_for = 10
-
     while True:
         try:
             msg.reply(txt)
             break
-        except HTTPError, e:
-            if (str(e)=="HTTP Error 504: Gateway Time-out" or str(e)=="timed out"):
-                lg.warning("_reddit_say(): Reddit is down, sleeping for %d seconds...", sleep_for)
+        except praw.HTTPError, e:
+            if e.code in [500, 502, 503, 504]:
+                lg.warning("_reddit_reply(): Reddit is down, sleeping for %s seconds...", sleep_for)
                 time.sleep(sleep_for)
                 sleep_for *= 2 if sleep_for < 600 else 600
                 pass
+            else:
+                raise
         except Exception, e:
             raise
 
