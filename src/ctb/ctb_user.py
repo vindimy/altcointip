@@ -1,6 +1,6 @@
 import ctb_misc
 
-import logging
+import logging, re, praw, urllib2
 
 lg = logging.getLogger('cointipbot')
 
@@ -25,7 +25,7 @@ class CtbUser(object):
         """
         Initialize CtbUser object with given parameters
         """
-        lg.debug("> CtbUser::__init__()")
+        lg.debug("> CtbUser::__init__(%s)", name)
 
         if not bool(name):
             raise Exception("CtbUser::__init__(): name must be set")
@@ -38,6 +38,8 @@ class CtbUser(object):
 
         if bool(redditobj):
             self._REDDITOBJ = redditobj
+
+        lg.debug("< CtbUser::__init__(%s) DONE", name)
 
     def get_balance(self, coin=None, kind=None):
         """
@@ -102,14 +104,15 @@ class CtbUser(object):
                 self._REDDITOBJ = self._CTB._redditcon.get_redditor(self._NAME)
                 lg.debug("< CtbUser::is_on_reddit(%s) DONE (yes)", self._NAME)
                 return True
-            except praw.HTTPError, e:
-                if e.code in [500, 502, 503, 504]:
+            except urllib2.HTTPError, e:
+                if e.code in [429, 500, 502, 503, 504]:
                     lg.warning("CtbUser::is_on_reddit(%s): Reddit is down, sleeping for %s seconds...",  self._NAME, str(sleep_for))
                     time.sleep(sleep_for)
                     sleep_for *= 2 if sleep_for < 600 else 600
                     pass
                 else:
-                    raise
+                    lg.debug("< CtbUser::is_on_reddit(%s) DONE (no)", self._NAME)
+                    return False
             except Exception, e:
                 lg.debug("< CtbUser::is_on_reddit(%s) DONE (no)", self._NAME)
                 return False
@@ -167,8 +170,8 @@ class CtbUser(object):
                 lg.debug("CtbUser::tell(%s): sending message", self._NAME)
                 self._REDDITOBJ.send_message(subj, msg)
                 break
-            except praw.HTTPError, e:
-                if e.code in [500, 502, 503, 504]:
+            except urllib2.HTTPError, e:
+                if e.code in [429, 500, 502, 503, 504]:
                     lg.warning("CtbUser::tell(%s): Reddit is down, sleeping for %s seconds...",  self._NAME, str(sleep_for))
                     time.sleep(sleep_for)
                     sleep_for *= 2 if sleep_for < 600 else 600

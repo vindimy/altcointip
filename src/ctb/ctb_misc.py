@@ -1,6 +1,6 @@
 import ctb_user, ctb_btce
 
-import logging
+import logging, urllib2
 
 lg = logging.getLogger('cointipbot')
 
@@ -43,8 +43,8 @@ def _reddit_reply(msg, txt):
         try:
             msg.reply(txt)
             break
-        except praw.HTTPError, e:
-            if e.code in [500, 502, 503, 504]:
+        except urllib2.HTTPError, e:
+            if e.code in [429, 500, 502, 503, 504]:
                 lg.warning("_reddit_reply(): Reddit is down, sleeping for %s seconds...", sleep_for)
                 time.sleep(sleep_for)
                 sleep_for *= 2 if sleep_for < 600 else 600
@@ -57,7 +57,7 @@ def _reddit_reply(msg, txt):
     lg.debug("< _reddit_reply(%s) DONE", msg.id)
     return True
 
-def _reddit_get_parent_author(_comment, _reddit):
+def _reddit_get_parent_author(_comment, _reddit, _ctb):
     """
     Return author of _comment's parent comment
     """
@@ -72,7 +72,7 @@ def _reddit_get_parent_author(_comment, _reddit):
     else:
         parentcomment = _reddit.get_submission(parentpermalink).comments[0]
     lg.debug("< _get_parent_comment_author() -> %s", parentcomment.author)
-    return CtbUser(name=parentcomment.author.name, redditobj=parentcomment.author)
+    return parentcomment.author.name
 
 def _get_value(conn, param0=None):
     """

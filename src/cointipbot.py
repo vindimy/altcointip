@@ -2,7 +2,7 @@
 
 from ctb import ctb_db, ctb_action, ctb_misc, ctb_user
 
-import gettext, locale, logging, sys, time
+import gettext, locale, logging, sys, time, urllib2
 import praw, re, sqlalchemy, yaml
 from pifkoin.bitcoind import Bitcoind, BitcoindException
 
@@ -155,19 +155,19 @@ class CointipBot(object):
         Run self-checks before starting the bot
         """
         # Ensure bot is a registered user
-        b = ctb_user.CtbUser(name=self._config['reddit']['user'], ctb=self)
+        b = ctb_user.CtbUser(name=self._config['reddit']['user'].lower(), ctb=self)
         if not b.is_registered():
             b.register()
 
         # Ensure (total pending tips) < (CointipBot's balance)
         for c in self._coincon:
-            ctb_balance = b.get_balance(coin=c, kind='tip')
+            ctb_balance = float(b.get_balance(coin=c, kind='tip'))
             pending_tips = float(0)
             actions = ctb_action._get_actions(atype='givetip', state='pending', coin=c, ctb=self)
             for a in actions:
                 pending_tips += a._TO_AMNT
-            if ctb_balance < pending_tips:
-                raise Exception("CointipBot::_self_checks(): CointipBot's balance (%s) < total pending tips (%s)" % (ctb_balance, pending_tips))
+            if (ctb_balance - pending_tips) < -0.000001:
+                raise Exception("CointipBot::_self_checks(): CointipBot's %s balance (%s) < total pending tips (%s)" % (c.upper(), ctb_balance, pending_tips))
 
         # Ensure coin balances are positive
         for c in self._coincon:
@@ -214,8 +214,8 @@ class CointipBot(object):
             try:
                 messages = self._redditcon.get_unread(limit=self._REDDIT_BATCH_LIMIT)
                 break
-            except praw.HTTPError, e:
-                if e.code in [500, 502, 503, 504]:
+            except urllib2.HTTPError, e:
+                if e.code in [429, 500, 502, 503, 504]:
                     lg.warning("_check_inbox(): get_unread(): Reddit is down (error %s), sleeping...", e.code)
                     time.sleep(60)
                     pass
@@ -235,8 +235,8 @@ class CointipBot(object):
                     try:
                         m.mark_as_read()
                         break
-                    except praw.HTTPError, e:
-                        if e.code in [500, 502, 503, 504]:
+                    except urllib2.HTTPError, e:
+                        if e.code in [429, 500, 502, 503, 504]:
                             lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
                             time.sleep(60)
                             pass
@@ -254,8 +254,8 @@ class CointipBot(object):
                     try:
                         m.mark_as_read()
                         break
-                    except praw.HTTPError, e:
-                        if e.code in [500, 502, 503, 504]:
+                    except urllib2.HTTPError, e:
+                        if e.code in [429, 500, 502, 503, 504]:
                             lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
                             time.sleep(60)
                             pass
@@ -284,8 +284,8 @@ class CointipBot(object):
                 try:
                     m.mark_as_read()
                     break
-                except praw.HTTPError, e:
-                    if e.code in [500, 502, 503, 504]:
+                except urllib2.HTTPError, e:
+                    if e.code in [429, 500, 502, 503, 504]:
                         lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
                         time.sleep(60)
                         pass
@@ -317,8 +317,8 @@ class CointipBot(object):
                 # Fetch comments from subreddits
                 my_comments = my_reddits_multi.get_comments(limit=self._REDDIT_BATCH_LIMIT)
                 break
-            except praw.HTTPError, e:
-                if e.code in [500, 502, 503, 504]:
+            except urllib2.HTTPError, e:
+                if e.code in [429, 500, 502, 503, 504]:
                     lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
                     time.sleep(60)
                     pass

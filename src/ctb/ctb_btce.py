@@ -38,6 +38,9 @@ class CtbBtce(object):
             except urllib2.HTTPError:
                 lg.warning("CtbBtce::parsePublicApi(): caught HTTP error")
                 return None
+            except Exception, e:
+                lg.warning("CtbBtce::parsePublicApi(): caught Exception: %s", str(e))
+                return None
 
     def ticker(self,pair):
         url = self.url + pair + '/ticker' #construct url
