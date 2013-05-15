@@ -101,7 +101,7 @@ class CtbAction(object):
                      self._FIAT,
                      self._SUBR,
                      self._MSG.id,
-                     self._MSG.permalink if self._TYPE == 'givetip' else None))
+                     self._MSG.permalink))
             if mysqlexec.rowcount <= 0:
                 raise Exception("query didn't affect any rows")
         except Exception, e:
@@ -119,7 +119,7 @@ class CtbAction(object):
                 self._FIAT,
                 self._SUBR,
                 self._MSG.id,
-                self._MSG.permalink if self._TYPE == 'givetip' else None), str(e))
+                self._MSG.permalink), str(e))
             raise
 
         lg.debug("< CtbAction::save() DONE")
@@ -267,7 +267,7 @@ class CtbAction(object):
         lg.debug("< CtbAction::expire() DONE")
         return None
 
-    def validate(self, ignore_pending=False):
+    def validate(self, is_pending=False):
         """
         Validate an action
         """
@@ -300,15 +300,15 @@ class CtbAction(object):
 
             # Verify minimum transaction size
             if self._TO_AMNT < _cc[self._COIN]['txmin']:
-                msg = "I'm sorry %s, your tip/withdraw of %.6g %s is below minimum (%.6g)." % (re.escape(self._FROM_USER._NAME), self._TO_AMNT, self._COIN.upper(), _cc[self._COIN]['txmin'])
+                msg = "I'm sorry %s, your tip/withdraw of __%.6g %s__ is below minimum (__%.6g__)." % (re.escape(self._FROM_USER._NAME), self._TO_AMNT, self._COIN.upper(), _cc[self._COIN]['txmin'])
                 lg.debug("CtbAction::validate(): " + msg)
                 msg += "\n\n* [+givetip comment](%s)" % (self._MSG.permalink)
                 msg += "\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                 return False
 
-            # Verify balance
-            if bool(self._TO_USER):
+            # Verify balance (unless it's a pending transaction being processed, in which case coins have been already moved to pending acct)
+            if bool(self._TO_USER) and not is_pending:
                 # Tip to user (requires less confirmations)
                 balance_avail = self._FROM_USER.get_balance(coin=self._COIN, kind='tip')
                 if not balance_avail >= self._TO_AMNT:
@@ -318,7 +318,7 @@ class CtbAction(object):
                     msg += "\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                     self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                     return False
-            else:
+            elif bool(self._TO_ADDR):
                 # Tip to address (requires more confirmations, like a withdrawal)
                 balance_avail = self._FROM_USER.get_balance(coin=self._COIN, kind='withdraw')
                 if not balance_avail >= self._TO_AMNT + _cc[self._COIN]['txfee']:
@@ -331,7 +331,7 @@ class CtbAction(object):
                     return False
 
             # Check if _TO_USER has any pending tips from _FROM_USER
-            if (bool(self._TO_USER)) and not ignore_pending:
+            if (bool(self._TO_USER)) and not is_pending:
                 if _check_action(atype='givetip', state='pending', to_user=self._TO_USER._NAME, from_user=self._FROM_USER._NAME, ctb=self._CTB):
                     # Send notice to _FROM_USER
                     msg = "I'm sorry %s, /u/%s already has a pending tip from you. Please wait until he/she accepts or declines it." % (re.escape(self._FROM_USER._NAME), re.escape(self._TO_USER._NAME))
@@ -409,12 +409,12 @@ class CtbAction(object):
         _redditcon = self._CTB._redditcon
 
         # Validate action
-        if not self.validate(ignore_pending=is_pending):
+        if not self.validate(is_pending=is_pending):
             # Couldn't validate action, returning
             return False
 
         # Check if action has been processed
-        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB, ignore_pending=is_pending)):
+        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB, is_pending=is_pending)):
             # Found action in database, returning
             lg.warning("CtbAction::givetip(): duplicate action (msg_id=%s, created_utc=%s)", self._MSG.id, self._MSG.created_utc)
             return False
@@ -776,7 +776,7 @@ def _eval_comment(_comment, _ctb):
     lg.debug("< _eval_comment() DONE (no)")
     return None
 
-def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=None, from_user=None, to_user=None, subr=None, ctb=None, ignore_pending=False):
+def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=None, from_user=None, to_user=None, subr=None, ctb=None, is_pending=False):
     """
     Return True if action with given parameters
     exists in database
@@ -789,7 +789,7 @@ def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=No
     # Build SQL query
     sql = "SELECT * FROM t_action"
     sql_terms = []
-    if bool(atype) or bool(state) or bool(coin) or bool(msg_id) or bool(created_utc) or bool(from_user) or bool(to_user) or bool(subr) or bool(ignore_pending):
+    if bool(atype) or bool(state) or bool(coin) or bool(msg_id) or bool(created_utc) or bool(from_user) or bool(to_user) or bool(subr) or bool(is_pending):
         sql += " WHERE "
         if bool(atype):
             sql_terms.append("type = '%s'" % atype)
@@ -807,7 +807,7 @@ def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=No
             sql_terms.append("to_user = '%s'" % to_user.lower())
         if bool(subr):
             sql_terms.append("subreddit = '%s'" % subr)
-        if bool(ignore_pending):
+        if bool(is_pending):
             sql_terms.append("state <> 'pending'")
         sql += ' AND '.join(sql_terms)
 

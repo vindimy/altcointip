@@ -22,7 +22,7 @@ misc:
 
 # Regex
 regex:
-  amount: '([0-9]{1,7}(?:\.[0-9]{0,5})?)'
+  amount: '([0-9]{1,6}(?:\.[0-9]{0,6})?)'
   keywords:
     tip: '(givetip|altcointip|alttip|alt)'
     info: '(info)'

@@ -306,7 +306,7 @@ class CointipBot(object):
         while True:
             try:
                 # Get subscribed subreddits
-                my_reddits = self._redditcon.get_my_reddits()
+                my_reddits = self._redditcon.get_my_subreddits()
                 my_reddits_list = []
                 for my_reddit in my_reddits:
                     my_reddits_list.append(my_reddit.display_name.lower())
