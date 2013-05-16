@@ -131,7 +131,7 @@ class CtbAction(object):
         """
         lg.debug("> CtbAction::do()")
         if self._TYPE == 'accept':
-            return self.accept()
+            return ( self.accept() and self.info() )
         if self._TYPE == 'decline':
             return self.decline()
         if self._TYPE == 'givetip':
@@ -546,8 +546,11 @@ class CtbAction(object):
             coininfo = {}
             coininfo['coin'] = c
             try:
-                coininfo['tbalance'] = _coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['tip'])
-                coininfo['wbalance'] = _coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['withdraw'])
+                coininfo['tbalance'] = float(_coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['tip']))
+                coininfo['wbalance'] = float(_coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['withdraw']))
+                # wbalance can be negative since tips require less confirmations, so set it to 0 if negative
+                if coininfo['wbalance'] < 0:
+                    coininfo['wbalance'] = 0
                 info.append(coininfo)
             except Exception, e:
                 lg.error("CtbAction::info(%s): error retrieving %s coininfo: %s", self._FROM_USER._NAME, c, str(e))
