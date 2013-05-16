@@ -68,6 +68,10 @@ class CtbAction(object):
             if not (bool(self._COIN) ^ bool(self._FIAT)):
                 raise Exception("CtbAction::__init__(type=givetip): _COIN xor _FIAT must be set")
 
+        # Subtract tx fee if it's needed
+        if bool(self._TO_ADDR):
+            self._TO_AMNT -= self._CTB._config['cc'][self._COIN]['txfee']
+
         # Determine USD value of 'givetip' action
         if not bool(self._USD_VAL):
             if self._TYPE in ['givetip', 'withdraw']:
@@ -319,11 +323,10 @@ class CtbAction(object):
                     self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                     return False
             elif bool(self._TO_ADDR):
-                # Tip to address (requires more confirmations, like a withdrawal)
+                # Tip/withdrawal to address (requires more confirmations)
                 balance_avail = self._FROM_USER.get_balance(coin=self._COIN, kind='withdraw')
-                if not balance_avail >= self._TO_AMNT + _cc[self._COIN]['txfee']:
-                    msg = "I'm sorry %s, your confirmed _withdraw_ balance of (__%.6g %s__) is insufficient for this tip." % (re.escape(self._FROM_USER._NAME), balance_avail, self._COIN.upper())
-                    msg += " There's a %.6g %s network transaction fee." % (_cc[self._COIN]['txfee'], self._COIN.upper())
+                if not balance_avail >= self._TO_AMNT:
+                    msg = "I'm sorry %s, your confirmed _withdraw_ balance of (__%.6g %s__) is insufficient for this action." % (re.escape(self._FROM_USER._NAME), balance_avail, self._COIN.upper())
                     lg.debug("CtbAction::validate(): " + msg)
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                     msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
