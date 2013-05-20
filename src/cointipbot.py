@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ctb import ctb_db, ctb_action, ctb_misc, ctb_user
+from ctb import ctb_action, ctb_db, ctb_log, ctb_misc, ctb_user
 
 import gettext, locale, logging, sys, time, urllib2
 import praw, re, sqlalchemy, yaml
@@ -47,14 +47,12 @@ class CointipBot(object):
         """
         hdlr_info = None
         hdlr_debug = None
-        lg1 = logging.getLogger('cointipbot')
-        lg2 = logging.getLogger('cointipbot')
-        bt1 = logging.getLogger('bitcoin')
-        bt2 = logging.getLogger('bitcoin')
+        lg = logging.getLogger('cointipbot')
+        bt = logging.getLogger('bitcoin')
 
         # Get handlers
         if self._config['logging'].has_key('info-log-filename'):
-            hdlr_debug = logging.FileHandler(self._config['logging']['info-log-filename'], mode='a')
+            hdlr_info = logging.FileHandler(self._config['logging']['info-log-filename'], mode='a')
         if self._config['logging'].has_key('debug-log-filename'):
             hdlr_debug = logging.FileHandler(self._config['logging']['debug-log-filename'], mode='a')
 
@@ -68,17 +66,22 @@ class CointipBot(object):
         # Set handlers
         if hdlr_info:
             hdlr_info.setFormatter(fmtr)
-            lg1.addHandler(hdlr_info)
-            bt1.addHandler(hdlr_info)
-            lg1.setLevel(logging.INFO)
-            bt1.setLevel(logging.INFO)
+            hdlr_info.addFilter(ctb_log.LevelFilter(logging.INFO))
+            lg.addHandler(hdlr_info)
+            bt.addHandler(hdlr_info)
 
         if hdlr_debug:
             hdlr_debug.setFormatter(fmtr)
-            lg2.addHandler(hdlr_debug)
-            bt2.addHandler(hdlr_debug)
-            lg2.setLevel(logging.DEBUG)
-            bt2.setLevel(logging.DEBUG)
+            hdlr_debug.addFilter(ctb_log.LevelFilter(logging.DEBUG))
+            lg.addHandler(hdlr_debug)
+            bt.addHandler(hdlr_debug)
+
+        # Set levels
+        lg.setLevel(logging.DEBUG)
+        bt.setLevel(logging.DEBUG)
+
+        lg.info("CointipBot::_init_logging(): -------------------- logging initialized --------------------")
+        return True
 
     def _parse_config(self, filename=_DEFAULT_CONFIG_FILENAME):
         """
@@ -160,7 +163,6 @@ class CointipBot(object):
             self._REDDIT_BATCH_LIMIT = self._config['reddit']['batch-limit']
         if 'sleep-time' in self._config['misc']:
             self._DEFAULT_SLEEP_TIME = self._config['misc']['sleep-time']
-        lg.debug("CointipBot::__init__(): batch-limit = %s, sleep-time = %s", self._REDDIT_BATCH_LIMIT, self._DEFAULT_SLEEP_TIME)
 
         # Logging
         if self._config.has_key('logging'):
@@ -186,6 +188,8 @@ class CointipBot(object):
 
         # Self-checks
         self._self_checks()
+
+        lg.info("CointipBot::__init__(): DONE, batch-limit = %s, sleep-time = %s", self._REDDIT_BATCH_LIMIT, self._DEFAULT_SLEEP_TIME)
 
     def _self_checks(self):
         """
