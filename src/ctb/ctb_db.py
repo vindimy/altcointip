@@ -13,6 +13,6 @@ class CointipBotDatabase:
 
   def connect(self):
     '''Return a connection object'''
-    engine = create_engine(self.dsn_url, echo_pool=True, pool_recycle=60, poolclass=SingletonThreadPool)
+    engine = create_engine(self.dsn_url, echo_pool=True, poolclass=SingletonThreadPool)
     self.metadata.create_all(engine)
     return engine
