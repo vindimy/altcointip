@@ -13,6 +13,10 @@ reddit:
   batch-limit: 1000
   useragent: /u/mybotuser
   help-url: http://www.reddit.com/r/mybotuser/wiki/index
+  comments:
+    verify: true
+    pending: false
+    expired: false
 
 # Other
 misc:
