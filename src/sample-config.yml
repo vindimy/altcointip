@@ -32,13 +32,18 @@ regex:
     withdraw: '(withdraw)'
     history: '(history)'
 
+# Logging
+logging:
+  info-log-filename: ctb-info.log
+  debug-log-filename: ctb-debug.log
+
 # Cryptocoins
 cc:
   # Bitcoin
   btc:
     enabled: false
     unit: btc
-    name: bitcoin
+    name: Bitcoin
     confile: '~/.bitcoin/bitcoin.conf'
     minconf:
       tip: 1
@@ -56,7 +61,7 @@ cc:
   ltc:
     enabled: false
     unit: ltc
-    name: litecoin
+    name: Litecoin
     conf-file: '~/.litecoin/litecoin.conf'
     minconf:
       tip: 1
@@ -74,7 +79,7 @@ cc:
   ppc:
     enabled: false
     unit: ppc
-    name: ppcoin
+    name: PPCoin
     conf-file: '~/.ppcoin/ppcoin.conf'
     minconf:
       tip: 1
@@ -92,7 +97,7 @@ cc:
   nmc:
     enabled: false
     unit: nmc
-    name: namecoin
+    name: Namecoin
     conf-file: '~/.namecoin/bitcoin.conf'
     minconf:
       tip: 1

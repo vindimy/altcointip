@@ -8,15 +8,6 @@ from pifkoin.bitcoind import Bitcoind, BitcoindException
 
 # Configure CointipBot logger
 lg = logging.getLogger('cointipbot')
-hdlr = logging.StreamHandler()
-fmtr = logging.Formatter("%(levelname)s %(asctime)s %(message)s")
-hdlr.setFormatter(fmtr)
-lg.addHandler(hdlr)
-lg.setLevel(logging.DEBUG)
-# Configure Bitcoin logger
-bt = logging.getLogger('bitcoin')
-bt.addHandler(hdlr)
-bt.setLevel(logging.DEBUG)
 
 class CointipBot(object):
     """
@@ -49,6 +40,45 @@ class CointipBot(object):
             trans = gettext.NullTranslations()
         trans.install()
         lg.debug(_("Testing localization..."))
+
+    def _init_logging(self):
+        """
+        Set up logging
+        """
+        hdlr_info = None
+        hdlr_debug = None
+        lg1 = logging.getLogger('cointipbot')
+        lg2 = logging.getLogger('cointipbot')
+        bt1 = logging.getLogger('bitcoin')
+        bt2 = logging.getLogger('bitcoin')
+
+        # Get handlers
+        if self._config['logging'].has_key('info-log-filename'):
+            hdlr_debug = logging.FileHandler(self._config['logging']['info-log-filename'], mode='a')
+        if self._config['logging'].has_key('debug-log-filename'):
+            hdlr_debug = logging.FileHandler(self._config['logging']['debug-log-filename'], mode='a')
+
+        if not hdlr_info and not hdlr_debug:
+            print "CointipBot::_init_logging(): Warning: no logging handlers are set up. Logging is disabled."
+            return False
+
+        # Get formatter
+        fmtr = logging.Formatter("%(levelname)s %(asctime)s %(message)s")
+
+        # Set handlers
+        if hdlr_info:
+            hdlr_info.setFormatter(fmtr)
+            lg1.addHandler(hdlr_info)
+            bt1.addHandler(hdlr_info)
+            lg1.setLevel(logging.INFO)
+            bt1.setLevel(logging.INFO)
+
+        if hdlr_debug:
+            hdlr_debug.setFormatter(fmtr)
+            lg2.addHandler(hdlr_debug)
+            bt2.addHandler(hdlr_debug)
+            lg2.setLevel(logging.DEBUG)
+            bt2.setLevel(logging.DEBUG)
 
     def _parse_config(self, filename=_DEFAULT_CONFIG_FILENAME):
         """
@@ -130,6 +160,13 @@ class CointipBot(object):
             self._REDDIT_BATCH_LIMIT = self._config['reddit']['batch-limit']
         if 'sleep-time' in self._config['misc']:
             self._DEFAULT_SLEEP_TIME = self._config['misc']['sleep-time']
+        lg.debug("CointipBot::__init__(): batch-limit = %s, sleep-time = %s", self._REDDIT_BATCH_LIMIT, self._DEFAULT_SLEEP_TIME)
+
+        # Logging
+        if self._config.has_key('logging'):
+            self._init_logging()
+        else:
+            print "CointipBot::__init__(): Warning: no logging handlers are set up. Logging is disabled."
 
         # MySQL
         self._mysqlcon = self._connect_db(self._config)
@@ -317,9 +354,10 @@ class CointipBot(object):
                 # Fetch comments from subreddits
                 my_comments = my_reddits_multi.get_comments(limit=self._REDDIT_BATCH_LIMIT)
                 break
+
             except urllib2.HTTPError, e:
                 if e.code in [429, 500, 502, 503, 504]:
-                    lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
+                    lg.warning("_check_subreddits(): Reddit is down (error %s), sleeping...", e.code)
                     time.sleep(60)
                     pass
                 else:
@@ -332,24 +370,32 @@ class CointipBot(object):
         self._last_processed_comment_time = ctb_misc._get_value(conn=self._mysqlcon, param0="last_processed_comment_time")
         _updated_last_processed_time = 0
 
-        for c in my_comments:
-            # Stop processing if old comment reached
-            if c.created_utc <= self._last_processed_comment_time:
-                lg.debug("_check_subreddits: old comment reached")
-                break
-            _updated_last_processed_time = c.created_utc if c.created_utc > _updated_last_processed_time else _updated_last_processed_time
+        try:
+            for c in my_comments:
+                # Stop processing if old comment reached
+                if c.created_utc <= self._last_processed_comment_time:
+                    lg.debug("_check_subreddits: old comment reached")
+                    break
 
-            # Attempt to evaluate comment
-            action = ctb_action._eval_comment(c, self)
+                _updated_last_processed_time = c.created_utc if c.created_utc > _updated_last_processed_time else _updated_last_processed_time
 
-            # Perform action if necessary
-            if action != None:
-                lg.debug("_check_subreddits(): calling action.do(%s)", action._TYPE)
-                try:
+                # Attempt to evaluate comment
+                action = ctb_action._eval_comment(c, self)
+
+                # Perform action if necessary
+                if action != None:
+                    lg.debug("_check_subreddits(): calling action.do(%s)", action._TYPE)
                     action.do()
-                except Exception, e:
-                    lg.exception("_check_subreddits(): error doing %s from %s", action._TYPE, c.permalink)
-                    raise
+
+        except urllib2.HTTPError, e:
+            if e.code in [429, 500, 502, 503, 504]:
+                lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
+                pass
+            else:
+                raise
+        except Exception, e:
+            lg.error("_check_subreddits(): coudln't fetch comments: %s", str(e))
+            raise
 
         # Save updated last_processed_time value
         if _updated_last_processed_time > 0:

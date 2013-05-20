@@ -580,7 +580,7 @@ class CtbAction(object):
             if hasattr(self._CTB, '_ticker_val'): # and hasattr(self._CTB._ticker_val, i['coin']+'_btc') and hasattr(self._CTB._ticker_val, 'btc_usd'):
                 tbalance_usd = self._CTB._ticker_val[i['coin']+'_btc']['avg'] * self._CTB._ticker_val['btc_usd']['avg'] * float(i['tbalance'])
                 wbalance_usd = self._CTB._ticker_val[i['coin']+'_btc']['avg'] * self._CTB._ticker_val['btc_usd']['avg'] * float(i['wbalance'])
-            txt += "__%s (%s)__|%s&nbsp;^%s&nbsp;%s|__%.6f&nbsp;^$%.2g__|%.6f&nbsp;^$%.2g\n" % (_cc[i['coin']]['name'].capitalize(), i['coin'].upper(), i['address'], addr_ex_str, addr_qr_str, i['tbalance'], tbalance_usd, i['wbalance'], wbalance_usd)
+            txt += "__%s (%s)__|%s&nbsp;^%s&nbsp;%s|__%.6f&nbsp;^$%.2g__|%.6f&nbsp;^$%.2g\n" % (_cc[i['coin']]['name'], i['coin'].upper(), i['address'], addr_ex_str, addr_qr_str, i['tbalance'], tbalance_usd, i['wbalance'], wbalance_usd)
         txt += "\nUse addresses above to deposit coins into your account. Tip and withdraw balances differ while newly deposited coins are confirmed."
         txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
 
