@@ -161,8 +161,8 @@ class CointipBot(object):
         self._config = self._parse_config(config_filename)
         if 'batch-limit' in self._config['reddit']:
             self._REDDIT_BATCH_LIMIT = self._config['reddit']['batch-limit']
-        if 'sleep-time' in self._config['misc']:
-            self._DEFAULT_SLEEP_TIME = self._config['misc']['sleep-time']
+        if 'sleep-seconds' in self._config['misc']:
+            self._DEFAULT_SLEEP_TIME = self._config['misc']['sleep-seconds']
 
         # Logging
         if self._config.has_key('logging'):
@@ -189,7 +189,7 @@ class CointipBot(object):
         # Self-checks
         self._self_checks()
 
-        lg.info("CointipBot::__init__(): DONE, batch-limit = %s, sleep-time = %s", self._REDDIT_BATCH_LIMIT, self._DEFAULT_SLEEP_TIME)
+        lg.info("CointipBot::__init__(): DONE, batch-limit = %s, sleep-seconds = %s", self._REDDIT_BATCH_LIMIT, self._DEFAULT_SLEEP_TIME)
 
     def _self_checks(self):
         """

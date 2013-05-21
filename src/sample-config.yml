@@ -21,7 +21,7 @@ reddit:
 # Other
 misc:
   qr-service-url: 'https://chart.googleapis.com/chart?cht=qr&choe=UTF-8&chs=300x300&chl='
-  sleep-time: 30
+  sleep-seconds: 30
   expire-pending-hours: 48
 
 # Regex
