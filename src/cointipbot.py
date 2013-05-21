@@ -390,6 +390,7 @@ class CointipBot(object):
                 if action != None:
                     lg.debug("_check_subreddits(): calling action.do(%s)", action._TYPE)
                     action.do()
+                    lg.info("_check_subreddits(): executed action %s from comment_id %s", action._TYPE, str(c.id))
 
         except urllib2.HTTPError, e:
             if e.code in [429, 500, 502, 503, 504]:
