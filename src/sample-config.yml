@@ -114,3 +114,20 @@ cc:
     regex:
       address: '([N|M][1-9a-z]{20,40})'
       units: '(nmc|namecoin|namecoins)'
+  # Novacoin
+  nvc:
+    enabled: false
+    unit: nvc
+    name: Novacoin
+    conf-file: '~/.novacoin/novacoin.conf'
+    minconf:
+      tip: 1
+      withdraw: 10
+    txmin: 0.5
+    txfee: 0.01
+    explorer:
+      address: 'http://www.cryptocoinexplorer.com:6750/address/'
+      transaction: 'http://www.cryptocoinexplorer.com:6750/tx/'
+    regex:
+      address: '(4[1-9a-z]{20,40})'
+      units: '(nvc|novacoin|novacoins)'
