@@ -138,7 +138,7 @@ class CtbUser(object):
                 sql_coins = "SELECT COUNT(*) AS count FROM t_addrs WHERE username = %s"
                 mysqlrow_coins = self._CTB._mysqlcon.execute(sql_coins, (self._NAME.lower())).fetchone()
                 if int(mysqlrow_coins['count']) != len(self._CTB._coincon):
-                    raise Exception("CtbUser::is_registered(%s): database returns %s coins but %s active" % (mysqlrow_coins['count'], len(self._CTB._coincon)))
+                    raise Exception("CtbUser::is_registered(%s): database returns %s coins but %s active" % (self._NAME, mysqlrow_coins['count'], len(self._CTB._coincon)))
                 # Set some properties
                 self._GIFTAMNT = mysqlrow['giftamount']
                 # Done
