@@ -131,3 +131,20 @@ cc:
     regex:
       address: '(4[1-9a-z]{20,40})'
       units: '(nvc|novacoin|novacoins)'
+  # Terracoin
+  trc:
+    enabled: false
+    unit: trc
+    name: Terracoin
+    conf-file: '~/.terracoin/terracoin.conf'
+    minconf:
+      tip: 1
+      withdraw: 10
+    txmin: 0.5
+    txfee: 0.01
+    explorer:
+      address: 'http://www.cryptocoinexplorer.com:3750/address/'
+      transaction: 'http://www.cryptocoinexplorer.com:3750/tx/'
+    regex:
+      address: '(1[1-9a-z]{20,40})'
+      units: '(trc|terracoin|terracoins)'
