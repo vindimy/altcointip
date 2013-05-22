@@ -173,7 +173,7 @@ class CtbAction(object):
         if not self._FROM_USER.is_registered():
             if not self._FROM_USER.register():
                 lg.debug("CtbAction::accept(): self._FROM_USER.register() failed")
-                return None
+                return False
 
         # Get pending actions
         actions = _get_actions(atype='givetip', to_user=self._FROM_USER._NAME, state='pending', ctb=self._CTB)
@@ -189,7 +189,7 @@ class CtbAction(object):
             ctb_misc._reddit_reply(msg=self._MSG, txt=txt)
 
         lg.debug("< CtbAction::accept() DONE")
-        return None
+        return True
 
     def decline(self):
         """
@@ -238,7 +238,7 @@ class CtbAction(object):
             ctb_misc._reddit_reply(msg=self._MSG, txt=txt)
 
         lg.debug("< CtbAction::decline() DONE")
-        return None
+        return True
 
     def expire(self):
         """
@@ -275,7 +275,7 @@ class CtbAction(object):
             self._FROM_USER.tell(subj="+givetip expired", msg=cmnt)
 
         lg.debug("< CtbAction::expire() DONE")
-        return None
+        return True
 
     def validate(self, is_pending=False):
         """
