@@ -583,7 +583,7 @@ class CtbAction(object):
             addr_ex_str = '[[ex]](' + _cc[i['coin']]['explorer']['address'] + '%s)'
             addr_ex_str = addr_ex_str % (i['address'])
             addr_qr_str = '[[qr]](' + _config['misc']['qr-service-url'] + '%s%%3A%s)'
-            addr_qr_str = addr_qr_str % (_cc[i['coin']]['name'], i['address'])
+            addr_qr_str = addr_qr_str % (_cc[i['coin']]['name'].lower(), i['address'])
             tbalance_usd = 0
             wbalance_usd = 0
             if hasattr(self._CTB, '_ticker_val'): # and hasattr(self._CTB._ticker_val, i['coin']+'_btc') and hasattr(self._CTB._ticker_val, 'btc_usd'):
