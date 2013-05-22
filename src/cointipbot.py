@@ -143,12 +143,24 @@ class CointipBot(object):
         Returns a praw connection object
         """
         lg.debug("Connecting to Reddit...")
-        try:
-            conn = praw.Reddit(user_agent = config['reddit']['useragent'])
-            conn.login(config['reddit']['user'], config['reddit']['pass'])
-        except Exception, e:
-            lg.error("Error connecting to Reddit: "+str(e))
-            sys.exit(1)
+
+        while True:
+            try:
+                conn = praw.Reddit(user_agent = config['reddit']['useragent'])
+                conn.login(config['reddit']['user'], config['reddit']['pass'])
+                break
+            except urllib2.HTTPError, e:
+                if e.code in [429, 500, 502, 503, 504]:
+                    lg.warning("CointipBot::_connect_reddit(): Reddit is down (error %s), sleeping...", e.code)
+                    time.sleep(60)
+                    pass
+                else:
+                    lg.error("CointipBot::_connect_reddit(): Error connecting to Reddit: %s", str(e))
+                    raise
+            except Exception, e:
+                lg.error("CointipBot::_connect_reddit(): Error connecting to Reddit: %s", str(e))
+                raise
+
         lg.info("Logged in to Reddit")
         return conn
 
@@ -355,7 +367,7 @@ class CointipBot(object):
                     lg.debug("_check_subreddits(): skipping subreddits list refresh")
                 else:
                     # Get subscribed subreddits
-                    my_reddits = self._redditcon.get_my_subreddits()
+                    my_reddits = self._redditcon.get_my_subreddits(limit=None)
                     my_reddits_list = []
 
                     for my_reddit in my_reddits:
