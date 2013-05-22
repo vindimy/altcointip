@@ -29,7 +29,7 @@ misc:
 regex:
   amount: '([0-9]{1,6}(?:\.[0-9]{0,6})?)'
   keywords:
-    tip: '(givetip|altcointip|alttip|alt)'
+    givetip: '(givetip|altcointip|alttip|alt)'
     info: '(info)'
     register: '(register)'
     accept: '(accept)'
@@ -51,9 +51,11 @@ cc:
     name: Bitcoin
     confile: '~/.bitcoin/bitcoin.conf'
     minconf:
-      tip: 1
+      givetip: 1
       withdraw: 10
-    txmin: 0.05
+    txmin:
+      givetip: 0.005
+      withdraw: 0.05
     txfee: 0.0005
     walletpassphrase: mypass1
     explorer:
@@ -69,9 +71,11 @@ cc:
     name: Litecoin
     conf-file: '~/.litecoin/litecoin.conf'
     minconf:
-      tip: 1
+      givetip: 1
       withdraw: 10
-    txmin: 0.25
+    txmin:
+      givetip: 0.05
+      withdraw: 0.5
     txfee: 0.01
     walletpassphrase: mypass1
     explorer:
@@ -87,9 +91,11 @@ cc:
     name: PPCoin
     conf-file: '~/.ppcoin/ppcoin.conf'
     minconf:
-      tip: 1
+      givetip: 1
       withdraw: 10
-    txmin: 0.5
+    txmin:
+      givetip: 0.05
+      withdraw: 0.5
     txfee: 0.01
     walletpassphrase: mypass1
     explorer:
@@ -105,9 +111,11 @@ cc:
     name: Namecoin
     conf-file: '~/.namecoin/bitcoin.conf'
     minconf:
-      tip: 1
+      givetip: 1
       withdraw: 10
-    txmin: 0.5
+    txmin:
+      givetip: 0.05
+      withdraw: 0.5
     txfee: 0.01
     explorer:
       address: 'http://explorer.dot-bit.org/a/'
@@ -122,9 +130,11 @@ cc:
     name: Novacoin
     conf-file: '~/.novacoin/novacoin.conf'
     minconf:
-      tip: 1
+      givetip: 1
       withdraw: 10
-    txmin: 0.5
+    txmin:
+      givetip: 0.05
+      withdraw: 0.5
     txfee: 0.01
     explorer:
       address: 'http://www.cryptocoinexplorer.com:6750/address/'
@@ -139,9 +149,11 @@ cc:
     name: Terracoin
     conf-file: '~/.terracoin/terracoin.conf'
     minconf:
-      tip: 1
+      givetip: 1
       withdraw: 10
-    txmin: 0.5
+    txmin:
+      givetip: 0.05
+      withdraw: 0.5
     txfee: 0.01
     explorer:
       address: 'http://www.cryptocoinexplorer.com:3750/address/'

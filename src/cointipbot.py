@@ -30,6 +30,9 @@ class CointipBot(object):
     _subreddits = None
     _subreddits_last_refresh = 0
 
+    _rlist_message = []
+    _rlist_comment = []
+
     def _init_localization(self):
         """
         Prepare localization
@@ -218,7 +221,7 @@ class CointipBot(object):
 
         # Ensure (total pending tips) < (CointipBot's balance)
         for c in self._coincon:
-            ctb_balance = float(b.get_balance(coin=c, kind='tip'))
+            ctb_balance = float(b.get_balance(coin=c, kind='givetip'))
             pending_tips = float(0)
             actions = ctb_action._get_actions(atype='givetip', state='pending', coin=c, ctb=self)
             for a in actions:
@@ -239,7 +242,7 @@ class CointipBot(object):
             if not u.is_registered():
                 raise Exception("CointipBot::_self_checks(): user %s is_registered() failed" % mysqlrow['username'])
             for c in self._coincon:
-                if u.get_balance(coin=c, kind='tip') < 0:
+                if u.get_balance(coin=c, kind='givetip') < 0:
                     raise Exception("CointipBot::_self_checks(): user %s %s balance is negative" % (mysqlrow['username'], c))
 
         # Done

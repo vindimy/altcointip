@@ -309,8 +309,8 @@ class CtbAction(object):
                 return False
 
             # Verify minimum transaction size
-            if self._TO_AMNT < _cc[self._COIN]['txmin']:
-                msg = "I'm sorry %s, your tip/withdraw of __%.6g %s__ is below minimum (__%.6g__)." % (re.escape(self._FROM_USER._NAME), self._TO_AMNT, self._COIN.upper(), _cc[self._COIN]['txmin'])
+            if self._TO_AMNT < _cc[self._COIN]['txmin'][self._TYPE]:
+                msg = "I'm sorry %s, your tip/withdraw of __%.6g %s__ is below minimum (__%.6g__)." % (re.escape(self._FROM_USER._NAME), self._TO_AMNT, self._COIN.upper(), _cc[self._COIN]['txmin'][self._TYPE])
                 lg.debug("CtbAction::validate(): " + msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
@@ -320,7 +320,7 @@ class CtbAction(object):
             # Verify balance (unless it's a pending transaction being processed, in which case coins have been already moved to pending acct)
             if bool(self._TO_USER) and not is_pending:
                 # Tip to user (requires less confirmations)
-                balance_avail = self._FROM_USER.get_balance(coin=self._COIN, kind='tip')
+                balance_avail = self._FROM_USER.get_balance(coin=self._COIN, kind='givetip')
                 if not balance_avail >= self._TO_AMNT:
                     msg = "I'm sorry %s, your confirmed _tip_ balance of (__%.6g %s__) is insufficient for this tip." % (re.escape(self._FROM_USER._NAME), balance_avail, self._COIN.upper())
                     lg.debug("CtbAction::validate(): " + msg)
@@ -437,10 +437,10 @@ class CtbAction(object):
             try:
                 if is_pending:
                     lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), _config['reddit']['user'].lower(), self._TO_ADDR)
-                    self._TXID = _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf']['tip'])
+                    self._TXID = _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf'][self._TYPE])
                 else:
                     lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_ADDR)
-                    self._TXID = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf']['tip'])
+                    self._TXID = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf'][self._TYPE])
             except Exception, e:
                 # Transaction failed
 
@@ -492,7 +492,7 @@ class CtbAction(object):
                 lg.debug("CtbAction::givetip(): sending %f %s to %s...", self._TO_AMNT, self._COIN, self._TO_ADDR)
                 if bool(_cc[self._COIN]['walletpassphrase']):
                     res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 1)
-                self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER._NAME.lower(), self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['minconf']['withdraw'])
+                self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER._NAME.lower(), self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['minconf'][self._TYPE])
 
             except Exception, e:
                 # Transaction failed
@@ -558,7 +558,7 @@ class CtbAction(object):
             coininfo = {}
             coininfo['coin'] = c
             try:
-                coininfo['tbalance'] = float(_coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['tip']))
+                coininfo['tbalance'] = float(_coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['givetip']))
                 coininfo['wbalance'] = float(_coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['withdraw']))
                 # wbalance can be negative since tips require less confirmations, so set it to 0 if negative
                 if coininfo['wbalance'] < 0:
@@ -631,54 +631,54 @@ def _eval_message(_message, _ctb):
     """
     lg.debug("> _eval_message()")
 
-    # rlist is a list of regular expressions to test _message against
-    #   'regex': regular expression
-    #   'action': action type
-    #   'coin': unit of cryptocurrency, if applicable
-    #   'rg-amount': group number to retrieve amount, if applicable
-    #   'rg-address': group number to retrieve coin address, if applicable
-    rlist = [
-            {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['register'],
-             'action':     'register',
-             'rg-amount':  -1,
-             'rg-address': -1,
-             'coin':       None},
-            {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['accept'],
-             'action':     'accept',
-             'rg-amount':  -1,
-             'rg-address': -1,
-             'coin':       None},
-            {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['decline'],
-             'action':     'decline',
-             'rg-amount':  -1,
-             'rg-address': -1,
-             'coin':       None},
-            {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['history'],
-             'action':     'history',
-             'rg-amount':  -1,
-             'rg-address': -1,
-             'coin':       None},
-            {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['info'],
-             'action':     'info',
-             'rg-amount':  -1,
-             'rg-address': -1,
-             'coin':       None}
-            ]
-
-    # Add regex for each configured cryptocoin
-    _cc = _ctb._config['cc']
-    for c in _cc:
-        if _cc[c]['enabled']:
-            rlist.append(
-                    # +withdraw ADDR 0.25 units
-                    {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['withdraw'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
-                     'action':     'withdraw',
-                     'coin':       _cc[c]['unit'],
-                     'rg-amount':  6,
-                     'rg-address': 4})
+    if not bool(_ctb._rlist_message):
+        # rlist is a list of regular expressions to test _message against
+        #   'regex': regular expression
+        #   'action': action type
+        #   'coin': unit of cryptocurrency, if applicable
+        #   'rg-amount': group number to retrieve amount, if applicable
+        #   'rg-address': group number to retrieve coin address, if applicable
+        _ctb._rlist_message = [
+                {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['register'],
+                 'action':     'register',
+                 'rg-amount':  -1,
+                 'rg-address': -1,
+                 'coin':       None},
+                {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['accept'],
+                 'action':     'accept',
+                 'rg-amount':  -1,
+                 'rg-address': -1,
+                 'coin':       None},
+                {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['decline'],
+                 'action':     'decline',
+                 'rg-amount':  -1,
+                 'rg-address': -1,
+                 'coin':       None},
+                {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['history'],
+                 'action':     'history',
+                 'rg-amount':  -1,
+                 'rg-address': -1,
+                 'coin':       None},
+                {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['info'],
+                 'action':     'info',
+                 'rg-amount':  -1,
+                 'rg-address': -1,
+                 'coin':       None}
+                ]
+        # Add regex for each configured cryptocoin
+        _cc = _ctb._config['cc']
+        for c in _cc:
+            if _cc[c]['enabled']:
+                _ctb._rlist_message.append(
+                   # +withdraw ADDR 0.25 units
+                   {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['withdraw'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+                    'action':     'withdraw',
+                    'coin':       _cc[c]['unit'],
+                    'rg-amount':  6,
+                    'rg-address': 4})
 
     # Do the matching
-    for r in rlist:
+    for r in _ctb._rlist_message:
         rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
         #lg.debug("matching '%s' with '%s'", _message.body, r['regex'])
         m = rg.search(_message.body)
@@ -715,47 +715,46 @@ def _eval_comment(_comment, _ctb):
 
     _cc = _ctb._config['cc']
 
-    # rlist is a list of regular expressions to test _comment against
-    #   'regex': regular expression
-    #   'action': action type
-    #   'rg-to-user': group number to retrieve tip receiver username
-    #   'rg-amount': group number to retrieve tip amount
-    #   'rg-address': group number to retrieve tip receiver coin address
-    #   'coin': unit of cryptocurrency
-    rlist = []
-
-    for c in _cc:
-        if _cc[c]['enabled']:
-            rlist.append(
-            # +givetip ADDR 0.25 units
-            {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['tip'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
-             'action':      'givetip',
-             'rg-to-user':  -1,
-             'rg-amount':   6,
-             'rg-address':  4,
-             'coin':        _cc[c]['unit'],
-             'fiat':        None})
-            rlist.append(
-            # +givetip 0.25 units
-            {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['tip'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
-             'action':      'givetip',
-             'rg-to-user':  -1,
-             'rg-amount':   4,
-             'rg-address':  -1,
-             'coin':        _cc[c]['unit'],
-             'fiat':        None})
-            rlist.append(
-            # +givetip @user 0.25 units
-            {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['tip'] + '(\\s+)' + '(@\w+)' + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
-             'action':      'givetip',
-             'rg-to-user':  4,
-             'rg-amount':   6,
-             'rg-address':  -1,
-             'coin':        _cc[c]['unit'],
-             'fiat':        None})
+    if not bool(_ctb._rlist_comment):
+        # rlist is a list of regular expressions to test _comment against
+        #   'regex': regular expression
+        #   'action': action type
+        #   'rg-to-user': group number to retrieve tip receiver username
+        #   'rg-amount': group number to retrieve tip amount
+        #   'rg-address': group number to retrieve tip receiver coin address
+        #   'coin': unit of cryptocurrency
+        for c in _cc:
+            if _cc[c]['enabled']:
+                _ctb._rlist_comment.append(
+                    # +givetip ADDR 0.25 units
+                    {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+                     'action':      'givetip',
+                     'rg-to-user':  -1,
+                     'rg-amount':   6,
+                     'rg-address':  4,
+                     'coin':        _cc[c]['unit'],
+                     'fiat':        None})
+                _ctb._rlist_comment.append(
+                    # +givetip 0.25 units
+                    {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+                     'action':      'givetip',
+                     'rg-to-user':  -1,
+                     'rg-amount':   4,
+                     'rg-address':  -1,
+                     'coin':        _cc[c]['unit'],
+                     'fiat':        None})
+                _ctb._rlist_comment.append(
+                    # +givetip @user 0.25 units
+                    {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + '(@\w+)' + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+                     'action':      'givetip',
+                     'rg-to-user':  4,
+                     'rg-amount':   6,
+                     'rg-address':  -1,
+                     'coin':        _cc[c]['unit'],
+                     'fiat':        None})
 
     # Do the matching
-    for r in rlist:
+    for r in _ctb._rlist_comment:
         rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
         #lg.debug("_eval_comment(): matching '%s' using <%s>", _comment.body, r['regex'])
         m = rg.search(_comment.body)
