@@ -293,7 +293,7 @@ class CointipBot(object):
                 continue
 
             # Ignore self messages
-            if m.author.name.lower() == self._config['reddit']['user'].lower():
+            if bool(m.author) and m.author.name.lower() == self._config['reddit']['user'].lower():
                 lg.debug("_check_inbox(): ignoring message from self")
                 while True:
                     try:
