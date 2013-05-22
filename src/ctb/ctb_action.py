@@ -577,6 +577,8 @@ class CtbAction(object):
             i['address'] = mysqlrow['address']
 
         # Format info message
+        tbalance_usd_total = float(0)
+        wbalance_usd_total = float(0)
         txt = "Hello %s! Here's your account info.\n\n" % self._FROM_USER._NAME
         txt += "coin|deposit address|tip balance|withdraw balance\n:---|:---|:---|:---\n"
         for i in info:
@@ -584,13 +586,16 @@ class CtbAction(object):
             addr_ex_str = addr_ex_str % (i['address'])
             addr_qr_str = '[[qr]](' + _config['misc']['qr-service-url'] + '%s%%3A%s)'
             addr_qr_str = addr_qr_str % (_cc[i['coin']]['name'].lower(), i['address'])
-            tbalance_usd = 0
-            wbalance_usd = 0
+            tbalance_usd = float(0)
+            wbalance_usd = float(0)
             if hasattr(self._CTB, '_ticker_val'): # and hasattr(self._CTB._ticker_val, i['coin']+'_btc') and hasattr(self._CTB._ticker_val, 'btc_usd'):
                 tbalance_usd = self._CTB._ticker_val[i['coin']+'_btc']['avg'] * self._CTB._ticker_val['btc_usd']['avg'] * float(i['tbalance'])
                 wbalance_usd = self._CTB._ticker_val[i['coin']+'_btc']['avg'] * self._CTB._ticker_val['btc_usd']['avg'] * float(i['wbalance'])
+                tbalance_usd_total += tbalance_usd
+                wbalance_usd_total += wbalance_usd
             txt += "__%s (%s)__|%s&nbsp;^%s&nbsp;%s|__%.6f&nbsp;^$%.2g__|%.6f&nbsp;^$%.2g\n" % (_cc[i['coin']]['name'], i['coin'].upper(), i['address'], addr_ex_str, addr_qr_str, i['tbalance'], tbalance_usd, i['wbalance'], wbalance_usd)
-        txt += "\nUse addresses above to deposit coins into your account. Tip and withdraw balances differ while newly deposited coins are confirmed."
+        txt += "\n\nTotal $ value: __$%.6g (tip)__, __$%.6g (withdraw)__." % (tbalance_usd_total, wbalance_usd_total)
+        txt += "\n\nUse addresses above to deposit coins into your account. Tip and withdraw balances differ while newly deposited coins are confirmed."
         txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
 
         # Send info message
