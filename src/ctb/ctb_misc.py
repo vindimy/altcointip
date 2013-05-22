@@ -1,6 +1,6 @@
 import ctb_user, ctb_btce
 
-import logging, urllib2
+import logging, time, urllib2
 
 lg = logging.getLogger('cointipbot')
 
@@ -12,6 +12,12 @@ def _refresh_exchange_rate(ctb=None):
 
     if not bool(ctb):
         raise Exception("_refresh_exchange_rate(): ctb is not set")
+
+    # Return if rate has been checked in the past hour
+    seconds = int(1 * 3600)
+    if ctb._ticker_last_refresh + seconds > int(time.mktime(time.gmtime())):
+        lg.debug("< _refresh_exchange_rate() DONE (skipping)")
+        return True
 
     # Determine pairs to request from BTC-e
     if not bool(ctb._ticker_pairs):
@@ -28,8 +34,11 @@ def _refresh_exchange_rate(ctb=None):
     if bool(ticker_val):
         ctb._ticker_val = ticker_val
 
+    # Update last refresh time
+    ctb._ticker_last_refresh = int(time.mktime(time.gmtime()))
+
     lg.debug("< _refresh_exchange_rate() DONE")
-    return None
+    return True
 
 def _reddit_reply(msg, txt):
     """

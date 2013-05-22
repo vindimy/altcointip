@@ -25,6 +25,10 @@ class CointipBot(object):
     _ticker = None
     _ticker_pairs = None
     _ticket_val = {}
+    _ticker_last_refresh = 0
+
+    _subreddits = None
+    _subreddits_last_refresh = 0
 
     def _init_localization(self):
         """
@@ -343,21 +347,28 @@ class CointipBot(object):
         lg.debug("> _check_subreddits()")
 
         my_comments = None
-
         while True:
             try:
-                # Get subscribed subreddits
-                my_reddits = self._redditcon.get_my_subreddits()
-                my_reddits_list = []
-                for my_reddit in my_reddits:
-                    my_reddits_list.append(my_reddit.display_name.lower())
+                seconds = int(1 * 3600)
+                if self._subreddits_last_refresh + seconds > int(time.mktime(time.gmtime())):
+                    # Skip getting subscribed subreddits if was done in psat hour
+                    lg.debug("_check_subreddits(): skipping subreddits list refresh")
+                else:
+                    # Get subscribed subreddits
+                    my_reddits = self._redditcon.get_my_subreddits()
+                    my_reddits_list = []
 
-                my_reddits_list.sort()
-                lg.debug("_check_subreddits(): subreddits: %s", '+'.join(my_reddits_list))
-                my_reddits_multi = self._redditcon.get_subreddit('+'.join(my_reddits_list))
+                    for my_reddit in my_reddits:
+                        my_reddits_list.append(my_reddit.display_name.lower())
+                    my_reddits_list.sort()
+
+                    lg.debug("_check_subreddits(): subreddits: %s", '+'.join(my_reddits_list))
+
+                    self._subreddits = self._redditcon.get_subreddit('+'.join(my_reddits_list))
+                    self._subreddits_last_refresh = int(time.mktime(time.gmtime()))
 
                 # Fetch comments from subreddits
-                my_comments = my_reddits_multi.get_comments(limit=self._REDDIT_BATCH_LIMIT)
+                my_comments = self._subreddits.get_comments(limit=self._REDDIT_BATCH_LIMIT)
                 break
 
             except urllib2.HTTPError, e:
