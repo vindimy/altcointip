@@ -17,6 +17,7 @@ reddit:
     verify: true
     pending: false
     expired: false
+    declined: false
 
 # Other
 misc:

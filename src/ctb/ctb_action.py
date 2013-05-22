@@ -216,12 +216,15 @@ class CtbAction(object):
                 # Save transaction as declined
                 a.save('declined')
                 # Respond to tip comment
-                cmnt = "* __[Declined by receiver]__: /u/%s -> /u/%s, __%.6g %s__" % (a._FROM_USER._NAME, a._TO_USER._NAME, a._TO_AMNT, a._COIN.upper())
+                cmnt = "* __[Declined]__: /u/%s -> /u/%s, __%.6g %s__" % (a._FROM_USER._NAME, a._TO_USER._NAME, a._TO_AMNT, a._COIN.upper())
                 if bool(self._USD_VAL):
                     cmnt += "&nbsp;__^$%.2g__" % self._USD_VAL
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::decline(): " + cmnt)
-                ctb_misc._reddit_reply(msg=a._MSG, txt=cmnt)
+                if _config['reddit']['comments']['declined']:
+                    ctb_misc._reddit_reply(msg=a._MSG, txt=cmnt)
+                else:
+                    a._FROM_USER.tell(subj="+givetip declined", msg=cmnt)
 
             # Notify self._FROM_USER
             txt = "Hello %s, your pending tips have been declined." % self._FROM_USER._NAME
@@ -261,13 +264,15 @@ class CtbAction(object):
         self.save('declined')
 
         # Respond to tip comment
+        cmnt = "* __[Expired]__: /u/%s -> /u/%s, __%.6g %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, self._COIN.upper())
+        if bool(self._USD_VAL):
+            cmnt += "&nbsp;__^$%.2g__" % self._USD_VAL
+        cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
+        lg.debug("CtbAction::expire(): " + cmnt)
         if _config['reddit']['comments']['expired']:
-            cmnt = "* __[Expired]__: /u/%s -> /u/%s, __%.6g %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, self._COIN.upper())
-            if bool(self._USD_VAL):
-                cmnt += "&nbsp;__^$%.2g__" % self._USD_VAL
-            cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
-            lg.debug("CtbAction::expire(): " + cmnt)
             ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
+        else:
+            self._FROM_USER.tell(subj="+givetip expired", msg=cmnt)
 
         lg.debug("< CtbAction::expire() DONE")
         return None
@@ -365,13 +370,15 @@ class CtbAction(object):
                 self.save('pending')
 
                 # Respond to tip comment
+                cmnt = "* __[Pending +accept]__: /u/%s -> /u/%s, __%.6g %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, self._COIN.upper())
+                if bool(self._USD_VAL):
+                    cmnt += "&nbsp;__^$%.2g__" % self._USD_VAL
+                cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
+                lg.debug("CtbAction::validate(): " + cmnt)
                 if _config['reddit']['comments']['pending']:
-                    cmnt = "* __[Pending]__: /u/%s -> /u/%s, __%.6g %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, self._COIN.upper())
-                    if bool(self._USD_VAL):
-                        cmnt += "&nbsp;__^$%.2g__" % self._USD_VAL
-                    cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
-                    lg.debug("CtbAction::validate(): " + cmnt)
                     ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
+                else:
+                    self._FROM_USER.tell(subj="+givetip pending", msg=cmnt)
 
                 # Send notice to _TO_USER
                 msg = "Hey %s, /u/%s sent you a __%.6g %s__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
