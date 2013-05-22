@@ -546,9 +546,9 @@ class CtbAction(object):
 
         # Check if user exists
         if not self._FROM_USER.is_registered():
-            msg = "I'm sorry %s, we've never met. "
+            msg = "I'm sorry %s, we've never met. " % (re.escape(self._FROM_USER._NAME))
             msg += "Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (self._CTB._config['reddit']['user'])
-            msg += "\n\n* [%s help](%s)" % (re.escape(self._FROM_USER._NAME), _config['reddit']['user'], _config['reddit']['help-url'])
+            msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
             self._FROM_USER.tell(subj="+info failed", msg=msg)
             return False
 
