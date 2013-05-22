@@ -352,6 +352,7 @@ class CointipBot(object):
                 for my_reddit in my_reddits:
                     my_reddits_list.append(my_reddit.display_name.lower())
 
+                my_reddits_list.sort()
                 lg.debug("_check_subreddits(): subreddits: %s", '+'.join(my_reddits_list))
                 my_reddits_multi = self._redditcon.get_subreddit('+'.join(my_reddits_list))
 
