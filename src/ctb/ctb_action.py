@@ -595,7 +595,8 @@ class CtbAction(object):
                 tbalance_usd_total += tbalance_usd
                 wbalance_usd_total += wbalance_usd
             txt += "__%s (%s)__|%s&nbsp;^%s&nbsp;%s|__%.6f&nbsp;^$%.2g__|%.6f&nbsp;^$%.2g\n" % (_cc[i['coin']]['name'], i['coin'].upper(), i['address'], addr_ex_str, addr_qr_str, i['tbalance'], tbalance_usd, i['wbalance'], wbalance_usd)
-        txt += "\n\nTotal $ value: __$%.6g (tip)__, __$%.6g (withdraw)__." % (tbalance_usd_total, wbalance_usd_total)
+        txt += "&nbsp;|&nbsp;|&nbsp;|&nbsp;\n"
+        txt += "__TOTAL $__|&nbsp;|__$%.2g__|$%.2g\n" % (tbalance_usd_total, wbalance_usd_total)
         txt += "\n\nUse addresses above to deposit coins into your account. Tip and withdraw balances differ while newly deposited coins are confirmed."
         txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
 
