@@ -309,8 +309,9 @@ class CtbAction(object):
                 return False
 
             # Verify minimum transaction size
-            if self._TO_AMNT < _cc[self._COIN]['txmin'][self._TYPE]:
-                msg = "I'm sorry %s, your tip/withdraw of __%.6g %s__ is below minimum (__%.6g__)." % (re.escape(self._FROM_USER._NAME), self._TO_AMNT, self._COIN.upper(), _cc[self._COIN]['txmin'][self._TYPE])
+            txkind = 'givetip' if bool(self._TO_USER) else 'withdraw'
+            if self._TO_AMNT < _cc[self._COIN]['txmin'][txkind]:
+                msg = "I'm sorry %s, your tip/withdraw of __%.6g %s__ is below minimum (__%.6g__)." % (re.escape(self._FROM_USER._NAME), self._TO_AMNT, self._COIN.upper(), _cc[self._COIN]['txmin'][txkind])
                 lg.debug("CtbAction::validate(): " + msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
