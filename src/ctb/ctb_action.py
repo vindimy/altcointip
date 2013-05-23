@@ -890,7 +890,11 @@ def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=Non
             lg.debug("< _get_actions() DONE (no)")
             return r
         for m in mysqlexec:
-            msg = redditcon.get_submission(m['msg_link']).comments[0]
+            submission = redditcon.get_submission(m['msg_link'])
+            if not len(submission.comments) > 0:
+                lg.warning("_get_actions(): couldn't fetch msg (deleted?) from msg_link %s", m['msg_link'])
+                continue
+            msg = submission.comments[0]
             r.append( CtbAction(  atype=atype,
                                   msg=msg,
                                   to_user=m['to_user'],
