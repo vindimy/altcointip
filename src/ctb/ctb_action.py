@@ -377,7 +377,7 @@ class CtbAction(object):
                 self.save('pending')
 
                 # Respond to tip comment
-                cmnt = "^__[Pending +accept]__: ^/u/%s ^-> ^/u/%s, __^%.6g %s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
+                cmnt = "^(__[Pending +accept]__:) ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
                 if bool(self._USD_VAL):
                     cmnt += "&nbsp;^__($%.6g)__" % self._USD_VAL
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
@@ -388,9 +388,9 @@ class CtbAction(object):
                     self._FROM_USER.tell(subj="+givetip pending", msg=cmnt)
 
                 # Send notice to _TO_USER
-                msg = "Hey %s, /u/%s sent you a __%.6g %s__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
+                msg = "Hey %s, /u/%s sent you a __%.6g %s(s)__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
                 msg += "Reply with __[+decline](http://www.reddit.com/message/compose?to=%s&subject=decline&message=%%2Bdecline)__ to decline it."
-                msg = msg % (re.escape(self._TO_USER._NAME), re.escape(self._FROM_USER._NAME), self._TO_AMNT, self._COIN.upper(), self._CTB._config['reddit']['user'], self._CTB._config['reddit']['user'])
+                msg = msg % (re.escape(self._TO_USER._NAME), re.escape(self._FROM_USER._NAME), self._TO_AMNT, _cc[self._COIN]['name'], self._CTB._config['reddit']['user'], self._CTB._config['reddit']['user'])
                 msg += " Pending tips expire in %s hours." % _config['misc']['expire-pending-hours']
                 lg.debug("CtbAction::validate(): %s", msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
@@ -457,7 +457,7 @@ class CtbAction(object):
                 self.save('failed')
 
                 # Send notice to _FROM_USER
-                msg = "Hey %s, something went wrong, and your tip of __%.6g %s__ to /u/%s has failed to process." % (re.escape(self._FROM_USER._NAME), self._TO_AMNT, self._COIN.upper(), re.escape(self._TO_USER._NAME))
+                msg = "Hey %s, something went wrong, and your tip of __%.6g %s(s)__ to /u/%s has failed to process." % (re.escape(self._FROM_USER._NAME), self._TO_AMNT, _cc[self._COIN]['name'], re.escape(self._TO_USER._NAME))
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
 
@@ -472,7 +472,7 @@ class CtbAction(object):
 
             try:
                 # Send confirmation to _TO_USER
-                msg = "Hey %s, you have received a __%.6g %s__ tip from /u/%s." % (re.escape(self._TO_USER._NAME), self._TO_AMNT, self._COIN.upper(), re.escape(self._FROM_USER._NAME))
+                msg = "Hey %s, you have received a __%.6g %s(s)__ tip from /u/%s." % (re.escape(self._TO_USER._NAME), self._TO_AMNT, _cc[self._COIN]['name'], re.escape(self._FROM_USER._NAME))
                 lg.debug("CtbAction::givetip(): " + msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
@@ -515,7 +515,7 @@ class CtbAction(object):
                 self.save('failed')
 
                 # Send notice to _FROM_USER
-                msg = "Hey %s, something went wrong, and your tip of __%.6g %s__ to /u/%s has failed to process." % (re.escape(self._FROM_USER._NAME), self._TO_AMNT, self._COIN.upper(), self._TO_ADDR)
+                msg = "Hey %s, something went wrong, and your tip of __%.6g %s(s)__ to /u/%s has failed to process." % (re.escape(self._FROM_USER._NAME), self._TO_AMNT, _cc[self._COIN]['name'], self._TO_ADDR)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
                 lg.error("CtbAction::givetip(): tx of %f %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, self._FROM_USER._NAME, self._TO_ADDR, str(e)))
