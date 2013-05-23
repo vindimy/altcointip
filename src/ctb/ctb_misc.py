@@ -122,3 +122,27 @@ def _set_value(conn, param0=None, value0=None):
         raise
     lg.debug("< _set_value() DONE")
     return True
+
+def _add_coin(coin, mysqlcon, coincon):
+    """
+    Add new coin address to each user
+    """
+    lg.debug("> _add_coin(%s)", coin)
+    sql_select = "SELECT username FROM t_users ORDER BY username"
+    sql_insert = "REPLACE INTO t_addrs (username, coin, address) VALUES (%s, %s, %s)"
+    try:
+        mysqlsel = mysqlcon.execute(sql_select)
+        for m in mysqlsel:
+            # Generate new coin address for user
+            new_addr = coincon[coin].getnewaddress(m['username'].lower())
+            # Add new coin address to MySQL
+            mysqlins = mysqlcon.execute(sql_insert, (m['username'].lower(), coin, new_addr))
+            if mysqlins.rowcount <= 0:
+                raise Exception("_add_coin(%s): rowcount <= 0 when executing <%s>", coin, sql_insert % (m['username'].lower(), coin, new_addr))
+            time.sleep(5)
+    except Exception, e:
+        lg.error("_add_coin(%s): error: %s", coin, str(e))
+        raise
+    lg.debug("< _add_coin(%s) DONE", coin)
+    return True
+
