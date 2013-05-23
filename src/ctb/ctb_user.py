@@ -1,6 +1,6 @@
 import ctb_misc
 
-import logging, re, praw, urllib2
+import logging, time, praw, re, urllib2
 
 lg = logging.getLogger('cointipbot')
 
@@ -52,7 +52,10 @@ class CtbUser(object):
             raise Exception("CtbUser::balance(%s): coin or kind not set" % self._NAME)
 
         lg.debug("CtbUser::balance(%s): getting %s %s balance", self._NAME, coin, kind)
+        # Ask coin daemon for account balance
         balance = self._CTB._coincon[coin].getbalance(self._NAME.lower(), self._CC[coin]['minconf'][kind])
+        # Sleep for .5 seconds to not overwhelm coin daemon
+        time.sleep(0.5)
 
         lg.debug("< CtbUser::balance(%s) DONE", self._NAME)
         return balance
@@ -205,9 +208,9 @@ class CtbUser(object):
         for c in self._CTB._coincon:
             try:
                 # Generate new address for user
-                new_addrs[c] = self._CTB._coincon[c].getaccountaddress(self._NAME.lower())
-                if not bool(new_addrs[c]):
-                    new_addrs[c] = _coincon[c].getnewaddress(self._NAME.lower())
+                new_addrs[c] = self._CTB._coincon[c].getnewaddress(self._NAME.lower())
+                # Sleep for 2 seconds to not overwhelm coin daemon
+                time.sleep(2)
                 lg.debug("CtbUser::register(%s): got %s address %s", self._NAME, c, new_addrs[c])
             except Exception, e:
                 lg.error("CtbUser::register(%s): error getting %s address: %s", self._NAME, c, str(e))

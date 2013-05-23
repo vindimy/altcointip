@@ -1,6 +1,6 @@
 import ctb_user, ctb_misc
 
-import logging, re, praw, urllib2
+import logging, praw, re, time, urllib2
 
 lg = logging.getLogger('cointipbot')
 
@@ -210,6 +210,8 @@ class CtbAction(object):
                 try:
                     lg.info("CtbAction::decline(): moving %s %s from %s to %s", str(a._TO_AMNT), a._COIN, _config['reddit']['user'].lower(), a._FROM_USER._NAME.lower())
                     m = _coincon[a._COIN].move(_config['reddit']['user'].lower(), a._FROM_USER._NAME.lower(), a._TO_AMNT)
+                    # Sleep for 1 second to not overwhelm coin daemon
+                    time.sleep(1)
                 except Exception, e:
                     lg.error("CtbAction::decline(): error: %s", str(e))
                     raise
@@ -256,6 +258,8 @@ class CtbAction(object):
         try:
             lg.info("CtbAction::expire(): moving %s %s from %s to %s", str(self._TO_AMNT), self._COIN, _config['reddit']['user'], self._FROM_USER._NAME.lower())
             m = _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._FROM_USER._NAME.lower(), self._TO_AMNT)
+            # Sleep for 1 second to not overwhelm coin daemon
+            time.sleep(1)
         except Exception, e:
             lg.error("CtbAction::expire(): error: %s", str(e))
             raise
@@ -363,6 +367,8 @@ class CtbAction(object):
                 try:
                     lg.info("CtbAction::validate(): moving %s %s from %s to %s", str(self._TO_AMNT), self._COIN, self._FROM_USER._NAME.lower(), _config['reddit']['user'])
                     m = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), _config['reddit']['user'].lower(), self._TO_AMNT)
+                    # Sleep for 1 second to not overwhelm coin daemon
+                    time.sleep(1)
                 except Exception, e:
                     lg.error("CtbAction::validate(): error: %s", str(e))
                     raise
@@ -442,6 +448,8 @@ class CtbAction(object):
                 else:
                     lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_ADDR)
                     self._TXID = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf'][self._TYPE])
+                # Sleep for 1 second to not overwhelm coin daemon
+                time.sleep(1)
             except Exception, e:
                 # Transaction failed
 
@@ -492,8 +500,10 @@ class CtbAction(object):
             try:
                 lg.debug("CtbAction::givetip(): sending %f %s to %s...", self._TO_AMNT, self._COIN, self._TO_ADDR)
                 if bool(_cc[self._COIN]['walletpassphrase']):
-                    res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 1)
+                    res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 3)
                 self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER._NAME.lower(), self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['minconf'][self._TYPE])
+                # Sleep for 5 seconds to not overwhelm coin daemon
+                time.sleep(5)
 
             except Exception, e:
                 # Transaction failed
@@ -560,7 +570,9 @@ class CtbAction(object):
             coininfo['coin'] = c
             try:
                 coininfo['tbalance'] = float(_coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['givetip']))
+                time.sleep(2)
                 coininfo['wbalance'] = float(_coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['withdraw']))
+                time.sleep(2)
                 # wbalance can be negative since tips require less confirmations, so set it to 0 if negative
                 if coininfo['wbalance'] < 0:
                     coininfo['wbalance'] = 0
@@ -611,9 +623,6 @@ class CtbAction(object):
         Register a new user
         """
         lg.debug("> CtbAction::register()")
-
-        _mysqlcon = self._CTB._mysqlcon
-        _coincon = self._CTB._coincon
 
         # If user exists, do nothing
         if self._FROM_USER.is_registered():

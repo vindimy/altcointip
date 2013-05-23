@@ -60,22 +60,23 @@ class CtbBtce(object):
     def updatePair(self,pair):
         '''modular update pair method'''
         tick = self.ticker(pair)
-        if not bool(tick):
-            return None
-        tick = tick['ticker']
         data = {}
-        # uncomment what you need to use
-        #data['high'] = tick.get('high',0)
-        #data['low'] = tick.get('low',0)
-        #data['last'] = tick.get('last',0)
-        #data['buy'] = tick.get('buy',0)
-        #data['sell'] = tick.get('sell',0)
-        #data['vol'] = tick.get('vol',0)
-        #data['volCur'] = tick.get('vol_cur',0)
-        data['avg'] = tick.get('avg',0)
-        # uncomment for gigantic dict
-        #data['depth'] = self.depth(pair)
-        #data['trades'] = self.trades(pair)
+        if not bool(tick) or not tick.has_key('ticker'):
+            data['avg'] = float(0)
+        else:
+            tick = tick['ticker']
+            # uncomment what you need to use
+            #data['high'] = tick.get('high',0)
+            #data['low'] = tick.get('low',0)
+            #data['last'] = tick.get('last',0)
+            #data['buy'] = tick.get('buy',0)
+            #data['sell'] = tick.get('sell',0)
+            #data['vol'] = tick.get('vol',0)
+            #data['volCur'] = tick.get('vol_cur',0)
+            data['avg'] = tick.get('avg',0)
+            # uncomment for gigantic dict
+            #data['depth'] = self.depth(pair)
+            #data['trades'] = self.trades(pair)
         self.tickerDict[pair] = data
         return data
 

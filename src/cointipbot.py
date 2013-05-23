@@ -167,7 +167,7 @@ class CointipBot(object):
         lg.info("Logged in to Reddit")
         return conn
 
-    def __init__(self, config_filename=_DEFAULT_CONFIG_FILENAME):
+    def __init__(self, config_filename=_DEFAULT_CONFIG_FILENAME, self_checks=True):
         """
         Constructor.
         Parses configuration file and initializes bot.
@@ -206,7 +206,8 @@ class CointipBot(object):
         self._redditcon = self._connect_reddit(self._config)
 
         # Self-checks
-        self._self_checks()
+        if self_checks:
+            self._self_checks()
 
         lg.info("CointipBot::__init__(): DONE, batch-limit = %s, sleep-seconds = %s", self._REDDIT_BATCH_LIMIT, self._DEFAULT_SLEEP_TIME)
 
