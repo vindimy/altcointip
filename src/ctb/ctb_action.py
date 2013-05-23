@@ -220,7 +220,7 @@ class CtbAction(object):
                 # Respond to tip comment
                 cmnt = "* __[Declined]__: /u/%s -> /u/%s, __%.6g %s__" % (a._FROM_USER._NAME, a._TO_USER._NAME, a._TO_AMNT, a._COIN.upper())
                 if bool(self._USD_VAL):
-                    cmnt += "&nbsp;__^$%.2g__" % self._USD_VAL
+                    cmnt += "&nbsp;__^$%.6g__" % self._USD_VAL
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::decline(): " + cmnt)
                 if _config['reddit']['comments']['declined']:
@@ -270,7 +270,7 @@ class CtbAction(object):
         # Respond to tip comment
         cmnt = "* __[Expired]__: /u/%s -> /u/%s, __%.6g %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, self._COIN.upper())
         if bool(self._USD_VAL):
-            cmnt += "&nbsp;__^$%.2g__" % self._USD_VAL
+            cmnt += "&nbsp;__^$%.6g__" % self._USD_VAL
         cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
         lg.debug("CtbAction::expire(): " + cmnt)
         if _config['reddit']['comments']['expired']:
@@ -379,7 +379,7 @@ class CtbAction(object):
                 # Respond to tip comment
                 cmnt = "* __[Pending +accept]__: /u/%s -> /u/%s, __%.6g %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, self._COIN.upper())
                 if bool(self._USD_VAL):
-                    cmnt += "&nbsp;__^$%.2g__" % self._USD_VAL
+                    cmnt += "&nbsp;__^$%.6g__" % self._USD_VAL
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::validate(): " + cmnt)
                 if _config['reddit']['comments']['pending']:
@@ -479,9 +479,9 @@ class CtbAction(object):
                 self._TO_USER.tell(subj="+givetip received", msg=msg)
 
                 # Post verification comment
-                cmnt = "* __[Verified]__: /u/%s -> /u/%s, __%.6g %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, self._COIN.upper())
+                cmnt = "* __[Verified]__: /u/%s -> /u/%s, __%.6g %s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
                 if bool(self._USD_VAL):
-                    cmnt += "&nbsp;__^$%.2g__" % self._USD_VAL
+                    cmnt += "&nbsp;__^$%.6g__" % self._USD_VAL
                 lg.debug("CtbAction::givetip(): " + cmnt)
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
@@ -526,9 +526,9 @@ class CtbAction(object):
             try:
                 # Post verification comment
                 ex = _cc[self._COIN]['explorer']
-                cmnt = "* __[[Verified](%s)]__: /u/%s -> [%s](%s), __%.6g %s__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, self._TO_AMNT, self._COIN.upper())
+                cmnt = "* __[[Verified](%s)]__: /u/%s -> [%s](%s), __%.6g %s(s)__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['name'])
                 if bool(self._USD_VAL):
-                    cmnt += "&nbsp;__^$%.2g__" % self._USD_VAL
+                    cmnt += "&nbsp;__^$%.6g__" % self._USD_VAL
                 lg.debug("CtbAction::givetip(): " + cmnt)
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
@@ -606,9 +606,9 @@ class CtbAction(object):
                 wbalance_usd = self._CTB._ticker_val[i['coin']+'_btc']['avg'] * self._CTB._ticker_val['btc_usd']['avg'] * float(i['wbalance'])
                 tbalance_usd_total += tbalance_usd
                 wbalance_usd_total += wbalance_usd
-            txt += "__%s (%s)__|%s&nbsp;^%s&nbsp;%s|__%.6f&nbsp;^$%.2g__|%.6f&nbsp;^$%.2g\n" % (_cc[i['coin']]['name'], i['coin'].upper(), i['address'], addr_ex_str, addr_qr_str, i['tbalance'], tbalance_usd, i['wbalance'], wbalance_usd)
+            txt += "__%s (%s)__|%s&nbsp;^%s&nbsp;%s|__%.6f&nbsp;^$%.6g__|%.6f&nbsp;^$%.6g\n" % (_cc[i['coin']]['name'], i['coin'].upper(), i['address'], addr_ex_str, addr_qr_str, i['tbalance'], tbalance_usd, i['wbalance'], wbalance_usd)
         txt += "&nbsp;|&nbsp;|&nbsp;|&nbsp;\n"
-        txt += "__TOTAL $__|&nbsp;|__$%.2g__|$%.2g\n" % (tbalance_usd_total, wbalance_usd_total)
+        txt += "__TOTAL $__|&nbsp;|__$%.6g__|$%.6g\n" % (tbalance_usd_total, wbalance_usd_total)
         txt += "\n\nUse addresses above to deposit coins into your account. Tip and withdraw balances differ while newly deposited coins are confirmed."
         txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
 
