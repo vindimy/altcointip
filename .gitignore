@@ -36,6 +36,8 @@ nosetests.xml
 
 # cointipbot
 config.yml
+ctb-info.log
+ctb-debug.log
 
 # cointipbot external libs
 pifkoin*
