@@ -27,7 +27,9 @@ misc:
 
 # Regex
 regex:
-  amount: '([0-9]{1,6}(?:\.[0-9]{0,6})?)'
+  amount:
+    num: '([0-9]{1,6}(?:\.[0-9]{0,6})?)'
+    word: '{all|flip|roll|quarter|half|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)'
   keywords:
     givetip: '(givetip|altcointip|alttip|alt)'
     info: '(info)'
@@ -136,6 +138,7 @@ cc:
       givetip: 0.05
       withdraw: 0.5
     txfee: 0.01
+    walletpassphrase: mypass1
     explorer:
       address: 'http://www.cryptocoinexplorer.com:6750/address/'
       transaction: 'http://www.cryptocoinexplorer.com:6750/tx/'
@@ -155,9 +158,29 @@ cc:
       givetip: 0.05
       withdraw: 0.5
     txfee: 0.01
+    walletpassphrase: mypass1
     explorer:
       address: 'http://www.cryptocoinexplorer.com:3750/address/'
       transaction: 'http://www.cryptocoinexplorer.com:3750/tx/'
     regex:
       address: '(1[1-9a-z]{20,40})'
       units: '(trc|terracoin|terracoins)'
+  # Devcoin
+  dvc:
+    enabled: false
+    unit: dvc
+    name: Devcoin
+    conf-file: '~/.devcoin/devcoin.conf'
+    minconf:
+      givetip: 1
+      withdraw: 10
+    txmin:
+      givetip: 5
+      withdraw: 50
+    txfee: 1
+    explorer:
+      address: 'http://glari.ch:2750/address/'
+      transaction: 'http://glari.ch:2750/tx/'
+    regex:
+      address: '(1[1-9a-z]{20,40})'
+      units: '(dvc|devcoin|devcoins)'
