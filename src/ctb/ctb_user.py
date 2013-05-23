@@ -58,7 +58,7 @@ class CtbUser(object):
         time.sleep(0.5)
 
         lg.debug("< CtbUser::balance(%s) DONE", self._NAME)
-        return balance
+        return float(balance)
 
     def get_addr(self, coin=None):
         """
