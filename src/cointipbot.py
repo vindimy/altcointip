@@ -61,7 +61,7 @@ class CointipBot(object):
         if self._config['logging'].has_key('info-log-filename'):
             hdlr_info = logging.FileHandler(self._config['logging']['info-log-filename'], mode='a')
         if self._config['logging'].has_key('debug-log-filename'):
-            hdlr_debug = logging.FileHandler(self._config['logging']['debug-log-filename'], mode='a')
+            hdlr_debug = logging.FileHandler(self._config['logging']['debug-log-filename'], mode='w')
 
         if not hdlr_info and not hdlr_debug:
             print "CointipBot::_init_logging(): Warning: no logging handlers are set up. Logging is disabled."
@@ -242,9 +242,9 @@ class CointipBot(object):
             u = ctb_user.CtbUser(name=mysqlrow['username'], ctb=self)
             if not u.is_registered():
                 raise Exception("CointipBot::_self_checks(): user %s is_registered() failed" % mysqlrow['username'])
-            for c in self._coincon:
-                if u.get_balance(coin=c, kind='givetip') < 0:
-                    raise Exception("CointipBot::_self_checks(): user %s %s balance is negative" % (mysqlrow['username'], c))
+        #    for c in self._coincon:
+        #        if u.get_balance(coin=c, kind='givetip') < 0:
+        #            raise Exception("CointipBot::_self_checks(): user %s %s balance is negative" % (mysqlrow['username'], c))
 
         # Done
         return True

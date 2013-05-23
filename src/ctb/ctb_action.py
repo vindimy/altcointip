@@ -218,9 +218,9 @@ class CtbAction(object):
                 # Save transaction as declined
                 a.save('declined')
                 # Respond to tip comment
-                cmnt = "* __[Declined]__: /u/%s -> /u/%s, __%.6g %s__" % (a._FROM_USER._NAME, a._TO_USER._NAME, a._TO_AMNT, a._COIN.upper())
+                cmnt = "^__[Declined]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (a._FROM_USER._NAME, a._TO_USER._NAME, a._TO_AMNT, _cc[self._COIN]['name'])
                 if bool(self._USD_VAL):
-                    cmnt += "&nbsp;__^$%.6g__" % self._USD_VAL
+                    cmnt += "&nbsp;^__($%.6g)__" % self._USD_VAL
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::decline(): " + cmnt)
                 if _config['reddit']['comments']['declined']:
@@ -268,9 +268,9 @@ class CtbAction(object):
         self.save('declined')
 
         # Respond to tip comment
-        cmnt = "* __[Expired]__: /u/%s -> /u/%s, __%.6g %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, self._COIN.upper())
+        cmnt = "^__[Expired]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
         if bool(self._USD_VAL):
-            cmnt += "&nbsp;__^$%.6g__" % self._USD_VAL
+            cmnt += "&nbsp;^__($%.6g)__" % self._USD_VAL
         cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
         lg.debug("CtbAction::expire(): " + cmnt)
         if _config['reddit']['comments']['expired']:
@@ -326,7 +326,7 @@ class CtbAction(object):
             if bool(self._TO_USER) and not is_pending:
                 # Tip to user (requires less confirmations)
                 balance_avail = self._FROM_USER.get_balance(coin=self._COIN, kind='givetip')
-                if not balance_avail >= self._TO_AMNT:
+                if not ( balance_avail > self._TO_AMNT or abs(balance_avail - self._TO_AMNT) < 0.000001 ):
                     msg = "I'm sorry %s, your confirmed _tip_ balance of (__%.6g %s__) is insufficient for this tip." % (re.escape(self._FROM_USER._NAME), balance_avail, self._COIN.upper())
                     lg.debug("CtbAction::validate(): " + msg)
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
@@ -336,7 +336,7 @@ class CtbAction(object):
             elif bool(self._TO_ADDR):
                 # Tip/withdrawal to address (requires more confirmations)
                 balance_avail = self._FROM_USER.get_balance(coin=self._COIN, kind='withdraw')
-                if not balance_avail >= self._TO_AMNT:
+                if not ( balance_avail > self._TO_AMNT or abs(balance_avail - self._TO_AMNT) < 0.000001 ):
                     msg = "I'm sorry %s, your confirmed _withdraw_ balance of (__%.6g %s__) is insufficient for this action." % (re.escape(self._FROM_USER._NAME), balance_avail, self._COIN.upper())
                     lg.debug("CtbAction::validate(): " + msg)
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
@@ -377,9 +377,9 @@ class CtbAction(object):
                 self.save('pending')
 
                 # Respond to tip comment
-                cmnt = "* __[Pending +accept]__: /u/%s -> /u/%s, __%.6g %s__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, self._COIN.upper())
+                cmnt = "^__[Pending +accept]__: ^/u/%s ^-> ^/u/%s, __^%.6g %s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
                 if bool(self._USD_VAL):
-                    cmnt += "&nbsp;__^$%.6g__" % self._USD_VAL
+                    cmnt += "&nbsp;^__($%.6g)__" % self._USD_VAL
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::validate(): " + cmnt)
                 if _config['reddit']['comments']['pending']:
@@ -443,10 +443,10 @@ class CtbAction(object):
 
             try:
                 if is_pending:
-                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), _config['reddit']['user'].lower(), self._TO_ADDR)
+                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), _config['reddit']['user'].lower(), self._TO_USER._NAME.lower())
                     self._TXID = _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf'][self._TYPE])
                 else:
-                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_ADDR)
+                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower())
                     self._TXID = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf'][self._TYPE])
                 # Sleep for 1 second to not overwhelm coin daemon
                 time.sleep(1)
@@ -479,12 +479,15 @@ class CtbAction(object):
                 self._TO_USER.tell(subj="+givetip received", msg=msg)
 
                 # Post verification comment
-                cmnt = "* __[Verified]__: /u/%s -> /u/%s, __%.6g %s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
+                cmnt = "^__[Verified]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
                 if bool(self._USD_VAL):
-                    cmnt += "&nbsp;__^$%.6g__" % self._USD_VAL
+                    cmnt += "&nbsp;^__($%.6g)__" % self._USD_VAL
                 lg.debug("CtbAction::givetip(): " + cmnt)
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
-                ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
+                if _config['reddit']['comments']['verify']:
+                    ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
+                else:
+                    self._FROM_USER.tell(subj="+givetip succeeded", msg=cmnt)
 
             except Exception, e:
                 # Couldn't post to Reddit
@@ -526,12 +529,15 @@ class CtbAction(object):
             try:
                 # Post verification comment
                 ex = _cc[self._COIN]['explorer']
-                cmnt = "* __[[Verified](%s)]__: /u/%s -> [%s](%s), __%.6g %s(s)__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['name'])
+                cmnt = "^__[[Verified](%s)]__: ^/u/%s ^-> ^[%s](%s), __^%.6g ^%s(s)__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['name'])
                 if bool(self._USD_VAL):
-                    cmnt += "&nbsp;__^$%.6g__" % self._USD_VAL
+                    cmnt += "&nbsp;^__($%.6g)__" % self._USD_VAL
                 lg.debug("CtbAction::givetip(): " + cmnt)
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
-                ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
+                if _config['reddit']['comments']['verify']:
+                    ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
+                else:
+                    self._FROM_USER.tell(subj="+givetip succeeded", msg=cmnt)
             except Exception, e:
                 # Couldn't post to Reddit
                 lg.error("CtbAction::givetip(): error communicating with Reddit: %s" % str(e))
@@ -570,9 +576,9 @@ class CtbAction(object):
             coininfo['coin'] = c
             try:
                 coininfo['tbalance'] = float(_coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['givetip']))
-                time.sleep(2)
+                time.sleep(0.5)
                 coininfo['wbalance'] = float(_coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['withdraw']))
-                time.sleep(2)
+                time.sleep(0.5)
                 # wbalance can be negative since tips require less confirmations, so set it to 0 if negative
                 if coininfo['wbalance'] < 0:
                     coininfo['wbalance'] = 0
@@ -689,10 +695,11 @@ def _eval_message(_message, _ctb):
                     'rg-address': 4})
 
     # Do the matching
+    body = _message.body
     for r in _ctb._rlist_message:
         rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
         #lg.debug("matching '%s' with '%s'", _message.body, r['regex'])
-        m = rg.search(_message.body)
+        m = rg.search(body)
 
         if bool(m):
             # Match found
@@ -703,7 +710,7 @@ def _eval_message(_message, _ctb):
             _to_amnt = m.group(r['rg-amount']) if r['rg-amount'] > 0 else None
 
             # Return CtbAction instance with given variables
-            lg.debug("< _eval_message() DONE")
+            lg.debug("< _eval_message() DONE (yes)")
             return CtbAction(   atype=r['action'],
                                 msg=_message,
                                 to_user=None,
@@ -722,7 +729,7 @@ def _eval_comment(_comment, _ctb):
     Evaluate comment body and return a CtbAction
     object if successful
     """
-    lg.debug("> _eval_comment(%s)", _comment.permalink)
+    lg.debug("> _eval_comment()")
 
     _cc = _ctb._config['cc']
 
@@ -765,10 +772,11 @@ def _eval_comment(_comment, _ctb):
                      'fiat':        None})
 
     # Do the matching
+    body = _comment.body
     for r in _ctb._rlist_comment:
         rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
         #lg.debug("_eval_comment(): matching '%s' using <%s>", _comment.body, r['regex'])
-        m = rg.search(_comment.body)
+        m = rg.search(body)
 
         if bool(m):
             # Match found
@@ -790,8 +798,8 @@ def _eval_comment(_comment, _ctb):
                 return None
 
             # Return CtbAction instance with given variables
-            lg.debug("_eval_comment(): creating action givetip: msg.id=%s, to=%s, to=%s, to=%s, coin=%s, fiat=%s" % (_comment.id, _to_user, _to_addr, _to_amnt, r['coin'], r['fiat']))
-            lg.debug("< _eval_comment() DONE")
+            lg.debug("_eval_comment(): creating action givetip: to_user=%s, to_addr=%s, to_amnt=%s, coin=%s, fiat=%s" % (_to_user, _to_addr, _to_amnt, r['coin'], r['fiat']))
+            lg.debug("< _eval_comment() DONE (yes)")
             return CtbAction(   atype='givetip',
                                 msg=_comment,
                                 to_user=_to_user,
