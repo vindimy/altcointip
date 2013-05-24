@@ -90,7 +90,7 @@ cc:
   ppc:
     enabled: false
     unit: ppc
-    name: PPCoin
+    name: Peercoin
     conf-file: '~/.ppcoin/ppcoin.conf'
     minconf:
       givetip: 1
@@ -105,7 +105,7 @@ cc:
       transaction: 'http://www.cryptocoinexplorer.com:2750/tx/'
     regex:
       address: '(P[1-9a-z]{20,40})'
-      units: '(ppc|ppcoin|ppcoins)'
+      units: '(ppc|ppcoin|ppcoins|peercoin|peercoins|p2pcoin|p2pcoins)'
   # Namecoin
   nmc:
     enabled: false
