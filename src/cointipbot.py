@@ -2,9 +2,10 @@
 
 from ctb import ctb_action, ctb_db, ctb_log, ctb_misc, ctb_user
 
-import gettext, locale, logging, sys, time, urllib2
+import gettext, locale, logging, sys, time
 import praw, re, sqlalchemy, yaml
 from pifkoin.bitcoind import Bitcoind, BitcoindException
+from requests.exceptions import HTTPError
 
 # Configure CointipBot logger
 lg = logging.getLogger('cointipbot')
@@ -152,7 +153,7 @@ class CointipBot(object):
                 conn = praw.Reddit(user_agent = config['reddit']['useragent'])
                 conn.login(config['reddit']['user'], config['reddit']['pass'])
                 break
-            except urllib2.HTTPError, e:
+            except HTTPError, e:
                 if e.code in [429, 500, 502, 503, 504]:
                     lg.warning("CointipBot::_connect_reddit(): Reddit is down (error %s), sleeping...", e.code)
                     time.sleep(60)
@@ -275,12 +276,13 @@ class CointipBot(object):
             try:
                 messages = self._redditcon.get_unread(limit=self._REDDIT_BATCH_LIMIT)
                 break
-            except urllib2.HTTPError, e:
+            except HTTPError, e:
                 if e.code in [429, 500, 502, 503, 504]:
                     lg.warning("_check_inbox(): get_unread(): Reddit is down (error %s), sleeping...", e.code)
                     time.sleep(60)
                     pass
                 else:
+                    lg.error("_check_inbox(): get_unread(): Reddit error %s", e.code)
                     raise
             except Exception, e:
                 lg.error("_check_inbox(): couldn't fetch messages: %s", str(e))
@@ -296,12 +298,13 @@ class CointipBot(object):
                     try:
                         m.mark_as_read()
                         break
-                    except urllib2.HTTPError, e:
+                    except HTTPError, e:
                         if e.code in [429, 500, 502, 503, 504]:
                             lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
                             time.sleep(60)
                             pass
                         else:
+                            lg.error("_check_inbox(): mark_as_read(): Reddit error %s", e.code)
                             raise
                     except Exception, e:
                         lg.error("_check_inbox(): couldn't mark message as read: %s", str(e))
@@ -315,12 +318,13 @@ class CointipBot(object):
                     try:
                         m.mark_as_read()
                         break
-                    except urllib2.HTTPError, e:
+                    except HTTPError, e:
                         if e.code in [429, 500, 502, 503, 504]:
                             lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
                             time.sleep(60)
                             pass
                         else:
+                            lg.error("_check_inbox(): mark_as_read(): Reddit error %s", e.code)
                             raise
                     except Exception, e:
                         lg.error("_check_inbox(): couldn't mark message as read: %s", str(e))
@@ -345,12 +349,13 @@ class CointipBot(object):
                 try:
                     m.mark_as_read()
                     break
-                except urllib2.HTTPError, e:
+                except HTTPError, e:
                     if e.code in [429, 500, 502, 503, 504]:
                         lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
                         time.sleep(60)
                         pass
                     else:
+                        lg.error("_check_inbox(): mark_as_read(): Reddit error %s", e.code)
                         raise
                 except Exception, e:
                     lg.error("_check_inbox(): couldn't mark message as read: %s", str(e))
@@ -387,12 +392,13 @@ class CointipBot(object):
                 my_comments = self._subreddits.get_comments(limit=self._REDDIT_BATCH_LIMIT)
                 break
 
-            except urllib2.HTTPError, e:
+            except HTTPError, e:
                 if e.code in [429, 500, 502, 503, 504]:
                     lg.warning("_check_subreddits(): Reddit is down (error %s), sleeping...", e.code)
                     time.sleep(60)
                     pass
                 else:
+                    lg.error("_check_subreddits(): Reddit error %s", e.code)
                     raise
             except Exception, e:
                 lg.error("_check_subreddits(): coudln't fetch comments: %s", str(e))
@@ -420,11 +426,12 @@ class CointipBot(object):
                     action.do()
                     lg.info("_check_subreddits(): executed action %s from comment_id %s", action._TYPE, str(c.id))
 
-        except urllib2.HTTPError, e:
+        except HTTPError, e:
             if e.code in [429, 500, 502, 503, 504]:
-                lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
+                lg.warning("_check_subreddits(): Reddit is down (error %s), sleeping...", e.code)
                 pass
             else:
+                lg.error("_check_subreddits(): Reddit error %s", e.code)
                 raise
         except Exception, e:
             lg.error("_check_subreddits(): coudln't fetch comments: %s", str(e))

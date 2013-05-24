@@ -1,6 +1,7 @@
 import ctb_user, ctb_btce
 
-import logging, time, urllib2
+import logging, time
+from requests.exceptions import HTTPError
 
 lg = logging.getLogger('cointipbot')
 
@@ -52,13 +53,14 @@ def _reddit_reply(msg, txt):
         try:
             msg.reply(txt)
             break
-        except urllib2.HTTPError, e:
+        except HTTPError, e:
             if e.code in [429, 500, 502, 503, 504]:
                 lg.warning("_reddit_reply(): Reddit is down, sleeping for %s seconds...", sleep_for)
                 time.sleep(sleep_for)
                 sleep_for *= 2 if sleep_for < 600 else 600
                 pass
             else:
+                lg.error("_reddit_reply(): Reddit error %s", e.code)
                 raise
         except Exception, e:
             raise

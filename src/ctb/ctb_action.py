@@ -1,6 +1,6 @@
 import ctb_user, ctb_misc
 
-import logging, praw, re, time, urllib2
+import logging, praw, re, time
 
 lg = logging.getLogger('cointipbot')
 
