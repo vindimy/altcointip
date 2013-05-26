@@ -55,13 +55,9 @@ def _reddit_reply(msg, txt):
             msg.reply(txt)
             break
         except HTTPError, e:
-            if e.code in [429, 500, 502, 503, 504]:
-                lg.warning("_reddit_reply(): Reddit is down (error %s), sleeping...", e.code)
-                time.sleep(60)
-                pass
-            else:
-                lg.error("_reddit_reply(): HTTPError %s: %s", e.code, str(e))
-                raise
+            lg.warning("_reddit_reply(): Reddit is down (error %s), sleeping...", e.code)
+            time.sleep(60)
+            pass
         except timeout:
             lg.warning("_reddit_reply(): Reddit is down (timeout), sleeping...")
             time.sleep(60)
@@ -91,13 +87,9 @@ def _reddit_get_parent_author(_comment, _reddit, _ctb):
             lg.debug("< _get_parent_comment_author() -> %s", parentcomment.author.name)
             return parentcomment.author.name
         except HTTPError, e:
-            if e.code in [429, 500, 502, 503, 504]:
-                lg.warning("_get_parent_comment_author(): Reddit is down (error %s), sleeping...", e.code)
-                time.sleep(60)
-                pass
-            else:
-                lg.error("_get_parent_comment_author(): HTTPError %s: %s", e.code, str(e))
-                raise
+            lg.warning("_get_parent_comment_author(): Reddit is down, sleeping...")
+            time.sleep(60)
+            pass
         except timeout:
             lg.warning("_get_parent_comment_author(): Reddit is down (timeout), sleeping...")
             time.sleep(60)

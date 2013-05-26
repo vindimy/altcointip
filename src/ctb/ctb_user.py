@@ -108,13 +108,9 @@ class CtbUser(object):
                 lg.debug("< CtbUser::is_on_reddit(%s) DONE (yes)", self._NAME)
                 return True
             except HTTPError, e:
-                if e.code in [429, 500, 502, 503, 504]:
-                    lg.warning("CtbUser::is_on_reddit(%s): Reddit is down (error %s), sleeping...", self._NAME, e.code)
-                    time.sleep(60)
-                    pass
-                else:
-                    lg.debug("< CtbUser::is_on_reddit(%s) DONE (no)", self._NAME)
-                    return False
+                lg.warning("CtbUser::is_on_reddit(%s): Reddit is down, sleeping...", self._NAME)
+                time.sleep(60)
+                pass
             except timeout:
                 lg.warning("CtbUser::is_on_reddit(%s): Reddit is down (timeout), sleeping...", self._NAME)
                 time.sleep(60)
@@ -176,13 +172,9 @@ class CtbUser(object):
                 self._REDDITOBJ.send_message(subj, msg)
                 break
             except HTTPError, e:
-                if e.code in [429, 500, 502, 503, 504]:
-                    lg.warning("CtbUser::tell(%s): Reddit is down (error %s), sleeping...", self._NAME, e.code)
-                    time.sleep(60)
-                    pass
-                else:
-                    lg.error("CtbUser::tell(%s): HTTPError %s: %s", self._NAME, e.code, str(e))
-                    raise
+                lg.warning("CtbUser::tell(%s): Reddit is down, sleeping...", self._NAME)
+                time.sleep(60)
+                pass
             except timeout:
                 lg.warning("CtbUser::tell(%s): Reddit is down (timeout), sleeping...", self._NAME)
                 time.sleep(60)

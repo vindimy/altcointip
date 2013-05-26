@@ -158,13 +158,9 @@ class CointipBot(object):
                 break
 
             except HTTPError, e:
-                if e.code in [429, 500, 502, 503, 504]:
-                    lg.warning("CointipBot::_connect_reddit(): Reddit is down (error %s), sleeping...", e.code)
-                    time.sleep(60)
-                    pass
-                else:
-                    lg.error("CointipBot::_connect_reddit(): HTTPError %s: %s", e.code, str(e))
-                    raise
+                lg.warning("CointipBot::_connect_reddit(): Reddit is down, sleeping...")
+                time.sleep(60)
+                pass
             except timeout:
                 lg.warning("CointipBot::_connect_reddit(): Reddit is down (timeout), sleeping...")
                 time.sleep(60)
@@ -313,13 +309,9 @@ class CointipBot(object):
                 break
 
             except HTTPError, e:
-                if e.code in [429, 500, 502, 503, 504]:
-                    lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
-                    time.sleep(60)
-                    pass
-                else:
-                    lg.error("_check_inbox(): HTTPError %s: %s", e.code, str(e))
-                    raise
+                lg.warning("_check_inbox(): Reddit is down, sleeping...")
+                time.sleep(60)
+                pass
             except timeout:
                 lg.warning("_check_inbox(): Reddit is down (timeout), sleeping...")
                 time.sleep(60)
@@ -363,13 +355,9 @@ class CointipBot(object):
                 break
 
             except HTTPError, e:
-                if e.code in [429, 500, 502, 503, 504]:
-                    lg.warning("_check_subreddits(): Reddit is down (error %s), sleeping...", e.code)
-                    time.sleep(60)
-                    pass
-                else:
-                    lg.error("_check_subreddits(): HTTPError %s: %s", e.code, str(e))
-                    raise
+                lg.warning("_check_subreddits(): Reddit is down, sleeping...")
+                time.sleep(60)
+                pass
             except timeout:
                 lg.warning("_check_subreddits(): Reddit is down (timeout), sleeping...")
                 time.sleep(60)
@@ -402,17 +390,13 @@ class CointipBot(object):
                     action.do()
                     lg.info("_check_subreddits(): executed action %s from comment_id %s", action._TYPE, str(c.id))
 
-            if counter >= self._REDDIT_BATCH_LIMIT:
+            if counter >= self._REDDIT_BATCH_LIMIT - 1:
                 lg.warning("_check_subreddits(): _REDDIT_BATCH_LIMIT (%s) was not large enough to process all comments", self._REDDIT_BATCH_LIMIT)
 
         except HTTPError, e:
-            if e.code in [429, 500, 502, 503, 504]:
-                lg.warning("_check_subreddits(): Reddit is down (error %s), sleeping...", e.code)
-                time.sleep(60)
-                pass
-            else:
-                lg.error("_check_subreddits(): HTTPError %s: %s", e.code, str(e))
-                raise
+            lg.warning("_check_subreddits(): Reddit is down, sleeping...")
+            time.sleep(60)
+            pass
         except timeout:
             lg.warning("_check_subreddits(): Reddit is down (timeout), sleeping...")
             time.sleep(60)

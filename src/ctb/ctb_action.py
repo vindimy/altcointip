@@ -931,13 +931,9 @@ def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=Non
             return r
 
         except HTTPError, e:
-            if e.code in [429, 500, 502, 503, 504]:
-                lg.warning("_get_actions(): Reddit is down (error %s), sleeping...", e.code)
-                sleep(60)
-                pass
-            else:
-                lg.error("_get_actions(): HTTPError %s: %s", e.code, str(e))
-                raise
+            lg.warning("_get_actions(): Reddit is down, sleeping...")
+            sleep(60)
+            pass
         except timeout:
             lg.warning("_get_actions(): Reddit is down (timeout), sleeping...")
             time.sleep(60)
