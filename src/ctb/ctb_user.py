@@ -108,12 +108,12 @@ class CtbUser(object):
                 lg.debug("< CtbUser::is_on_reddit(%s) DONE (yes)", self._NAME)
                 return True
             except HTTPError, e:
-                lg.warning("CtbUser::is_on_reddit(%s): Reddit is down, sleeping...", self._NAME)
-                time.sleep(60)
+                lg.warning("CtbUser::is_on_reddit(%s): Reddit is down (%s), sleeping...", self._NAME, str(e))
+                time.sleep(self._CTB._DEFAULT_SLEEP_TIME)
                 pass
             except timeout:
                 lg.warning("CtbUser::is_on_reddit(%s): Reddit is down (timeout), sleeping...", self._NAME)
-                time.sleep(60)
+                time.sleep(self._CTB._DEFAULT_SLEEP_TIME)
                 pass
             except Exception, e:
                 lg.debug("< CtbUser::is_on_reddit(%s) DONE (no)", self._NAME)
@@ -172,12 +172,12 @@ class CtbUser(object):
                 self._REDDITOBJ.send_message(subj, msg)
                 break
             except HTTPError, e:
-                lg.warning("CtbUser::tell(%s): Reddit is down, sleeping...", self._NAME)
-                time.sleep(60)
+                lg.warning("CtbUser::tell(%s): Reddit is down (%s), sleeping...", self._NAME, str(e))
+                time.sleep(self._CTB._DEFAULT_SLEEP_TIME)
                 pass
             except timeout:
                 lg.warning("CtbUser::tell(%s): Reddit is down (timeout), sleeping...", self._NAME)
-                time.sleep(60)
+                time.sleep(self._CTB._DEFAULT_SLEEP_TIME)
                 pass
             except Exception, e:
                 raise

@@ -158,12 +158,12 @@ class CointipBot(object):
                 break
 
             except HTTPError, e:
-                lg.warning("CointipBot::_connect_reddit(): Reddit is down, sleeping...")
-                time.sleep(60)
+                lg.warning("CointipBot::_connect_reddit(): Reddit is down (%s), sleeping...", str(e))
+                time.sleep(self._DEFAULT_SLEEP_TIME)
                 pass
             except timeout:
                 lg.warning("CointipBot::_connect_reddit(): Reddit is down (timeout), sleeping...")
-                time.sleep(60)
+                time.sleep(self._DEFAULT_SLEEP_TIME)
                 pass
             except Exception, e:
                 lg.error("CointipBot::_connect_reddit(): Error connecting to Reddit: %s", str(e))
@@ -309,12 +309,12 @@ class CointipBot(object):
                 break
 
             except HTTPError, e:
-                lg.warning("_check_inbox(): Reddit is down, sleeping...")
-                time.sleep(60)
+                lg.warning("_check_inbox(): Reddit is down (%s), sleeping...", str(e))
+                time.sleep(self._DEFAULT_SLEEP_TIME)
                 pass
             except timeout:
                 lg.warning("_check_inbox(): Reddit is down (timeout), sleeping...")
-                time.sleep(60)
+                time.sleep(self._DEFAULT_SLEEP_TIME)
                 pass
             except Exception, e:
                 lg.error("_check_inbox(): %s", str(e))
@@ -355,12 +355,12 @@ class CointipBot(object):
                 break
 
             except HTTPError, e:
-                lg.warning("_check_subreddits(): Reddit is down, sleeping...")
-                time.sleep(60)
+                lg.warning("_check_subreddits(): Reddit is down (%s), sleeping...", str(e))
+                time.sleep(self._DEFAULT_SLEEP_TIME)
                 pass
             except timeout:
                 lg.warning("_check_subreddits(): Reddit is down (timeout), sleeping...")
-                time.sleep(60)
+                time.sleep(self._DEFAULT_SLEEP_TIME)
                 pass
             except Exception, e:
                 lg.error("_check_subreddits(): coudln't fetch comments: %s", str(e))
@@ -394,12 +394,12 @@ class CointipBot(object):
                 lg.warning("_check_subreddits(): _REDDIT_BATCH_LIMIT (%s) was not large enough to process all comments", self._REDDIT_BATCH_LIMIT)
 
         except HTTPError, e:
-            lg.warning("_check_subreddits(): Reddit is down, sleeping...")
-            time.sleep(60)
+            lg.warning("_check_subreddits(): Reddit is down (%s), sleeping...", str(e))
+            time.sleep(self._DEFAULT_SLEEP_TIME)
             pass
         except timeout:
             lg.warning("_check_subreddits(): Reddit is down (timeout), sleeping...")
-            time.sleep(60)
+            time.sleep(self._DEFAULT_SLEEP_TIME)
             pass
         except Exception, e:
             lg.error("_check_subreddits(): coudln't fetch comments: %s", str(e))
@@ -433,7 +433,7 @@ class CointipBot(object):
                 # Check subreddit comments for tips
                 self._check_subreddits()
                 # Sleep
-                lg.debug("Sleeping for "+str(self._DEFAULT_SLEEP_TIME)+" seconds")
+                lg.debug("Sleeping for %s seconds", self._DEFAULT_SLEEP_TIME)
                 time.sleep(self._DEFAULT_SLEEP_TIME)
             except Exception, e:
                 lg.exception("Caught exception in main() loop: %s", str(e))

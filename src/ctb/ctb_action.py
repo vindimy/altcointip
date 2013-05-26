@@ -932,12 +932,12 @@ def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=Non
             return r
 
         except HTTPError, e:
-            lg.warning("_get_actions(): Reddit is down, sleeping...")
-            sleep(60)
+            lg.warning("_get_actions(): Reddit is down (%s), sleeping...", str(e))
+            sleep(ctb._DEFAULT_SLEEP_TIME)
             pass
         except timeout:
             lg.warning("_get_actions(): Reddit is down (timeout), sleeping...")
-            time.sleep(60)
+            time.sleep(ctb._DEFAULT_SLEEP_TIME)
             pass
         except Exception, e:
             lg.error("_get_actions(): error executing <%s>: %s", sql, str(e))
