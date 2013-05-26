@@ -380,15 +380,15 @@ class CtbAction(object):
                 self.save('pending')
 
                 # Respond to tip comment
-                cmnt = "^(__[Pending +accept]__:) ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
+                cmnt = "^(__[Verified]__:) ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
                 if bool(self._USD_VAL):
                     cmnt += "&nbsp;^__($%.2g)__" % self._USD_VAL
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::validate(): " + cmnt)
-                if _config['reddit']['comments']['pending']:
+                if _config['reddit']['comments']['verify']:
                     ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
                 else:
-                    self._FROM_USER.tell(subj="+givetip pending", msg=cmnt)
+                    self._FROM_USER.tell(subj="+givetip pending +accept", msg=cmnt)
 
                 # Send notice to _TO_USER
                 msg = "Hey %s, /u/%s sent you a __%.6g %s(s) ($%.2g)__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
@@ -481,16 +481,17 @@ class CtbAction(object):
                 msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                 self._TO_USER.tell(subj="+givetip received", msg=msg)
 
-                # Post verification comment
-                cmnt = "^__[Verified]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
-                if bool(self._USD_VAL):
-                    cmnt += "&nbsp;^__($%.2g)__" % self._USD_VAL
-                lg.debug("CtbAction::givetip(): " + cmnt)
-                cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
-                if _config['reddit']['comments']['verify']:
-                    ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
-                else:
-                    self._FROM_USER.tell(subj="+givetip succeeded", msg=cmnt)
+                if not is_pending:
+                    # This is not an +accept, so post verification comment
+                    cmnt = "^__[Verified]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
+                    if bool(self._USD_VAL):
+                        cmnt += "&nbsp;^__($%.2g)__" % self._USD_VAL
+                    lg.debug("CtbAction::givetip(): " + cmnt)
+                    cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
+                    if _config['reddit']['comments']['verify']:
+                        ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
+                    else:
+                        self._FROM_USER.tell(subj="+givetip succeeded", msg=cmnt)
 
             except Exception, e:
                 # Couldn't post to Reddit
