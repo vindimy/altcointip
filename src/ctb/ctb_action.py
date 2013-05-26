@@ -2,6 +2,9 @@ import ctb_user, ctb_misc
 
 import logging, praw, re, time
 
+from requests.exceptions import HTTPError
+from socket import timeout
+
 lg = logging.getLogger('cointipbot')
 
 class CtbAction(object):
@@ -646,7 +649,7 @@ def _eval_message(_message, _ctb):
     Evaluate message body and return a CtbAction
     object if successful
     """
-    lg.debug("> _eval_message()")
+    #lg.debug("> _eval_message()")
 
     if not bool(_ctb._rlist_message):
         # rlist is a list of regular expressions to test _message against
@@ -687,7 +690,7 @@ def _eval_message(_message, _ctb):
         for c in _cc:
             if _cc[c]['enabled']:
                 _ctb._rlist_message.append(
-                   # +withdraw ADDR 0.25 units
+                   # +withdraw ADDR 0.25 COIN
                    {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['withdraw'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
                     'action':     'withdraw',
                     'coin':       _cc[c]['unit'],
@@ -703,14 +706,12 @@ def _eval_message(_message, _ctb):
 
         if bool(m):
             # Match found
-            lg.debug("_eval_message(): match found (type %s)", r['action'])
 
             # Extract matched fields into variables
             _to_addr = m.group(r['rg-address']) if r['rg-address'] > 0 else None
             _to_amnt = m.group(r['rg-amount']) if r['rg-amount'] > 0 else None
 
             # Return CtbAction instance with given variables
-            lg.debug("< _eval_message() DONE (yes)")
             return CtbAction(   atype=r['action'],
                                 msg=_message,
                                 to_user=None,
@@ -721,7 +722,6 @@ def _eval_message(_message, _ctb):
                                 ctb=_ctb)
 
     # No match found
-    lg.debug("< _eval_message() DONE (no)")
     return None
 
 def _eval_comment(_comment, _ctb):
@@ -729,7 +729,7 @@ def _eval_comment(_comment, _ctb):
     Evaluate comment body and return a CtbAction
     object if successful
     """
-    lg.debug("> _eval_comment()")
+    #lg.debug("> _eval_comment()")
 
     _cc = _ctb._config['cc']
 
@@ -780,7 +780,6 @@ def _eval_comment(_comment, _ctb):
 
         if bool(m):
             # Match found
-            lg.debug("_eval_comment(): match found (type givetip)")
 
             # Extract matched fields into variables
             _to_user = m.group(r['rg-to-user'])[1:] if r['rg-to-user'] > 0 else None
@@ -798,9 +797,9 @@ def _eval_comment(_comment, _ctb):
                 return None
 
             # Return CtbAction instance with given variables
-            lg.debug("_eval_comment(): creating action givetip: to_user=%s, to_addr=%s, to_amnt=%s, coin=%s, fiat=%s" % (_to_user, _to_addr, _to_amnt, r['coin'], r['fiat']))
-            lg.debug("< _eval_comment() DONE (yes)")
-            return CtbAction(   atype='givetip',
+            lg.debug("_eval_comment(): creating action %s: to_user=%s, to_addr=%s, to_amnt=%s, coin=%s, fiat=%s" % (r['action'], _to_user, _to_addr, _to_amnt, r['coin'], r['fiat']))
+            #lg.debug("< _eval_comment() DONE (yes)")
+            return CtbAction(   atype=r['action'],
                                 msg=_comment,
                                 to_user=_to_user,
                                 to_addr=_to_addr,
@@ -811,7 +810,7 @@ def _eval_comment(_comment, _ctb):
                                 ctb=_ctb)
 
     # No match found
-    lg.debug("< _eval_comment() DONE (no)")
+    #lg.debug("< _eval_comment() DONE (no)")
     return None
 
 def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=None, from_user=None, to_user=None, subr=None, ctb=None, is_pending=False):
@@ -899,34 +898,53 @@ def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=Non
             sql_terms.append("subreddit = '%s'" % subr)
         sql += ' AND '.join(sql_terms)
 
-    r = []
-    try:
-        lg.debug("_get_actions(): <%s>", sql)
-        mysqlexec = mysqlcon.execute(sql)
-        if mysqlexec.rowcount <= 0:
-            lg.debug("< _get_actions() DONE (no)")
-            return r
-        for m in mysqlexec:
-            submission = redditcon.get_submission(m['msg_link'])
-            if not len(submission.comments) > 0:
-                lg.warning("_get_actions(): couldn't fetch msg (deleted?) from msg_link %s", m['msg_link'])
-                continue
-            msg = submission.comments[0]
-            r.append( CtbAction(  atype=atype,
-                                  msg=msg,
-                                  to_user=m['to_user'],
-                                  to_addr=m['to_addr'] if not bool(m['to_user']) else None,
-                                  to_amnt=m['to_amnt'],
-                                  coin=m['coin'],
-                                  fiat=m['fiat'],
-                                  subr=m['subreddit'],
-                                  usd_val=m['usd_value'],
-                                  ctb=ctb))
-        lg.debug("< _get_actions() DONE (yes)")
-        return r
-    except Exception, e:
-        lg.error("_get_actions(): error executing <%s>: %s", sql, str(e))
-        raise
+    while True:
+        try:
+            r = []
+            lg.debug("_get_actions(): <%s>", sql)
+            mysqlexec = mysqlcon.execute(sql)
 
-    lg.debug("< _get_actions() DONE (should not get here)")
+            if mysqlexec.rowcount <= 0:
+                lg.debug("< _get_actions() DONE (no)")
+                return r
+
+            for m in mysqlexec:
+                submission = redditcon.get_submission(m['msg_link'])
+
+                if not len(submission.comments) > 0:
+                    lg.warning("_get_actions(): couldn't fetch msg (deleted?) from msg_link %s", m['msg_link'])
+                    continue
+
+                msg = submission.comments[0]
+                r.append( CtbAction(  atype=atype,
+                                      msg=msg,
+                                      to_user=m['to_user'],
+                                      to_addr=m['to_addr'] if not bool(m['to_user']) else None,
+                                      to_amnt=m['to_amnt'],
+                                      coin=m['coin'],
+                                      fiat=m['fiat'],
+                                      subr=m['subreddit'],
+                                      usd_val=m['usd_value'],
+                                      ctb=ctb))
+
+            lg.debug("< _get_actions() DONE (yes)")
+            return r
+
+        except HTTPError, e:
+            if e.code in [429, 500, 502, 503, 504]:
+                lg.warning("_get_actions(): Reddit is down (error %s), sleeping...", e.code)
+                sleep(60)
+                pass
+            else:
+                lg.error("_get_actions(): HTTPError %s: %s", e.code, str(e))
+                raise
+        except timeout:
+            lg.warning("_get_actions(): Reddit is down (timeout), sleeping...")
+            time.sleep(60)
+            pass
+        except Exception, e:
+            lg.error("_get_actions(): error executing <%s>: %s", sql, str(e))
+            raise
+
+    lg.warning("< _get_actions() DONE (should not get here)")
     return None

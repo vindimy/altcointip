@@ -5,7 +5,9 @@ from ctb import ctb_action, ctb_db, ctb_log, ctb_misc, ctb_user
 import gettext, locale, logging, sys, time
 import praw, re, sqlalchemy, yaml
 from pifkoin.bitcoind import Bitcoind, BitcoindException
+
 from requests.exceptions import HTTPError
+from socket import timeout
 
 # Configure CointipBot logger
 lg = logging.getLogger('cointipbot')
@@ -152,15 +154,21 @@ class CointipBot(object):
             try:
                 conn = praw.Reddit(user_agent = config['reddit']['useragent'])
                 conn.login(config['reddit']['user'], config['reddit']['pass'])
+
                 break
+
             except HTTPError, e:
                 if e.code in [429, 500, 502, 503, 504]:
                     lg.warning("CointipBot::_connect_reddit(): Reddit is down (error %s), sleeping...", e.code)
                     time.sleep(60)
                     pass
                 else:
-                    lg.error("CointipBot::_connect_reddit(): Error connecting to Reddit: %s", str(e))
+                    lg.error("CointipBot::_connect_reddit(): HTTPError %s: %s", e.code, str(e))
                     raise
+            except timeout:
+                lg.warning("CointipBot::_connect_reddit(): Reddit is down (timeout), sleeping...")
+                time.sleep(60)
+                pass
             except Exception, e:
                 lg.error("CointipBot::_connect_reddit(): Error connecting to Reddit: %s", str(e))
                 raise
@@ -271,95 +279,54 @@ class CointipBot(object):
         """
         lg.debug("> _check_inbox()")
 
-        # Try to fetch some messages
         while True:
             try:
+                # Try to fetch some messages
                 messages = self._redditcon.get_unread(limit=self._REDDIT_BATCH_LIMIT)
+
+                # Process messages
+                for m in messages:
+
+                    # Ignore replies to bot's comments
+                    if m.was_comment:
+                        lg.debug("_check_inbox(): ignoring reply to bot's comments")
+                        m.mark_as_read()
+                        continue
+
+                    # Ignore self messages
+                    if bool(m.author) and m.author.name.lower() == self._config['reddit']['user'].lower():
+                        lg.debug("_check_inbox(): ignoring message from self")
+                        m.mark_as_read()
+                        continue
+
+                    # Attempt to evaluate message
+                    action = ctb_action._eval_message(m, self)
+
+                    # Perform action if necessary
+                    if action != None:
+                        action.do()
+                        lg.info("_check_inbox(): executed action %s from message_id %s", action._TYPE, str(m.id))
+
+                    # Mark message as read
+                    m.mark_as_read()
+
                 break
+
             except HTTPError, e:
                 if e.code in [429, 500, 502, 503, 504]:
-                    lg.warning("_check_inbox(): get_unread(): Reddit is down (error %s), sleeping...", e.code)
+                    lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
                     time.sleep(60)
                     pass
                 else:
-                    lg.error("_check_inbox(): get_unread(): Reddit error %s", e.code)
+                    lg.error("_check_inbox(): HTTPError %s: %s", e.code, str(e))
                     raise
+            except timeout:
+                lg.warning("_check_inbox(): Reddit is down (timeout), sleeping...")
+                time.sleep(60)
+                pass
             except Exception, e:
-                lg.error("_check_inbox(): couldn't fetch messages: %s", str(e))
+                lg.error("_check_inbox(): %s", str(e))
                 raise
-
-        # Process messages
-        for m in messages:
-
-            # Ignore replies to bot's comments
-            if m.was_comment:
-                lg.debug("_check_inbox(): ignoring reply to bot's comments")
-                while True:
-                    try:
-                        m.mark_as_read()
-                        break
-                    except HTTPError, e:
-                        if e.code in [429, 500, 502, 503, 504]:
-                            lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
-                            time.sleep(60)
-                            pass
-                        else:
-                            lg.error("_check_inbox(): mark_as_read(): Reddit error %s", e.code)
-                            raise
-                    except Exception, e:
-                        lg.error("_check_inbox(): couldn't mark message as read: %s", str(e))
-                        raise
-                continue
-
-            # Ignore self messages
-            if bool(m.author) and m.author.name.lower() == self._config['reddit']['user'].lower():
-                lg.debug("_check_inbox(): ignoring message from self")
-                while True:
-                    try:
-                        m.mark_as_read()
-                        break
-                    except HTTPError, e:
-                        if e.code in [429, 500, 502, 503, 504]:
-                            lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
-                            time.sleep(60)
-                            pass
-                        else:
-                            lg.error("_check_inbox(): mark_as_read(): Reddit error %s", e.code)
-                            raise
-                    except Exception, e:
-                        lg.error("_check_inbox(): couldn't mark message as read: %s", str(e))
-                        raise
-                continue
-
-            # Attempt to evaluate message
-            action = ctb_action._eval_message(m, self)
-
-            # Perform action if necessary
-            if action != None:
-                lg.debug("_check_inbox(): calling action.do(%s)...", action._TYPE)
-                try:
-                    action.do()
-                    lg.info("_check_inbox(): executed action %s from message_id %s", action._TYPE, str(m.id))
-                except Exception, e:
-                    lg.error("_check_inbox(): error executing action %s from message_id %s: %s", action._TYPE, str(m.id), str(e))
-                    raise
-
-            # Mark message as read
-            while True:
-                try:
-                    m.mark_as_read()
-                    break
-                except HTTPError, e:
-                    if e.code in [429, 500, 502, 503, 504]:
-                        lg.warning("_check_inbox(): Reddit is down (error %s), sleeping...", e.code)
-                        time.sleep(60)
-                        pass
-                    else:
-                        lg.error("_check_inbox(): mark_as_read(): Reddit error %s", e.code)
-                        raise
-                except Exception, e:
-                    lg.error("_check_inbox(): couldn't mark message as read: %s", str(e))
-                    raise
 
         lg.debug("< check_inbox() DONE")
         return True
@@ -372,7 +339,7 @@ class CointipBot(object):
             try:
                 seconds = int(1 * 3600)
                 if self._subreddits_last_refresh + seconds > int(time.mktime(time.gmtime())):
-                    # Skip getting subscribed subreddits if was done in psat hour
+                    # Skip getting subscribed subreddits if was done in past hour
                     lg.debug("_check_subreddits(): skipping subreddits list refresh")
                 else:
                     # Get subscribed subreddits
@@ -390,6 +357,7 @@ class CointipBot(object):
 
                 # Fetch comments from subreddits
                 my_comments = self._subreddits.get_comments(limit=self._REDDIT_BATCH_LIMIT)
+
                 break
 
             except HTTPError, e:
@@ -398,8 +366,12 @@ class CointipBot(object):
                     time.sleep(60)
                     pass
                 else:
-                    lg.error("_check_subreddits(): Reddit error %s", e.code)
+                    lg.error("_check_subreddits(): HTTPError %s: %s", e.code, str(e))
                     raise
+            except timeout:
+                lg.warning("_check_subreddits(): Reddit is down (timeout), sleeping...")
+                time.sleep(60)
+                pass
             except Exception, e:
                 lg.error("_check_subreddits(): coudln't fetch comments: %s", str(e))
                 raise
@@ -408,12 +380,15 @@ class CointipBot(object):
         self._last_processed_comment_time = ctb_misc._get_value(conn=self._mysqlcon, param0="last_processed_comment_time")
         _updated_last_processed_time = 0
 
+        counter = 0
         try:
             for c in my_comments:
                 # Stop processing if old comment reached
                 if c.created_utc <= self._last_processed_comment_time:
-                    lg.debug("_check_subreddits: old comment reached")
+                    lg.debug("_check_subreddits: old comment reached (%s processed)", counter)
                     break
+
+                counter += 1
 
                 _updated_last_processed_time = c.created_utc if c.created_utc > _updated_last_processed_time else _updated_last_processed_time
 
@@ -422,17 +397,24 @@ class CointipBot(object):
 
                 # Perform action if necessary
                 if action != None:
-                    lg.debug("_check_subreddits(): calling action.do(%s)", action._TYPE)
                     action.do()
                     lg.info("_check_subreddits(): executed action %s from comment_id %s", action._TYPE, str(c.id))
+
+            if counter >= self._REDDIT_BATCH_LIMIT:
+                lg.warning("_check_subreddits(): _REDDIT_BATCH_LIMIT (%s) was not large enough to process all comments", self._REDDIT_BATCH_LIMIT)
 
         except HTTPError, e:
             if e.code in [429, 500, 502, 503, 504]:
                 lg.warning("_check_subreddits(): Reddit is down (error %s), sleeping...", e.code)
+                time.sleep(60)
                 pass
             else:
-                lg.error("_check_subreddits(): Reddit error %s", e.code)
+                lg.error("_check_subreddits(): HTTPError %s: %s", e.code, str(e))
                 raise
+        except timeout:
+            lg.warning("_check_subreddits(): Reddit is down (timeout), sleeping...")
+            time.sleep(60)
+            pass
         except Exception, e:
             lg.error("_check_subreddits(): coudln't fetch comments: %s", str(e))
             raise

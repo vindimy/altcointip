@@ -101,7 +101,6 @@ class CtbUser(object):
             lg.debug("< CtbUser::is_on_reddit(%s) DONE (yes)", self._NAME)
             return True
 
-        sleep_for = 10
         while True:
             # This loop retries if Reddit is down
             try:
@@ -110,13 +109,16 @@ class CtbUser(object):
                 return True
             except HTTPError, e:
                 if e.code in [429, 500, 502, 503, 504]:
-                    lg.warning("CtbUser::is_on_reddit(%s): Reddit is down, sleeping for %s seconds...",  self._NAME, str(sleep_for))
-                    time.sleep(sleep_for)
-                    sleep_for *= 2 if sleep_for < 600 else 600
+                    lg.warning("CtbUser::is_on_reddit(%s): Reddit is down (error %s), sleeping...", self._NAME, e.code)
+                    time.sleep(60)
                     pass
                 else:
                     lg.debug("< CtbUser::is_on_reddit(%s) DONE (no)", self._NAME)
                     return False
+            except timeout:
+                lg.warning("CtbUser::is_on_reddit(%s): Reddit is down (timeout), sleeping...", self._NAME)
+                time.sleep(60)
+                pass
             except Exception, e:
                 lg.debug("< CtbUser::is_on_reddit(%s) DONE (no)", self._NAME)
                 return False
@@ -167,7 +169,6 @@ class CtbUser(object):
         if not self.is_on_reddit():
             raise Exception("CtbUser::tell(%s): not a Reddit user", self._NAME)
 
-        sleep_for = 10
         while True:
             # This loop retries sending message if Reddit is down
             try:
@@ -176,12 +177,16 @@ class CtbUser(object):
                 break
             except HTTPError, e:
                 if e.code in [429, 500, 502, 503, 504]:
-                    lg.warning("CtbUser::tell(%s): Reddit is down, sleeping for %s seconds...",  self._NAME, str(sleep_for))
-                    time.sleep(sleep_for)
-                    sleep_for *= 2 if sleep_for < 600 else 600
+                    lg.warning("CtbUser::tell(%s): Reddit is down (error %s), sleeping...", self._NAME, e.code)
+                    time.sleep(60)
                     pass
                 else:
+                    lg.error("CtbUser::tell(%s): HTTPError %s: %s", self._NAME, e.code, str(e))
                     raise
+            except timeout:
+                lg.warning("CtbUser::tell(%s): Reddit is down (timeout), sleeping...", self._NAME)
+                time.sleep(60)
+                pass
             except Exception, e:
                 raise
 

@@ -1,7 +1,9 @@
 import ctb_user, ctb_btce
 
 import logging, time
+
 from requests.exceptions import HTTPError
+from socket import timeout
 
 lg = logging.getLogger('cointipbot')
 
@@ -46,22 +48,24 @@ def _reddit_reply(msg, txt):
     Reply to a comment on Reddit
     Retry if Reddit is down
     """
-    lg.debug("> _reddit_reply(%s)", msg.id)
+    lg.debug("> _reddit_reply()")
 
-    sleep_for = 10
     while True:
         try:
             msg.reply(txt)
             break
         except HTTPError, e:
             if e.code in [429, 500, 502, 503, 504]:
-                lg.warning("_reddit_reply(): Reddit is down, sleeping for %s seconds...", sleep_for)
-                time.sleep(sleep_for)
-                sleep_for *= 2 if sleep_for < 600 else 600
+                lg.warning("_reddit_reply(): Reddit is down (error %s), sleeping...", e.code)
+                time.sleep(60)
                 pass
             else:
-                lg.error("_reddit_reply(): Reddit error %s", e.code)
+                lg.error("_reddit_reply(): HTTPError %s: %s", e.code, str(e))
                 raise
+        except timeout:
+            lg.warning("_reddit_reply(): Reddit is down (timeout), sleeping...")
+            time.sleep(60)
+            pass
         except Exception, e:
             raise
 
@@ -73,17 +77,36 @@ def _reddit_get_parent_author(_comment, _reddit, _ctb):
     Return author of _comment's parent comment
     """
     lg.debug("> _get_parent_comment_author()")
-    parentpermalink = _comment.permalink.replace(_comment.id, _comment.parent_id[3:])
-    commentlinkid = _comment.link_id[3:]
-    commentid = _comment.id
-    parentid = _comment.parent_id[3:]
-    authorid = _comment.author.name
-    if (commentlinkid==parentid):
-        parentcomment = _reddit.get_submission(parentpermalink)
-    else:
-        parentcomment = _reddit.get_submission(parentpermalink).comments[0]
-    lg.debug("< _get_parent_comment_author() -> %s", parentcomment.author)
-    return parentcomment.author.name
+    while True:
+        try:
+            parentpermalink = _comment.permalink.replace(_comment.id, _comment.parent_id[3:])
+            commentlinkid = _comment.link_id[3:]
+            commentid = _comment.id
+            parentid = _comment.parent_id[3:]
+            authorid = _comment.author.name
+            if (commentlinkid==parentid):
+                parentcomment = _reddit.get_submission(parentpermalink)
+            else:
+                parentcomment = _reddit.get_submission(parentpermalink).comments[0]
+            lg.debug("< _get_parent_comment_author() -> %s", parentcomment.author.name)
+            return parentcomment.author.name
+        except HTTPError, e:
+            if e.code in [429, 500, 502, 503, 504]:
+                lg.warning("_get_parent_comment_author(): Reddit is down (error %s), sleeping...", e.code)
+                time.sleep(60)
+                pass
+            else:
+                lg.error("_get_parent_comment_author(): HTTPError %s: %s", e.code, str(e))
+                raise
+        except timeout:
+            lg.warning("_get_parent_comment_author(): Reddit is down (timeout), sleeping...")
+            time.sleep(60)
+            pass
+        except Exception, e:
+            raise
+
+    lg.error("_get_parent_comment_author(): returning None (should not get here)")
+    return None
 
 def _get_value(conn, param0=None):
     """
