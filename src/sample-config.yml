@@ -12,6 +12,7 @@ reddit:
   pass: mybotpass
   batch-limit: 1000
   useragent: /u/mybotuser
+  all-subreddits: false
   help-url: http://www.reddit.com/r/mybotuser/wiki/index
   comments:
     verify: true

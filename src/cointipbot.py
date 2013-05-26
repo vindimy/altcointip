@@ -343,12 +343,14 @@ class CointipBot(object):
                     lg.debug("_check_subreddits(): skipping subreddits list refresh")
                 else:
                     # Get subscribed subreddits
-                    my_reddits = self._redditcon.get_my_subreddits(limit=None)
-                    my_reddits_list = []
-
-                    for my_reddit in my_reddits:
-                        my_reddits_list.append(my_reddit.display_name.lower())
-                    my_reddits_list.sort()
+                    if self._config['reddit']['all-subreddits']:
+                        my_reddits_list = ['all']
+                    else:
+                        my_reddits = self._redditcon.get_my_subreddits(limit=None)
+                        my_reddits_list = []
+                        for my_reddit in my_reddits:
+                            my_reddits_list.append(my_reddit.display_name.lower())
+                        my_reddits_list.sort()
 
                     lg.debug("_check_subreddits(): subreddits: %s", '+'.join(my_reddits_list))
 
