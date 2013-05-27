@@ -1,7 +1,10 @@
 import ctb_misc
 
 import logging, time, praw, re
+
 from requests.exceptions import HTTPError
+from praw.errors import ExceptionList, APIException, InvalidCaptcha, InvalidUser, RateLimitExceeded
+from socket import timeout
 
 lg = logging.getLogger('cointipbot')
 
@@ -171,7 +174,14 @@ class CtbUser(object):
                 lg.debug("CtbUser::tell(%s): sending message", self._NAME)
                 self._REDDITOBJ.send_message(subj, msg)
                 break
-            except HTTPError, e:
+            except APIException as e:
+                lg.warning("CtbUser::tell(%s): failed (%s)", self._NAME, str(e))
+                return False
+            except ExceptionList as el:
+                for e in el:
+                    lg.warning("CtbUser::tell(%s): failed (%s)", self._NAME, str(e))
+                return False
+            except (HTTPError, RateLimitExceeded) as e:
                 lg.warning("CtbUser::tell(%s): Reddit is down (%s), sleeping...", self._NAME, str(e))
                 time.sleep(self._CTB._DEFAULT_SLEEP_TIME)
                 pass

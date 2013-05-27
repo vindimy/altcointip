@@ -3,6 +3,7 @@ import ctb_user, ctb_misc
 import logging, praw, re, time
 
 from requests.exceptions import HTTPError
+from praw.errors import ExceptionList, APIException, InvalidCaptcha, InvalidUser, RateLimitExceeded
 from socket import timeout
 
 lg = logging.getLogger('cointipbot')
@@ -111,7 +112,7 @@ class CtbAction(object):
                      self._MSG.permalink if hasattr(self._MSG, 'permalink') else None))
             if mysqlexec.rowcount <= 0:
                 raise Exception("query didn't affect any rows")
-        except Exception, e:
+        except Exception as e:
             lg.error("CtbAction::save(%s): error executing query <%s>: %s", state, sql % (
                 self._TYPE,
                 state,
@@ -215,7 +216,7 @@ class CtbAction(object):
                     m = _coincon[a._COIN].move(_config['reddit']['user'].lower(), a._FROM_USER._NAME.lower(), a._TO_AMNT)
                     # Sleep for 1 second to not overwhelm coin daemon
                     time.sleep(1)
-                except Exception, e:
+                except Exception as e:
                     lg.error("CtbAction::decline(): error: %s", str(e))
                     raise
                 # Save transaction as declined
@@ -263,7 +264,7 @@ class CtbAction(object):
             m = _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._FROM_USER._NAME.lower(), self._TO_AMNT)
             # Sleep for 1 second to not overwhelm coin daemon
             time.sleep(1)
-        except Exception, e:
+        except Exception as e:
             lg.error("CtbAction::expire(): error: %s", str(e))
             raise
 
@@ -372,7 +373,7 @@ class CtbAction(object):
                     m = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), _config['reddit']['user'].lower(), self._TO_AMNT)
                     # Sleep for 1 second to not overwhelm coin daemon
                     time.sleep(1)
-                except Exception, e:
+                except Exception as e:
                     lg.error("CtbAction::validate(): error: %s", str(e))
                     raise
 
@@ -453,7 +454,7 @@ class CtbAction(object):
                     self._TXID = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf'][self._TYPE])
                 # Sleep for 1 second to not overwhelm coin daemon
                 time.sleep(1)
-            except Exception, e:
+            except Exception as e:
                 # Transaction failed
 
                 # Save transaction to database
@@ -489,11 +490,12 @@ class CtbAction(object):
                     lg.debug("CtbAction::givetip(): " + cmnt)
                     cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                     if _config['reddit']['comments']['verify']:
-                        ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
+                        if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
+                            self._FROM_USER.tell(subj="+givetip succeeded", msg=cmnt)
                     else:
                         self._FROM_USER.tell(subj="+givetip succeeded", msg=cmnt)
 
-            except Exception, e:
+            except Exception as e:
                 # Couldn't post to Reddit
                 lg.error("CtbAction::givetip(): error communicating with Reddit: %s" % str(e))
                 raise
@@ -512,7 +514,7 @@ class CtbAction(object):
                 # Sleep for 5 seconds to not overwhelm coin daemon
                 time.sleep(5)
 
-            except Exception, e:
+            except Exception as e:
                 # Transaction failed
 
                 # Save transaction to database
@@ -539,10 +541,11 @@ class CtbAction(object):
                 lg.debug("CtbAction::givetip(): " + cmnt)
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 if _config['reddit']['comments']['verify']:
-                    ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
+                    if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
+                        self._FROM_USER.tell(subj="+givetip succeeded", msg=cmnt)
                 else:
                     self._FROM_USER.tell(subj="+givetip succeeded", msg=cmnt)
-            except Exception, e:
+            except Exception as e:
                 # Couldn't post to Reddit
                 lg.error("CtbAction::givetip(): error communicating with Reddit: %s" % str(e))
                 raise
@@ -587,7 +590,7 @@ class CtbAction(object):
                 if coininfo['wbalance'] < 0:
                     coininfo['wbalance'] = 0
                 info.append(coininfo)
-            except Exception, e:
+            except Exception as e:
                 lg.error("CtbAction::info(%s): error retrieving %s coininfo: %s", self._FROM_USER._NAME, c, str(e))
                 raise
 
@@ -858,7 +861,7 @@ def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=No
         else:
             lg.debug("< _check_action() DONE (yes)")
             return True
-    except Exception, e:
+    except Exception as e:
         lg.error("_check_action(): error executing <%s>: %s", sql, str(e))
         raise
 
@@ -931,7 +934,7 @@ def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=Non
             lg.debug("< _get_actions() DONE (yes)")
             return r
 
-        except HTTPError, e:
+        except (HTTPError, RateLimitExceeded) as e:
             lg.warning("_get_actions(): Reddit is down (%s), sleeping...", str(e))
             sleep(ctb._DEFAULT_SLEEP_TIME)
             pass
@@ -939,7 +942,7 @@ def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=Non
             lg.warning("_get_actions(): Reddit is down (timeout), sleeping...")
             time.sleep(ctb._DEFAULT_SLEEP_TIME)
             pass
-        except Exception, e:
+        except Exception as e:
             lg.error("_get_actions(): error executing <%s>: %s", sql, str(e))
             raise
 

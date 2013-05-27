@@ -3,6 +3,7 @@ import ctb_user, ctb_btce
 import logging, time
 
 from requests.exceptions import HTTPError
+from praw.errors import ExceptionList, APIException, InvalidCaptcha, InvalidUser, RateLimitExceeded
 from socket import timeout
 
 lg = logging.getLogger('cointipbot')
@@ -54,7 +55,14 @@ def _reddit_reply(msg, txt):
         try:
             msg.reply(txt)
             break
-        except HTTPError, e:
+        except APIException as e:
+            lg.warning("_reddit_reply(): failed (%s)", str(e))
+            return False
+        except ExceptionList as el:
+            for e in el:
+                lg.warning("_reddit_reply(): failed (%s)", str(e))
+            return False
+        except (HTTPError, RateLimitExceeded) as e:
             lg.warning("_reddit_reply(): Reddit is down (%s), sleeping...", str(e))
             time.sleep(30)
             pass
@@ -62,7 +70,7 @@ def _reddit_reply(msg, txt):
             lg.warning("_reddit_reply(): Reddit is down (timeout), sleeping...")
             time.sleep(30)
             pass
-        except Exception, e:
+        except Exception as e:
             raise
 
     lg.debug("< _reddit_reply(%s) DONE", msg.id)
