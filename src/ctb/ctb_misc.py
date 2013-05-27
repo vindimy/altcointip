@@ -46,7 +46,7 @@ def _refresh_exchange_rate(ctb=None):
 
 def _reddit_reply(msg, txt):
     """
-    Reply to a comment on Reddit
+    Reply to a comment/message on Reddit
     Retry if Reddit is down
     """
     lg.debug("> _reddit_reply()")
@@ -63,6 +63,9 @@ def _reddit_reply(msg, txt):
                 lg.warning("_reddit_reply(): failed (%s)", str(e))
             return False
         except (HTTPError, RateLimitExceeded) as e:
+            if str(e) == "403 Client Error: Forbidden":
+                lg.warning("_reddit_reply(): banned to reply to %s", msg.permalink)
+                return False
             lg.warning("_reddit_reply(): Reddit is down (%s), sleeping...", str(e))
             time.sleep(30)
             pass

@@ -228,7 +228,8 @@ class CtbAction(object):
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::decline(): " + cmnt)
                 if _config['reddit']['comments']['declined']:
-                    ctb_misc._reddit_reply(msg=a._MSG, txt=cmnt)
+                    if not ctb_misc._reddit_reply(msg=a._MSG, txt=cmnt):
+                        a._FROM_USER.tell(subj="+givetip declined", msg=cmnt)
                 else:
                     a._FROM_USER.tell(subj="+givetip declined", msg=cmnt)
 
@@ -278,7 +279,8 @@ class CtbAction(object):
         cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
         lg.debug("CtbAction::expire(): " + cmnt)
         if _config['reddit']['comments']['expired']:
-            ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
+            if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
+                self._FROM_USER.tell(subj="+givetip expired", msg=cmnt)
         else:
             self._FROM_USER.tell(subj="+givetip expired", msg=cmnt)
 
@@ -387,7 +389,8 @@ class CtbAction(object):
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::validate(): " + cmnt)
                 if _config['reddit']['comments']['verify']:
-                    ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt)
+                    if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
+                        self._FROM_USER.tell(subj="+givetip pending +accept", msg=cmnt)
                 else:
                     self._FROM_USER.tell(subj="+givetip pending +accept", msg=cmnt)
 
