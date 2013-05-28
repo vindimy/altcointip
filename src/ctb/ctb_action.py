@@ -356,7 +356,7 @@ class CtbAction(object):
                     # Send notice to _FROM_USER
                     msg = "I'm sorry %s, /u/%s already has a pending tip from you. Please wait until he/she accepts or declines it." % (re.escape(self._FROM_USER._NAME), re.escape(self._TO_USER._NAME))
                     lg.debug("CtbAction::validate(): " + msg)
-                    msg += " Pending tips expire in %s hours." % _config['misc']['expire-pending-hours']
+                    msg += " Pending tips expire in %.1g days." % ( float(_config['misc']['expire-pending-hours']) / float(24) )
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                     msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                     self._FROM_USER.tell(subj="+givetip failed", msg=msg)
@@ -398,7 +398,7 @@ class CtbAction(object):
                 msg = "Hey %s, /u/%s sent you a __%.6g %s(s) ($%.2g)__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
                 msg += "Reply with __[+decline](http://www.reddit.com/message/compose?to=%s&subject=decline&message=%%2Bdecline)__ to decline it."
                 msg = msg % (re.escape(self._TO_USER._NAME), re.escape(self._FROM_USER._NAME), self._TO_AMNT, _cc[self._COIN]['name'], self._USD_VAL, self._CTB._config['reddit']['user'], self._CTB._config['reddit']['user'])
-                msg += " Pending tips expire in %s hours." % _config['misc']['expire-pending-hours']
+                msg += " Pending tips expire in %.1g days." % ( float(_config['misc']['expire-pending-hours']) / float(24) )
                 lg.debug("CtbAction::validate(): %s", msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
