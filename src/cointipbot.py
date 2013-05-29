@@ -371,16 +371,16 @@ class CointipBot(object):
         self._last_processed_comment_time = ctb_misc._get_value(conn=self._mysqlcon, param0="last_processed_comment_time")
         _updated_last_processed_time = 0
 
-        counter = 0
         try:
+            counter = 0
             for c in my_comments:
                 # Stop processing if old comment reached
+                #lg.debug("_check_subreddits(): c.id %s from %s, %s <= %s", c.id, c.subreddit.display_name, c.created_utc, self._last_processed_comment_time)
                 if c.created_utc <= self._last_processed_comment_time:
-                    lg.debug("_check_subreddits: old comment reached (%s processed)", counter)
+                    lg.debug("_check_subreddits(): old comment reached")
                     break
 
                 counter += 1
-
                 _updated_last_processed_time = c.created_utc if c.created_utc > _updated_last_processed_time else _updated_last_processed_time
 
                 # Attempt to evaluate comment
@@ -388,9 +388,10 @@ class CointipBot(object):
 
                 # Perform action if necessary
                 if action != None:
+                    lg.info("_check_subreddits(): %s from %s (c.id %s)", action._TYPE, action._FROM_USER._NAME, str(c.id))
                     action.do()
-                    lg.info("_check_subreddits(): executed action %s from comment_id %s", action._TYPE, str(c.id))
 
+            lg.debug("_check_subreddits(): %s comments processed", counter)
             if counter >= self._REDDIT_BATCH_LIMIT - 1:
                 lg.warning("_check_subreddits(): _REDDIT_BATCH_LIMIT (%s) was not large enough to process all comments", self._REDDIT_BATCH_LIMIT)
 
