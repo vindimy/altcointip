@@ -110,7 +110,7 @@ class CtbUser(object):
                 self._REDDITOBJ = self._CTB._redditcon.get_redditor(self._NAME)
                 lg.debug("< CtbUser::is_on_reddit(%s) DONE (yes)", self._NAME)
                 return True
-            except HTTPError, e:
+            except (HTTPError, RateLimitExceeded) as e:
                 lg.warning("CtbUser::is_on_reddit(%s): Reddit is down (%s), sleeping...", self._NAME, str(e))
                 time.sleep(self._CTB._DEFAULT_SLEEP_TIME)
                 pass
@@ -118,7 +118,7 @@ class CtbUser(object):
                 lg.warning("CtbUser::is_on_reddit(%s): Reddit is down (timeout), sleeping...", self._NAME)
                 time.sleep(self._CTB._DEFAULT_SLEEP_TIME)
                 pass
-            except Exception, e:
+            except Exception as e:
                 lg.debug("< CtbUser::is_on_reddit(%s) DONE (no)", self._NAME)
                 return False
 

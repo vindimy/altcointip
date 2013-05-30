@@ -67,11 +67,11 @@ def _reddit_reply(msg, txt):
                 lg.warning("_reddit_reply(): banned to reply to %s", msg.permalink)
                 return False
             lg.warning("_reddit_reply(): Reddit is down (%s), sleeping...", str(e))
-            time.sleep(30)
+            time.sleep(10)
             pass
         except timeout:
             lg.warning("_reddit_reply(): Reddit is down (timeout), sleeping...")
-            time.sleep(30)
+            time.sleep(10)
             pass
         except Exception as e:
             raise
@@ -95,17 +95,24 @@ def _reddit_get_parent_author(_comment, _reddit, _ctb):
                 parentcomment = _reddit.get_submission(parentpermalink)
             else:
                 parentcomment = _reddit.get_submission(parentpermalink).comments[0]
-            lg.debug("< _get_parent_comment_author() -> %s", parentcomment.author.name)
+            lg.debug("< _get_parent_comment_author(%s) -> %s", _comment.id, parentcomment.author.name)
             return parentcomment.author.name
-        except HTTPError, e:
-            lg.warning("_get_parent_comment_author(): Reddit is down (%s), sleeping...", str(e))
+        except APIException as e:
+            lg.error("_reddit_get_parent_author(%s): failed (%s)", _comment.id, str(e))
+            raise
+        except ExceptionList as el:
+            for e in el:
+                lg.error("_reddit_get_parent_author(%s): failed (%s)", _comment.id, str(e))
+            raise
+        except (HTTPError, RateLimitExceeded) as e:
+            lg.warning("_get_parent_comment_author(%s): Reddit is down (%s), sleeping...", _comment.id, str(e))
             time.sleep(_ctb._DEFAULT_SLEEP_TIME)
             pass
         except timeout:
-            lg.warning("_get_parent_comment_author(): Reddit is down (timeout), sleeping...")
+            lg.warning("_get_parent_comment_author(%s): Reddit is down (timeout), sleeping...", _comment.id)
             time.sleep(_ctb._DEFAULT_SLEEP_TIME)
             pass
-        except Exception, e:
+        except Exception as e:
             raise
 
     lg.error("_get_parent_comment_author(): returning None (should not get here)")
