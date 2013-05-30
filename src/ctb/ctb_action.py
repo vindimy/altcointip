@@ -224,7 +224,7 @@ class CtbAction(object):
                 # Respond to tip comment
                 cmnt = "^__[Declined]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (a._FROM_USER._NAME, a._TO_USER._NAME, a._TO_AMNT, _cc[self._COIN]['name'])
                 if bool(self._USD_VAL):
-                    cmnt += "&nbsp;^__($%.2g)__" % self._USD_VAL
+                    cmnt += "&nbsp;^__($%.4g)__" % self._USD_VAL
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::decline(): " + cmnt)
                 if _config['reddit']['comments']['declined']:
@@ -275,7 +275,7 @@ class CtbAction(object):
         # Respond to tip comment
         cmnt = "^__[Expired]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
         if bool(self._USD_VAL):
-            cmnt += "&nbsp;^__($%.2g)__" % self._USD_VAL
+            cmnt += "&nbsp;^__($%.4g)__" % self._USD_VAL
         cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
         lg.debug("CtbAction::expire(): " + cmnt)
         if _config['reddit']['comments']['expired']:
@@ -385,7 +385,7 @@ class CtbAction(object):
                 # Respond to tip comment
                 cmnt = "^(__[Verified]__:) ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
                 if bool(self._USD_VAL):
-                    cmnt += "&nbsp;^__($%.2g)__" % self._USD_VAL
+                    cmnt += "&nbsp;^__($%.4g)__" % self._USD_VAL
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::validate(): " + cmnt)
                 if _config['reddit']['comments']['verify']:
@@ -395,7 +395,7 @@ class CtbAction(object):
                     self._FROM_USER.tell(subj="+givetip pending +accept", msg=cmnt)
 
                 # Send notice to _TO_USER
-                msg = "Hey %s, /u/%s sent you a __%.6g %s(s) ($%.2g)__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
+                msg = "Hey %s, /u/%s sent you a __%.6g %s(s) ($%.4g)__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
                 msg += "Reply with __[+decline](http://www.reddit.com/message/compose?to=%s&subject=decline&message=%%2Bdecline)__ to decline it."
                 msg = msg % (re.escape(self._TO_USER._NAME), re.escape(self._FROM_USER._NAME), self._TO_AMNT, _cc[self._COIN]['name'], self._USD_VAL, self._CTB._config['reddit']['user'], self._CTB._config['reddit']['user'])
                 msg += " Pending tips expire in %.1g days." % ( float(_config['misc']['expire-pending-hours']) / float(24) )
@@ -479,7 +479,7 @@ class CtbAction(object):
 
             try:
                 # Send confirmation to _TO_USER
-                msg = "Hey %s, you have received a __%.6g %s(s) ($%.2g)__ tip from /u/%s." % (re.escape(self._TO_USER._NAME), self._TO_AMNT, _cc[self._COIN]['name'], self._USD_VAL, re.escape(self._FROM_USER._NAME))
+                msg = "Hey %s, you have received a __%.6g %s(s) ($%.4g)__ tip from /u/%s." % (re.escape(self._TO_USER._NAME), self._TO_AMNT, _cc[self._COIN]['name'], self._USD_VAL, re.escape(self._FROM_USER._NAME))
                 lg.debug("CtbAction::givetip(): " + msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
@@ -489,7 +489,7 @@ class CtbAction(object):
                     # This is not an +accept, so post verification comment
                     cmnt = "^__[Verified]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
                     if bool(self._USD_VAL):
-                        cmnt += "&nbsp;^__($%.2g)__" % self._USD_VAL
+                        cmnt += "&nbsp;^__($%.4g)__" % self._USD_VAL
                     lg.debug("CtbAction::givetip(): " + cmnt)
                     cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                     if _config['reddit']['comments']['verify']:
@@ -540,7 +540,7 @@ class CtbAction(object):
                 ex = _cc[self._COIN]['explorer']
                 cmnt = "^__[[Verified](%s)]__: ^/u/%s ^-> ^[%s](%s), __^%.6g ^%s(s)__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['name'])
                 if bool(self._USD_VAL):
-                    cmnt += "&nbsp;^__($%.2g)__" % self._USD_VAL
+                    cmnt += "&nbsp;^__($%.4g)__" % self._USD_VAL
                 lg.debug("CtbAction::givetip(): " + cmnt)
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 if _config['reddit']['comments']['verify']:
@@ -622,9 +622,9 @@ class CtbAction(object):
                 wbalance_usd = self._CTB._ticker_val[i['coin']+'_btc']['avg'] * self._CTB._ticker_val['btc_usd']['avg'] * float(i['wbalance'])
                 tbalance_usd_total += tbalance_usd
                 wbalance_usd_total += wbalance_usd
-            txt += "__%s (%s)__|%s&nbsp;^%s&nbsp;%s|__%.6f&nbsp;^$%.2g__|%.6f&nbsp;^$%.2g\n" % (_cc[i['coin']]['name'], i['coin'].upper(), i['address'], addr_ex_str, addr_qr_str, i['tbalance'], tbalance_usd, i['wbalance'], wbalance_usd)
+            txt += "__%s (%s)__|%s&nbsp;^%s&nbsp;%s|__%.6f&nbsp;^$%.4g__|%.6f&nbsp;^$%.4g\n" % (_cc[i['coin']]['name'], i['coin'].upper(), i['address'], addr_ex_str, addr_qr_str, i['tbalance'], tbalance_usd, i['wbalance'], wbalance_usd)
         txt += "&nbsp;|&nbsp;|&nbsp;|&nbsp;\n"
-        txt += "__TOTAL $__|&nbsp;|__$%.2g__|$%.2g\n" % (tbalance_usd_total, wbalance_usd_total)
+        txt += "__TOTAL $__|&nbsp;|__$%.4g__|$%.4g\n" % (tbalance_usd_total, wbalance_usd_total)
         txt += "\n\nUse addresses above to deposit coins into your account. Tip and withdraw balances differ while newly deposited coins are confirmed."
         txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
 
