@@ -370,11 +370,11 @@ class CtbAction(object):
                     self.save('failed')
                     return False
 
-            # Check if _TO_USER has any pending tips from _FROM_USER
+            # Check if _TO_USER has any pending _COIN tips from _FROM_USER
             if (bool(self._TO_USER)) and not is_pending:
-                if _check_action(atype='givetip', state='pending', to_user=self._TO_USER._NAME, from_user=self._FROM_USER._NAME, ctb=self._CTB):
+                if _check_action(atype='givetip', state='pending', to_user=self._TO_USER._NAME, from_user=self._FROM_USER._NAME, coin=self._COIN, ctb=self._CTB):
                     # Send notice to _FROM_USER
-                    msg = "I'm sorry %s, /u/%s already has a pending tip from you. Please wait until he/she accepts or declines it." % (re.escape(self._FROM_USER._NAME), re.escape(self._TO_USER._NAME))
+                    msg = "I'm sorry %s, /u/%s already has a pending %s tip from you. Please wait until he/she accepts or declines it." % (re.escape(self._FROM_USER._NAME), re.escape(self._TO_USER._NAME), self._COIN.upper())
                     lg.debug("CtbAction::validate(): " + msg)
                     msg += " Pending tips expire in %.1g days." % ( float(_config['misc']['expire-pending-hours']) / float(24) )
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
