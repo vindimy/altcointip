@@ -1,8 +1,8 @@
-SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
 CREATE TABLE IF NOT EXISTS `t_action` (
-  `type` enum('givetip','withdraw') NOT NULL,
+  `type` enum('givetip','withdraw','info','register','accept','decline','history') NOT NULL,
   `state` enum('completed','pending','failed','declined') NOT NULL,
   `created_utc` int(11) unsigned NOT NULL,
   `from_user` varchar(30) NOT NULL,
@@ -42,4 +42,3 @@ CREATE TABLE IF NOT EXISTS `t_values` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 INSERT INTO `t_values` (`param0`, `value0`) VALUES('last_processed_comment_time', 0);
-

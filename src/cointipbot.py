@@ -262,13 +262,15 @@ class CointipBot(object):
         # Calculate timestamp
         seconds = int(self._config['misc']['expire-pending-hours'] * 3600)
         created_before = time.mktime(time.gmtime()) - seconds
+        counter = 0
 
         # Get expired actions and decline them
         for a in ctb_action._get_actions(atype='givetip', state='pending', created_utc='< ' + str(created_before), ctb=self):
             a.expire()
+            counter += 1
 
         # Done
-        return True
+        return (counter > 0)
 
     def _check_inbox(self):
         """
@@ -301,8 +303,8 @@ class CointipBot(object):
 
                     # Perform action if necessary
                     if action != None:
-                        action.do()
-                        lg.info("_check_inbox(): executed action %s from message_id %s", action._TYPE, str(m.id))
+                        if action.do():
+                            lg.info("_check_inbox(): %s from %s (m.id %s)", action._TYPE, action._FROM_USER._NAME, str(m.id))
 
                     # Mark message as read
                     m.mark_as_read()
@@ -429,13 +431,15 @@ class CointipBot(object):
                 # Refresh exchange rates
                 ctb_misc._refresh_exchange_rate(self)
                 # Expire pending tips
-                self._expire_pending_tips()
+                if self._expire_pending_tips():
+                    time.sleep(2)
                 # Check personal messages
                 self._check_inbox()
+                time.sleep(2)
                 # Check subreddit comments for tips
                 self._check_subreddits()
                 # Sleep
-                lg.debug("Sleeping for %s seconds", self._DEFAULT_SLEEP_TIME)
+                lg.debug("Sleeping for %s seconds...", self._DEFAULT_SLEEP_TIME)
                 time.sleep(self._DEFAULT_SLEEP_TIME)
             except Exception as e:
                 lg.exception("Caught exception in main() loop: %s", str(e))

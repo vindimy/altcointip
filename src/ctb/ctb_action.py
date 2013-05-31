@@ -41,15 +41,15 @@ class CtbAction(object):
 
         self._TYPE = atype
 
-        self._COIN = coin.lower() if bool(coin) else None
+        self._COIN = coin.lower() if bool(coin) else 'x'
         self._FIAT = fiat.lower() if bool(fiat) else None
         self._SUBR = subr
-        self._USD_VAL = float(usd_val) if bool(usd_val) else None
+        self._USD_VAL = float(usd_val) if bool(usd_val) else float(0)
 
         self._MSG = msg
         self._CTB = ctb
 
-        self._TO_AMNT = float(to_amnt) if bool(to_amnt) else None
+        self._TO_AMNT = float(to_amnt) if bool(to_amnt) else float(0)
         self._TO_ADDR = to_addr
         self._TO_USER = ctb_user.CtbUser(name=to_user, ctb=ctb) if bool(to_user) else None
         self._FROM_USER = ctb_user.CtbUser(name=msg.author.name, redditobj=msg.author, ctb=ctb) if bool(msg) else None
@@ -173,10 +173,15 @@ class CtbAction(object):
         _cc = self._CTB._config['cc']
         _redditcon = self._CTB._redditcon
 
+        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB)):
+            lg.debug("CtbAction::accept(): duplicate action %s, ignoring", self._MSG.id)
+            return False
+
         # Register as new user
         if not self._FROM_USER.is_registered():
             if not self._FROM_USER.register():
                 lg.debug("CtbAction::accept(): self._FROM_USER.register() failed")
+                self.save('failed')
                 return False
 
         # Get pending actions
@@ -192,6 +197,9 @@ class CtbAction(object):
             txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
             ctb_misc._reddit_reply(msg=self._MSG, txt=txt)
 
+        # Save action to database
+        self.save('completed')
+
         lg.debug("< CtbAction::accept() DONE")
         return True
 
@@ -206,6 +214,10 @@ class CtbAction(object):
         _config = self._CTB._config
         _cc = self._CTB._config['cc']
         _redditcon = self._CTB._redditcon
+
+        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB)):
+            lg.debug("CtbAction::decline(): duplicate action %s, ignoring", self._MSG.id)
+            return False
 
         actions = _get_actions(atype='givetip', to_user=self._FROM_USER._NAME, state='pending', ctb=self._CTB)
         if bool(actions):
@@ -243,6 +255,9 @@ class CtbAction(object):
             lg.debug("CtbAction::decline(): %s", txt)
             txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
             ctb_misc._reddit_reply(msg=self._MSG, txt=txt)
+
+        # Save action to database
+        self.save('completed')
 
         lg.debug("< CtbAction::decline() DONE")
         return True
@@ -307,6 +322,7 @@ class CtbAction(object):
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                self.save('failed')
                 return False
 
             # Verify that _FROM_USER has coin address
@@ -316,6 +332,7 @@ class CtbAction(object):
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                self.save('failed')
                 return False
 
             # Verify minimum transaction size
@@ -326,6 +343,7 @@ class CtbAction(object):
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                self.save('failed')
                 return False
 
             # Verify balance (unless it's a pending transaction being processed, in which case coins have been already moved to pending acct)
@@ -338,6 +356,7 @@ class CtbAction(object):
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                     msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                     self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                    self.save('failed')
                     return False
             elif bool(self._TO_ADDR):
                 # Tip/withdrawal to address (requires more confirmations)
@@ -348,6 +367,7 @@ class CtbAction(object):
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                     msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                     self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                    self.save('failed')
                     return False
 
             # Check if _TO_USER has any pending tips from _FROM_USER
@@ -360,6 +380,7 @@ class CtbAction(object):
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                     msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                     self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                    self.save('failed')
                     return False
 
             # Check if _TO_USER has registered, if applicable
@@ -416,6 +437,7 @@ class CtbAction(object):
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                     msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                     self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                    self.save('failed')
                     return False
 
         # Action is valid
@@ -434,15 +456,15 @@ class CtbAction(object):
         _cc = self._CTB._config['cc']
         _redditcon = self._CTB._redditcon
 
-        # Validate action
-        if not self.validate(is_pending=is_pending):
-            # Couldn't validate action, returning
-            return False
-
         # Check if action has been processed
         if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB, is_pending=is_pending)):
             # Found action in database, returning
             lg.warning("CtbAction::givetip(): duplicate action (msg_id=%s, created_utc=%s)", self._MSG.id, self._MSG.created_utc)
+            return False
+
+        # Validate action
+        if not self.validate(is_pending=is_pending):
+            # Couldn't validate action, returning
             return False
 
         if bool(self._TO_USER):
@@ -571,6 +593,10 @@ class CtbAction(object):
         _cc = self._CTB._config['cc']
         _redditcon = self._CTB._redditcon
 
+        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB)):
+            lg.debug("CtbAction::info(): duplicate action %s, ignoring", self._MSG.id)
+            return False
+
         # Check if user exists
         if not self._FROM_USER.is_registered():
             msg = "I'm sorry %s, we've never met. " % (re.escape(self._FROM_USER._NAME))
@@ -631,6 +657,9 @@ class CtbAction(object):
         # Send info message
         ctb_misc._reddit_reply(msg=self._MSG, txt=txt)
 
+        # Save action to database
+        self.save('completed')
+
         lg.debug("< CtbAction::info() DONE")
         return True
 
@@ -640,12 +669,20 @@ class CtbAction(object):
         """
         lg.debug("> CtbAction::register()")
 
+        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB)):
+            lg.debug("CtbAction::register(): duplicate action %s, ignoring", self._MSG.id)
+            return False
+
         # If user exists, do nothing
         if self._FROM_USER.is_registered():
             lg.debug("CtbAction::register(%s): user already exists; ignoring request", self._FROM_USER._NAME)
+            self.save('completed')
             return True
 
         result = self._FROM_USER.register()
+
+        # Save action to database
+        self.save('completed')
 
         lg.debug("< CtbAction::register() DONE")
         return result
@@ -916,13 +953,17 @@ def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=Non
                 return r
 
             for m in mysqlexec:
-                submission = redditcon.get_submission(m['msg_link'])
+                lg.debug("_get_actions(): found %s", m['msg_link'])
 
+                submission = redditcon.get_submission(m['msg_link'])
                 if not len(submission.comments) > 0:
                     lg.warning("_get_actions(): couldn't fetch msg (deleted?) from msg_link %s", m['msg_link'])
                     continue
-
                 msg = submission.comments[0]
+                if not bool(msg.author):
+                    lg.warning("_get_actions(): couldn't fetch msg.author (deleted?) from msg_link %s", m['msg_link'])
+                    continue
+
                 r.append( CtbAction(  atype=atype,
                                       msg=msg,
                                       to_user=m['to_user'],
