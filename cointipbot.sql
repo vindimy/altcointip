@@ -40,5 +40,3 @@ CREATE TABLE IF NOT EXISTS `t_values` (
   `value0` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`param0`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-INSERT INTO `t_values` (`param0`, `value0`) VALUES('last_processed_comment_time', 0);

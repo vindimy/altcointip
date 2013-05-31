@@ -32,10 +32,11 @@ class CointipBot(object):
     _ticker_last_refresh = 0
 
     _subreddits = None
-    _subreddits_last_refresh = 0
 
     _rlist_message = []
     _rlist_comment = []
+
+    _last_processed_comment_time = 0
 
     def _init_localization(self):
         """
@@ -333,10 +334,7 @@ class CointipBot(object):
         while True:
             try:
                 seconds = int(1 * 3600)
-                if self._subreddits_last_refresh + seconds > int(time.mktime(time.gmtime())):
-                    # Skip getting subscribed subreddits if was done in past hour
-                    lg.debug("_check_subreddits(): skipping subreddits list refresh")
-                else:
+                if not bool(self._subreddits):
                     # Get subscribed subreddits
                     if self._config['reddit']['all-subreddits']:
                         my_reddits_list = ['all']
@@ -350,11 +348,9 @@ class CointipBot(object):
                     lg.debug("_check_subreddits(): subreddits: %s", '+'.join(my_reddits_list))
 
                     self._subreddits = self._redditcon.get_subreddit('+'.join(my_reddits_list))
-                    self._subreddits_last_refresh = int(time.mktime(time.gmtime()))
 
                 # Fetch comments from subreddits
                 my_comments = self._subreddits.get_comments(limit=self._REDDIT_BATCH_LIMIT)
-
                 break
 
             except (HTTPError, RateLimitExceeded) as e:
@@ -370,9 +366,7 @@ class CointipBot(object):
                 raise
 
         # Process comments until old comment reached
-        self._last_processed_comment_time = ctb_misc._get_value(conn=self._mysqlcon, param0="last_processed_comment_time")
         _updated_last_processed_time = 0
-
         try:
             counter = 0
             for c in my_comments:
@@ -383,7 +377,8 @@ class CointipBot(object):
                     break
 
                 counter += 1
-                _updated_last_processed_time = c.created_utc if c.created_utc > _updated_last_processed_time else _updated_last_processed_time
+                if c.created_utc > _updated_last_processed_time:
+                    _updated_last_processed_time = c.created_utc
 
                 # Attempt to evaluate comment
                 action = ctb_action._eval_comment(c, self)
@@ -411,7 +406,7 @@ class CointipBot(object):
 
         # Save updated last_processed_time value
         if _updated_last_processed_time > 0:
-            ctb_misc._set_value(conn=self._mysqlcon, param0="last_processed_comment_time", value0=_updated_last_processed_time)
+            self._last_processed_comment_time = _updated_last_processed_time
 
         lg.debug("< _check_subreddits() DONE")
         return True
