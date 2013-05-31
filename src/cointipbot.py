@@ -385,7 +385,7 @@ class CointipBot(object):
 
                 # Perform action if necessary
                 if action != None:
-                    lg.info("_check_subreddits(): %s from %s (c.id %s)", action._TYPE, action._FROM_USER._NAME, str(c.id))
+                    lg.info("_check_subreddits(): %s (%.6g %s) from %s (c.id %s)", action._TYPE, action._TO_AMNT, action._COIN, action._FROM_USER._NAME, str(c.id))
                     action.do()
 
             lg.debug("_check_subreddits(): %s comments processed", counter)
