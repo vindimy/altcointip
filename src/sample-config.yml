@@ -49,11 +49,18 @@ logging:
 fiat:
   # USD
   usd:
-    enabled: false
     unit: usd
+    symbol: $
     name: US Dollar
     regex:
       units: (usd|$)
+  # EUR
+  eur:
+    unit: eur
+    symbol: e
+    name: Euro
+    regex:
+      units: (eur|e)
 
 # Cryptocoins
 cc:

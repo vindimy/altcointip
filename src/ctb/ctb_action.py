@@ -19,21 +19,19 @@ class CtbAction(object):
 
     _FROM_USER=None     # CtbUser instance
     _TO_USER=None       # CtbUser instance, if applicable
-
-    _TO_AMNT=None       # float specifying value of 'givetip' and 'withdraw' actions
     _TO_ADDR=None       # destination cryptocoin address of 'givetip' and 'withdraw' actions, if applicable
-
-    _USD_VAL=None       # USD value of the 'givetip' action, if applicable
 
     _COIN=None          # coin for this action (for example, 'ltc')
     _FIAT=None          # fiat for this action (for example, 'usd'), if applicable
+    _COIN_VAL=None      # coin value of 'givetip' and 'withdraw' actions
+    _FIAT_VAL=None      # fiat value of the 'givetip' or 'withdraw' action
 
     _SUBR=None          # subreddit that originated the action, if applicable
 
     _MSG=None           # Reddit object pointing to originating message/comment
     _CTB=None           # CointipBot instance
 
-    def __init__(self, atype=None, msg=None, to_user=None, to_amnt=None, to_addr=None, coin=None, fiat=None, subr=None, usd_val=None, ctb=None):
+    def __init__(self, atype=None, msg=None, to_user=None, to_addr=None, coin=None, fiat=None, coin_val=None, fiat_val=None, subr=None, ctb=None):
         """
         Initialize CtbAction object with given parameters and run basic checks
         """
@@ -41,46 +39,54 @@ class CtbAction(object):
 
         self._TYPE = atype
 
-        self._COIN = coin.lower() if bool(coin) else 'x'
-        self._FIAT = fiat.lower() if bool(fiat) else None
-        self._SUBR = subr
-        self._USD_VAL = float(usd_val) if bool(usd_val) else float(0)
+        self._COIN = coin.lower() if bool(coin) else None
+        self._FIAT = fiat.lower() if bool(fiat) else 'usd'
+        self._COIN_VAL = float(coin_val) if bool(coin_val) else None
+        self._FIAT_VAL = float(fiat_val) if bool(fiat_val) else None
 
         self._MSG = msg
         self._CTB = ctb
 
-        self._TO_AMNT = float(to_amnt) if bool(to_amnt) else float(0)
         self._TO_ADDR = to_addr
         self._TO_USER = ctb_user.CtbUser(name=to_user, ctb=ctb) if bool(to_user) else None
         self._FROM_USER = ctb_user.CtbUser(name=msg.author.name, redditobj=msg.author, ctb=ctb) if bool(msg) else None
+        self._SUBR = subr
 
         # Do some checks
         if not bool(self._TYPE) or self._TYPE not in ['accept', 'decline', 'history', 'info', 'register', 'givetip', 'withdraw']:
             raise Exception("CtbAction::__init__(type=?): proper type is required")
-
         if not bool(self._CTB):
             raise Exception("CtbAction::__init__(type=%s): no reference to CointipBot", self._TYPE)
-
         if not bool(self._MSG):
             raise Exception("CtbAction::__init__(type=%s): no reference to Reddit message/comment", self._TYPE)
-
         if self._TYPE in ['givetip', 'withdraw']:
-            if not bool(self._TO_AMNT):
-                raise Exception("CtbAction::__init__(type=givetip): _TO_AMNT must be set")
             if not (bool(self._TO_USER) ^ bool(self._TO_ADDR)):
-                raise Exception("CtbAction::__init__(type=givetip): _TO_USER xor _TO_ADDR must be set")
-            if not (bool(self._COIN) ^ bool(self._FIAT)):
-                raise Exception("CtbAction::__init__(type=givetip): _COIN xor _FIAT must be set")
+                raise Exception("CtbAction::__init__(atype=%s, from_user=%s): _TO_USER xor _TO_ADDR must be set" % (self._TYPE, self._FROM_USER._NAME))
+            if not (bool(self._COIN)):
+                raise Exception("CtbAction::__init__(atype=%s, from_user=%s): _COIN must be set" % (self._TYPE, self._FROM_USER._NAME))
+            if not (bool(self._COIN_VAL) or bool(self._FIAT_VAL)):
+                raise Exception("CtbAction::__init__(atype=%s, from_user=%s): _COIN_VAL or _FIAT_VAL must be set" % (self._TYPE, self._FROM_USER._NAME))
 
-        # Subtract tx fee if it's needed
+        # Determine fiat or COIN value
+        if self._TYPE in ['givetip', 'withdraw']:
+            if not bool(self._FIAT_VAL):
+                # Determine fiat value
+                if hasattr(ctb, '_ticker_val') and ctb._ticker_val.has_key(self._COIN+'_btc') and ctb._ticker_val.has_key('btc_'+self._FIAT):
+                    self._FIAT_VAL = float( self._COIN_VAL * ctb._ticker_val[self._COIN+'_btc']['avg'] * ctb._ticker_val['btc_'+self._FIAT]['avg'] )
+                else:
+                    lg.warning("CtbAction::__init__(atype=%s, from_user=%s): can't determine %s value of %s", self._TYPE, self._FROM_USER._NAME, self._FIAT, self._COIN)
+                    self._FIAT_VAL = float(0)
+            elif not bool(self._COIN_VAL):
+                # Determine COIN value
+                if hasattr(ctb, '_ticker_val') and ctb._ticker_val.has_key(self._COIN+'_btc') and ctb._ticker_val.has_key('btc_'+self._FIAT):
+                    self._COIN_VAL = float( self._FIAT_VAL / ( ctb._ticker_val[self._COIN+'_btc']['avg'] * ctb._ticker_val['btc_'+self._FIAT]['avg'] ) )
+                else:
+                    lg.warning("CtbAction::__init__(atype=%s, from_user=%s): can't determine %s value of %s", self._TYPE, self._FROM_USER._NAME, self._COIN, self._FIAT)
+                    self._COIN_VAL = float(0)
+
+        # Subtract tx fee if needed
         if bool(self._TO_ADDR):
-            self._TO_AMNT -= self._CTB._config['cc'][self._COIN]['txfee']
-
-        # Determine USD value of 'givetip' action
-        if not bool(self._USD_VAL):
-            if self._TYPE in ['givetip', 'withdraw']:
-                if hasattr(ctb, '_ticker_val'):
-                    self._USD_VAL = float(to_amnt) * ctb._ticker_val[coin+'_btc']['avg'] * ctb._ticker_val['btc_usd']['avg']
+            self._COIN_VAL -= self._CTB._config['cc'][self._COIN]['txfee']
 
         lg.debug("< CtbAction::__init__(atype=%s, from_user=%s) DONE", self._TYPE, self._FROM_USER._NAME)
 
@@ -91,7 +97,7 @@ class CtbAction(object):
         lg.debug("> CtbAction::save(%s)", state)
 
         conn = self._CTB._mysqlcon
-        sql = "REPLACE INTO t_action (type, state, created_utc, from_user, to_user, to_addr, to_amnt, usd_value, txid, coin, fiat, subreddit, msg_id, msg_link)"
+        sql = "REPLACE INTO t_action (type, state, created_utc, from_user, to_user, to_addr, coin_val, fiat_val, txid, coin, fiat, subreddit, msg_id, msg_link)"
         sql += " values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
         try:
@@ -102,8 +108,8 @@ class CtbAction(object):
                      self._FROM_USER._NAME.lower(),
                      self._TO_USER._NAME.lower() if bool(self._TO_USER) else None,
                      self._TO_ADDR,
-                     self._TO_AMNT,
-                     self._USD_VAL,
+                     self._COIN_VAL,
+                     self._FIAT_VAL,
                      self._TXID,
                      self._COIN,
                      self._FIAT,
@@ -120,8 +126,8 @@ class CtbAction(object):
                 self._FROM_USER._NAME.lower(),
                 self._TO_USER._NAME.lower() if bool(self._TO_USER) else None,
                 self._TO_ADDR,
-                self._TO_AMNT,
-                self._USD_VAL,
+                self._COIN_VAL,
+                self._FIAT_VAL,
                 self._TXID,
                 self._COIN,
                 self._FIAT,
@@ -171,6 +177,7 @@ class CtbAction(object):
         _coincon = self._CTB._coincon
         _config = self._CTB._config
         _cc = self._CTB._config['cc']
+        _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
         if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB)):
@@ -213,6 +220,7 @@ class CtbAction(object):
         _coincon = self._CTB._coincon
         _config = self._CTB._config
         _cc = self._CTB._config['cc']
+        _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
         if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB)):
@@ -224,8 +232,8 @@ class CtbAction(object):
             for a in actions:
                 # Move coins back into a._FROM_USER account
                 try:
-                    lg.info("CtbAction::decline(): moving %s %s from %s to %s", str(a._TO_AMNT), a._COIN, _config['reddit']['user'].lower(), a._FROM_USER._NAME.lower())
-                    m = _coincon[a._COIN].move(_config['reddit']['user'].lower(), a._FROM_USER._NAME.lower(), a._TO_AMNT)
+                    lg.info("CtbAction::decline(): moving %s %s from %s to %s", str(a._COIN_VAL), a._COIN, _config['reddit']['user'].lower(), a._FROM_USER._NAME.lower())
+                    m = _coincon[a._COIN].move(_config['reddit']['user'].lower(), a._FROM_USER._NAME.lower(), a._COIN_VAL)
                     # Sleep for 0.5 seconds to not overwhelm coin daemon
                     time.sleep(0.5)
                 except Exception as e:
@@ -234,9 +242,9 @@ class CtbAction(object):
                 # Save transaction as declined
                 a.save('declined')
                 # Respond to tip comment
-                cmnt = "^__[Declined]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (a._FROM_USER._NAME, a._TO_USER._NAME, a._TO_AMNT, _cc[self._COIN]['name'])
-                if bool(self._USD_VAL):
-                    cmnt += "&nbsp;^__($%.4g)__" % self._USD_VAL
+                cmnt = "^__[Declined]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (a._FROM_USER._NAME, a._TO_USER._NAME, a._COIN_VAL, _cc[self._COIN]['name'])
+                if bool(self._FIAT_VAL):
+                    cmnt += "&nbsp;^__(%s%.4g)__" % (_fiat[self._FIAT]['symbol'], self._FIAT_VAL)
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::decline(): " + cmnt)
                 if _config['reddit']['comments']['declined']:
@@ -272,12 +280,13 @@ class CtbAction(object):
         _coincon = self._CTB._coincon
         _config = self._CTB._config
         _cc = self._CTB._config['cc']
+        _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
         # Move coins back into self._FROM_USER account
         try:
-            lg.info("CtbAction::expire(): moving %s %s from %s to %s", str(self._TO_AMNT), self._COIN, _config['reddit']['user'], self._FROM_USER._NAME.lower())
-            m = _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._FROM_USER._NAME.lower(), self._TO_AMNT)
+            lg.info("CtbAction::expire(): moving %s %s from %s to %s", str(self._COIN_VAL), self._COIN, _config['reddit']['user'], self._FROM_USER._NAME.lower())
+            m = _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._FROM_USER._NAME.lower(), self._COIN_VAL)
             # Sleep for 0.5 seconds to not overwhelm coin daemon
             time.sleep(0.5)
         except Exception as e:
@@ -288,9 +297,9 @@ class CtbAction(object):
         self.save('declined')
 
         # Respond to tip comment
-        cmnt = "^__[Expired]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
-        if bool(self._USD_VAL):
-            cmnt += "&nbsp;^__($%.4g)__" % self._USD_VAL
+        cmnt = "^__[Expired]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._COIN_VAL, _cc[self._COIN]['name'])
+        if bool(self._FIAT_VAL):
+            cmnt += "&nbsp;^__(%s%.4g)__" % (_fiat[self._FIAT]['symbol'], self._FIAT_VAL)
         cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
         lg.debug("CtbAction::expire(): " + cmnt)
         if _config['reddit']['comments']['expired']:
@@ -312,6 +321,7 @@ class CtbAction(object):
         _coincon = self._CTB._coincon
         _config = self._CTB._config
         _cc = self._CTB._config['cc']
+        _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
         if self._TYPE in ['givetip', 'withdraw']:
@@ -337,8 +347,8 @@ class CtbAction(object):
 
             # Verify minimum transaction size
             txkind = 'givetip' if bool(self._TO_USER) else 'withdraw'
-            if self._TO_AMNT < _cc[self._COIN]['txmin'][txkind]:
-                msg = "I'm sorry %s, your tip/withdraw of __%.6g %s__ is below minimum of __%.6g__." % (re.escape(self._FROM_USER._NAME), self._TO_AMNT, self._COIN.upper(), _cc[self._COIN]['txmin'][txkind])
+            if self._COIN_VAL < _cc[self._COIN]['txmin'][txkind]:
+                msg = "I'm sorry %s, your tip/withdraw of __%.6g %s__ is below minimum of __%.6g__." % (re.escape(self._FROM_USER._NAME), self._COIN_VAL, self._COIN.upper(), _cc[self._COIN]['txmin'][txkind])
                 lg.debug("CtbAction::validate(): " + msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
@@ -350,7 +360,7 @@ class CtbAction(object):
             if bool(self._TO_USER) and not is_pending:
                 # Tip to user (requires less confirmations)
                 balance_avail = self._FROM_USER.get_balance(coin=self._COIN, kind='givetip')
-                if not ( balance_avail > self._TO_AMNT or abs(balance_avail - self._TO_AMNT) < 0.000001 ):
+                if not ( balance_avail > self._COIN_VAL or abs(balance_avail - self._COIN_VAL) < 0.000001 ):
                     msg = "I'm sorry %s, your confirmed _tip_ balance of __%.6g %s__ is insufficient for this tip." % (re.escape(self._FROM_USER._NAME), balance_avail, self._COIN.upper())
                     lg.debug("CtbAction::validate(): " + msg)
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
@@ -361,7 +371,7 @@ class CtbAction(object):
             elif bool(self._TO_ADDR):
                 # Tip/withdrawal to address (requires more confirmations)
                 balance_avail = self._FROM_USER.get_balance(coin=self._COIN, kind='withdraw')
-                if not ( balance_avail > self._TO_AMNT or abs(balance_avail - self._TO_AMNT) < 0.000001 ):
+                if not ( balance_avail > self._COIN_VAL or abs(balance_avail - self._COIN_VAL) < 0.000001 ):
                     msg = "I'm sorry %s, your confirmed _withdraw_ balance of __%.6g %s__ is insufficient for this action." % (re.escape(self._FROM_USER._NAME), balance_avail, self._COIN.upper())
                     lg.debug("CtbAction::validate(): " + msg)
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
@@ -392,8 +402,8 @@ class CtbAction(object):
 
                 # Move coins into pending account
                 try:
-                    lg.info("CtbAction::validate(): moving %s %s from %s to %s", str(self._TO_AMNT), self._COIN, self._FROM_USER._NAME.lower(), _config['reddit']['user'])
-                    m = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), _config['reddit']['user'].lower(), self._TO_AMNT)
+                    lg.info("CtbAction::validate(): moving %s %s from %s to %s", str(self._COIN_VAL), self._COIN, self._FROM_USER._NAME.lower(), _config['reddit']['user'])
+                    m = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), _config['reddit']['user'].lower(), self._COIN_VAL)
                     # Sleep for 0.5 seconds to not overwhelm coin daemon
                     time.sleep(0.5)
                 except Exception as e:
@@ -404,9 +414,9 @@ class CtbAction(object):
                 self.save('pending')
 
                 # Respond to tip comment
-                cmnt = "^(__[Verified]__:) ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
-                if bool(self._USD_VAL):
-                    cmnt += "&nbsp;^__($%.4g)__" % self._USD_VAL
+                cmnt = "^(__[Verified]__:) ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._COIN_VAL, _cc[self._COIN]['name'])
+                if bool(self._FIAT_VAL):
+                    cmnt += "&nbsp;^__(%s%.4g)__" % (_fiat[self._FIAT]['symbol'], self._FIAT_VAL)
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::validate(): " + cmnt)
                 if _config['reddit']['comments']['verify']:
@@ -416,9 +426,9 @@ class CtbAction(object):
                     self._FROM_USER.tell(subj="+givetip pending +accept", msg=cmnt)
 
                 # Send notice to _TO_USER
-                msg = "Hey %s, /u/%s sent you a __%.6g %s(s) ($%.4g)__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
+                msg = "Hey %s, /u/%s sent you a __%.6g %s(s) (%s%.4g)__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
                 msg += "Reply with __[+decline](http://www.reddit.com/message/compose?to=%s&subject=decline&message=%%2Bdecline)__ to decline it."
-                msg = msg % (re.escape(self._TO_USER._NAME), re.escape(self._FROM_USER._NAME), self._TO_AMNT, _cc[self._COIN]['name'], self._USD_VAL, self._CTB._config['reddit']['user'], self._CTB._config['reddit']['user'])
+                msg = msg % (re.escape(self._TO_USER._NAME), re.escape(self._FROM_USER._NAME), self._COIN_VAL, _cc[self._COIN]['name'], _fiat[self._FIAT]['symbol'], self._FIAT_VAL, self._CTB._config['reddit']['user'], self._CTB._config['reddit']['user'])
                 msg += " Pending tips expire in %.1g days." % ( float(_config['misc']['expire-pending-hours']) / float(24) )
                 lg.debug("CtbAction::validate(): %s", msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
@@ -454,6 +464,7 @@ class CtbAction(object):
         _coincon = self._CTB._coincon
         _config = self._CTB._config
         _cc = self._CTB._config['cc']
+        _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
         # Check if action has been processed
@@ -472,11 +483,11 @@ class CtbAction(object):
 
             try:
                 if is_pending:
-                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), _config['reddit']['user'].lower(), self._TO_USER._NAME.lower())
-                    self._TXID = _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf'][self._TYPE])
+                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._COIN_VAL, self._COIN.upper(), _config['reddit']['user'].lower(), self._TO_USER._NAME.lower())
+                    self._TXID = _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._TO_USER._NAME.lower(), self._COIN_VAL, _cc[self._COIN]['minconf'][self._TYPE])
                 else:
-                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._TO_AMNT, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower())
-                    self._TXID = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._TO_AMNT, _cc[self._COIN]['minconf'][self._TYPE])
+                    lg.debug("CtbAction::givetip(): sending %f %s from %s to %s...", self._COIN_VAL, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower())
+                    self._TXID = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._COIN_VAL, _cc[self._COIN]['minconf'][self._TYPE])
                 # Sleep for 0.5 seconds to not overwhelm coin daemon
                 time.sleep(0.5)
             except Exception as e:
@@ -486,12 +497,12 @@ class CtbAction(object):
                 self.save('failed')
 
                 # Send notice to _FROM_USER
-                msg = "Hey %s, something went wrong, and your tip of __%.6g %s(s)__ to /u/%s has failed to process." % (re.escape(self._FROM_USER._NAME), self._TO_AMNT, _cc[self._COIN]['name'], re.escape(self._TO_USER._NAME))
+                msg = "Hey %s, something went wrong, and your tip of __%.6g %s(s)__ to /u/%s has failed to process." % (re.escape(self._FROM_USER._NAME), self._COIN_VAL, _cc[self._COIN]['name'], re.escape(self._TO_USER._NAME))
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
 
                 # Log error
-                lg.error("CtbAction::givetip(): move of %s %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, (self._FROM_USER._NAME if is_pending else _config['reddit']['user']), self._TO_USER._NAME, str(e)))
+                lg.error("CtbAction::givetip(): move of %s %s from %s to %s failed: %s" % (self._COIN_VAL, self._COIN, (self._FROM_USER._NAME if is_pending else _config['reddit']['user']), self._TO_USER._NAME, str(e)))
                 raise
 
             # Transaction succeeded
@@ -501,7 +512,7 @@ class CtbAction(object):
 
             try:
                 # Send confirmation to _TO_USER
-                msg = "Hey %s, you have received a __%.6g %s(s) ($%.4g)__ tip from /u/%s." % (re.escape(self._TO_USER._NAME), self._TO_AMNT, _cc[self._COIN]['name'], self._USD_VAL, re.escape(self._FROM_USER._NAME))
+                msg = "Hey %s, you have received a __%.6g %s(s) (%s%.4g)__ tip from /u/%s." % (re.escape(self._TO_USER._NAME), self._COIN_VAL, _cc[self._COIN]['name'], _fiat[self._FIAT]['symbol'], self._FIAT_VAL, re.escape(self._FROM_USER._NAME))
                 lg.debug("CtbAction::givetip(): " + msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
@@ -509,9 +520,9 @@ class CtbAction(object):
 
                 if not is_pending:
                     # This is not an +accept, so post verification comment
-                    cmnt = "^__[Verified]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_AMNT, _cc[self._COIN]['name'])
-                    if bool(self._USD_VAL):
-                        cmnt += "&nbsp;^__($%.4g)__" % self._USD_VAL
+                    cmnt = "^__[Verified]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._COIN_VAL, _cc[self._COIN]['name'])
+                    if bool(self._FIAT_VAL):
+                        cmnt += "&nbsp;^__(%s%.4g)__" % (_fiat[self._FIAT]['symbol'], self._FIAT_VAL)
                     lg.debug("CtbAction::givetip(): " + cmnt)
                     cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                     if _config['reddit']['comments']['verify']:
@@ -532,10 +543,10 @@ class CtbAction(object):
             # Process tip to address
 
             try:
-                lg.debug("CtbAction::givetip(): sending %f %s to %s...", self._TO_AMNT, self._COIN, self._TO_ADDR)
+                lg.debug("CtbAction::givetip(): sending %f %s to %s...", self._COIN_VAL, self._COIN, self._TO_ADDR)
                 if _cc[self._COIN].has_key('walletpassphrase'):
                     res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 3)
-                self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER._NAME.lower(), self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['minconf'][self._TYPE])
+                self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER._NAME.lower(), self._TO_ADDR, self._COIN_VAL, _cc[self._COIN]['minconf'][self._TYPE])
                 # Sleep for 2 seconds to not overwhelm coin daemon
                 time.sleep(2)
 
@@ -546,10 +557,10 @@ class CtbAction(object):
                 self.save('failed')
 
                 # Send notice to _FROM_USER
-                msg = "Hey %s, something went wrong, and your tip of __%.6g %s(s)__ to __%s__ has failed to process." % (re.escape(self._FROM_USER._NAME), self._TO_AMNT, _cc[self._COIN]['name'], self._TO_ADDR)
+                msg = "Hey %s, something went wrong, and your tip of __%.6g %s(s)__ to __%s__ has failed to process." % (re.escape(self._FROM_USER._NAME), self._COIN_VAL, _cc[self._COIN]['name'], self._TO_ADDR)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._FROM_USER.tell(subj="+givetip failed", msg=msg)
-                lg.error("CtbAction::givetip(): tx of %f %s from %s to %s failed: %s" % (self._TO_AMNT, self._COIN, self._FROM_USER._NAME, self._TO_ADDR, str(e)))
+                lg.error("CtbAction::givetip(): tx of %f %s from %s to %s failed: %s" % (self._COIN_VAL, self._COIN, self._FROM_USER._NAME, self._TO_ADDR, str(e)))
                 raise
 
             # Transaction succeeded
@@ -560,9 +571,9 @@ class CtbAction(object):
             try:
                 # Post verification comment
                 ex = _cc[self._COIN]['explorer']
-                cmnt = "^__[[Verified](%s)]__: ^/u/%s ^-> ^[%s](%s), __^%.6g ^%s(s)__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, self._TO_AMNT, _cc[self._COIN]['name'])
-                if bool(self._USD_VAL):
-                    cmnt += "&nbsp;^__($%.4g)__" % self._USD_VAL
+                cmnt = "^__[[Verified](%s)]__: ^/u/%s ^-> ^[%s](%s), __^%.6g ^%s(s)__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, self._COIN_VAL, _cc[self._COIN]['name'])
+                if bool(self._FIAT_VAL):
+                    cmnt += "&nbsp;^__(%s%.4g)__" % (_fiat[self._FIAT]['symbol'], self._FIAT_VAL)
                 lg.debug("CtbAction::givetip(): " + cmnt)
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 if _config['reddit']['comments']['verify']:
@@ -591,6 +602,7 @@ class CtbAction(object):
         _coincon = self._CTB._coincon
         _config = self._CTB._config
         _cc = self._CTB._config['cc']
+        _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
         if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB)):
@@ -705,40 +717,52 @@ def _eval_message(_message, _ctb):
         _ctb._rlist_message = [
                 {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['register'],
                  'action':     'register',
-                 'rg-amount':  -1,
-                 'rg-address': -1,
+                 'rg-amount':  None,
+                 'rg-address': None,
                  'coin':       None},
                 {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['accept'],
                  'action':     'accept',
-                 'rg-amount':  -1,
-                 'rg-address': -1,
+                 'rg-amount':  None,
+                 'rg-address': None,
                  'coin':       None},
                 {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['decline'],
                  'action':     'decline',
-                 'rg-amount':  -1,
-                 'rg-address': -1,
+                 'rg-amount':  None,
+                 'rg-address': None,
                  'coin':       None},
                 {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['history'],
                  'action':     'history',
-                 'rg-amount':  -1,
-                 'rg-address': -1,
+                 'rg-amount':  None,
+                 'rg-address': None,
                  'coin':       None},
                 {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['info'],
                  'action':     'info',
-                 'rg-amount':  -1,
-                 'rg-address': -1,
+                 'rg-amount':  None,
+                 'rg-address': None,
                  'coin':       None}
                 ]
         # Add regex for each configured cryptocoin
         _cc = _ctb._config['cc']
+        _fiat = _ctb._config['fiat']
         for c in _cc:
             if _cc[c]['enabled']:
                 _ctb._rlist_message.append(
-                   # +withdraw ADDR 0.25 COIN
+                   # +withdraw ADDR 0.25 UNIT
                    {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['withdraw'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
                     'action':     'withdraw',
                     'coin':       _cc[c]['unit'],
+                    'fiat':       None,
                     'rg-amount':  6,
+                    'rg-address': 4})
+        for f in _fiat:
+            if _fiat[f]['enabled']:
+                _ctb._rlist_message.append(
+                   # +withdraw ADDR $0.25 UNIT
+                   {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['withdraw'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+                    'action':     'withdraw',
+                    'coin':       _cc[c]['unit'],
+                    'fiat':       _fiat[f]['unit'],
+                    'rg-amount':  7,
                     'rg-address': 4})
 
     # Do the matching
@@ -752,17 +776,18 @@ def _eval_message(_message, _ctb):
             # Match found
 
             # Extract matched fields into variables
-            _to_addr = m.group(r['rg-address']) if r['rg-address'] > 0 else None
-            _to_amnt = m.group(r['rg-amount']) if r['rg-amount'] > 0 else None
+            _to_addr = m.group(r['rg-address']) if bool(r['rg-address']) else None
+            _amount = m.group(r['rg-amount']) if bool(r['rg-amount']) else None
 
             # Return CtbAction instance with given variables
             return CtbAction(   atype=r['action'],
                                 msg=_message,
                                 to_user=None,
                                 to_addr=_to_addr,
-                                to_amnt=_to_amnt,
                                 coin=r['coin'],
-                                fiat=None,
+                                coin_val=_amount if not bool(r['fiat']) else None,
+                                fiat=r['fiat'],
+                                fiat_val=_amount if bool(r['fiat']) else None
                                 ctb=_ctb)
 
     # No match found
@@ -776,6 +801,7 @@ def _eval_comment(_comment, _ctb):
     #lg.debug("> _eval_comment()")
 
     _cc = _ctb._config['cc']
+    _fiat = _ctb._config['fiat']
 
     if not bool(_ctb._rlist_comment):
         # rlist is a list of regular expressions to test _comment against
@@ -788,32 +814,61 @@ def _eval_comment(_comment, _ctb):
         for c in _cc:
             if _cc[c]['enabled']:
                 _ctb._rlist_comment.append(
-                    # +givetip ADDR 0.25 units
+                    # +givetip ADDR 0.25 UNIT
                     {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
                      'action':      'givetip',
-                     'rg-to-user':  -1,
+                     'rg-to-user':  None,
                      'rg-amount':   6,
                      'rg-address':  4,
                      'coin':        _cc[c]['unit'],
                      'fiat':        None})
                 _ctb._rlist_comment.append(
-                    # +givetip 0.25 units
+                    # +givetip 0.25 UNIT
                     {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
                      'action':      'givetip',
-                     'rg-to-user':  -1,
+                     'rg-to-user':  None,
                      'rg-amount':   4,
-                     'rg-address':  -1,
+                     'rg-address':  None,
                      'coin':        _cc[c]['unit'],
                      'fiat':        None})
                 _ctb._rlist_comment.append(
-                    # +givetip @user 0.25 units
+                    # +givetip @USER 0.25 UNIT
                     {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + '(@\w+)' + '(\\s+)' + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
                      'action':      'givetip',
                      'rg-to-user':  4,
                      'rg-amount':   6,
-                     'rg-address':  -1,
+                     'rg-address':  None,
                      'coin':        _cc[c]['unit'],
                      'fiat':        None})
+        for f in _fiat:
+            if _fiat[f]['enabled']:
+                _ctb._rlist_comment.append(
+                    # +givetip ADDR $0.25 UNIT
+                    {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+                     'action':      'givetip',
+                     'rg-to-user':  None,
+                     'rg-amount':   7,
+                     'rg-address':  4,
+                     'coin':        _cc[c]['unit'],
+                     'fiat':        _fiat[f]['unit']})
+                _ctb._rlist_comment.append(
+                    # +givetip $0.25 UNIT
+                    {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+                     'action':      'givetip',
+                     'rg-to-user':  None,
+                     'rg-amount':   5,
+                     'rg-address':  None,
+                     'coin':        _cc[c]['unit'],
+                     'fiat':        _fiat[f]['unit']})
+                _ctb._rlist_comment.append(
+                    # +givetip @USER $0.25 UNIT
+                    {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + '(@\w+)' + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+                     'action':      'givetip',
+                     'rg-to-user':  4,
+                     'rg-amount':   7,
+                     'rg-address':  None,
+                     'coin':        _cc[c]['unit'],
+                     'fiat':        _fiat[f]['unit']})
 
     # Do the matching
     body = _comment.body
@@ -826,9 +881,9 @@ def _eval_comment(_comment, _ctb):
             # Match found
 
             # Extract matched fields into variables
-            _to_user = m.group(r['rg-to-user'])[1:] if r['rg-to-user'] > 0 else None
-            _to_addr = m.group(r['rg-address']) if r['rg-address'] > 0 else None
-            _to_amnt = m.group(r['rg-amount']) if r['rg-amount'] > 0 else None
+            _to_user = m.group(r['rg-to-user'])[1:] if bool(r['rg-to-user']) else None
+            _to_addr = m.group(r['rg-address']) if bool(r['rg-address']) else None
+            _amount = m.group(r['rg-amount']) if bool(r['rg-amount']) else None
 
             # If no destination mentioned, find parent submission's author
             if not bool(_to_user) and not bool(_to_addr):
@@ -841,15 +896,16 @@ def _eval_comment(_comment, _ctb):
                 return None
 
             # Return CtbAction instance with given variables
-            lg.debug("_eval_comment(): creating action %s: to_user=%s, to_addr=%s, to_amnt=%s, coin=%s, fiat=%s" % (r['action'], _to_user, _to_addr, _to_amnt, r['coin'], r['fiat']))
+            lg.debug("_eval_comment(): creating action %s: to_user=%s, to_addr=%s, amount=%s, coin=%s, fiat=%s" % (r['action'], _to_user, _to_addr, _amount, r['coin'], r['fiat']))
             #lg.debug("< _eval_comment() DONE (yes)")
             return CtbAction(   atype=r['action'],
                                 msg=_comment,
                                 to_user=_to_user,
                                 to_addr=_to_addr,
-                                to_amnt=_to_amnt,
                                 coin=r['coin'],
+                                coin_val=_amount if not bool(r['fiat']) else None,
                                 fiat=r['fiat'],
+                                fiat_val=_amount if bool(r['fiat']) else None,
                                 subr=_comment.subreddit,
                                 ctb=_ctb)
 
@@ -968,11 +1024,11 @@ def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=Non
                                       msg=msg,
                                       to_user=m['to_user'],
                                       to_addr=m['to_addr'] if not bool(m['to_user']) else None,
-                                      to_amnt=m['to_amnt'],
                                       coin=m['coin'],
                                       fiat=m['fiat'],
+                                      coin_val=m['coin_val'],
+                                      fiat_val=m['fiat_val'],
                                       subr=m['subreddit'],
-                                      usd_val=m['usd_value'],
                                       ctb=ctb))
 
             lg.debug("< _get_actions() DONE (yes)")
