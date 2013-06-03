@@ -25,7 +25,13 @@ def _refresh_exchange_rate(ctb=None):
 
     # Determine pairs to request from BTC-e
     if not bool(ctb._ticker_pairs):
+        # Always request btc_usd pair
         ctb._ticker_pairs = {'btc_usd': 'True'}
+        # Request other btc_FIAT pairs
+        for f in ctb._config['fiat']:
+            if ctb._config['fiat'][f]['enabled'] and not ctb._config['fiat'][f]['unit'] == 'usd':
+                ctb._ticker_pairs['btc_'+ctb._config['fiat'][f]['unit']] = 'True'
+        # Request each COIN_btc pair
         for c in ctb._coincon:
             ctb._ticker_pairs[c+'_btc'] = 'True'
 
