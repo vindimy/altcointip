@@ -40,7 +40,7 @@ class CtbAction(object):
         self._TYPE = atype
 
         self._COIN = coin.lower() if bool(coin) else None
-        self._FIAT = fiat.lower() if bool(fiat) else 'usd'
+        self._FIAT = fiat.lower() if bool(fiat) else None
         self._COIN_VAL = float(coin_val) if bool(coin_val) else None
         self._FIAT_VAL = float(fiat_val) if bool(fiat_val) else None
 
@@ -69,6 +69,9 @@ class CtbAction(object):
 
         # Determine fiat or COIN value
         if self._TYPE in ['givetip', 'withdraw']:
+            if not bool(self._FIAT):
+                # Set fiat to 'usd' if not specified
+                self._FIAT = 'usd'
             if not bool(self._FIAT_VAL):
                 # Determine fiat value
                 if hasattr(ctb, '_ticker_val') and ctb._ticker_val.has_key(self._COIN+'_btc') and ctb._ticker_val.has_key('btc_'+self._FIAT):
@@ -144,20 +147,36 @@ class CtbAction(object):
         Call appropriate function depending on action type
         """
         lg.debug("> CtbAction::do()")
+
         if self._TYPE == 'accept':
-            return ( self.accept() and self.info() )
+            if self.accept():
+                action._TYPE = 'info'
+                return self.info()
+            else:
+                return False
+
         if self._TYPE == 'decline':
             return self.decline()
+
         if self._TYPE == 'givetip':
             return self.givetip()
+
         if self._TYPE == 'history':
             return self.history()
+
         if self._TYPE == 'info':
             return self.info()
+
         if self._TYPE == 'register':
-            return ( self.register() and self.info() )
+            if self.register():
+                self._TYPE = 'info'
+                return self.info()
+            else:
+                return False
+
         if self._TYPE == 'withdraw':
             return self.givetip()
+
         lg.debug("< CtbAction::do() DONE")
         return None
 
