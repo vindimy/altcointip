@@ -49,18 +49,44 @@ logging:
 fiat:
   # USD
   usd:
+    enabled: true
     unit: usd
-    symbol: $
+    symbol: '$'
     name: US Dollar
     regex:
-      units: (usd|$)
+      units: (\$|usd)
   # EUR
   eur:
+    enabled: true
     unit: eur
-    symbol: e
+    symbol: '€'
     name: Euro
     regex:
-      units: (eur|e)
+      units: (€|eur)
+  # GBP
+  gbp:
+    enabled: false
+    unit: gbp
+    symbol: '£'
+    name: British Pound
+    regex:
+      units: (£|gbp)
+  # JPY
+  jpy:
+    enabled: false
+    unit: jpy
+    symbol: '¥'
+    name: Japanese Yen
+    regex:
+      units: (¥|jpy)
+  # RUR
+  rur:
+    enabled: true
+    unit: rur
+    symbol: 'R'
+    name: Russian Ruble
+    regex:
+      units: (r|rur)
 
 # Cryptocoins
 cc:
@@ -202,3 +228,5 @@ cc:
     regex:
       address: '(1[1-9a-z]{20,40})'
       units: '(dvc|devcoin|devcoins)'
+﻿# -*- coding: utf-8 -*-
+

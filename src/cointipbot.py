@@ -373,6 +373,8 @@ class CointipBot(object):
                 raise
 
         # Process comments until old comment reached
+        if self._last_processed_comment_time <= 0:
+            self._last_processed_comment_time = ctb_misc._get_value(conn=self._mysqlcon, param0='last_processed_comment_time')
         _updated_last_processed_time = 0
         try:
             counter = 0
@@ -414,6 +416,7 @@ class CointipBot(object):
         # Save updated last_processed_time value
         if _updated_last_processed_time > 0:
             self._last_processed_comment_time = _updated_last_processed_time
+        ctb_misc._set_value(conn=self._mysqlcon, param0='last_processed_comment_time', value0=self._last_processed_comment_time)
 
         lg.debug("< _check_subreddits() DONE")
         return True

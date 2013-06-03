@@ -719,29 +719,34 @@ def _eval_message(_message, _ctb):
                  'action':     'register',
                  'rg-amount':  None,
                  'rg-address': None,
-                 'coin':       None},
+                 'coin':       None,
+                 'fiat':       None},
                 {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['accept'],
                  'action':     'accept',
                  'rg-amount':  None,
                  'rg-address': None,
-                 'coin':       None},
+                 'coin':       None,
+                 'fiat':       None},
                 {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['decline'],
                  'action':     'decline',
                  'rg-amount':  None,
                  'rg-address': None,
-                 'coin':       None},
+                 'coin':       None,
+                 'fiat':       None},
                 {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['history'],
                  'action':     'history',
                  'rg-amount':  None,
                  'rg-address': None,
-                 'coin':       None},
+                 'coin':       None,
+                 'fiat':       None},
                 {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['info'],
                  'action':     'info',
                  'rg-amount':  None,
                  'rg-address': None,
-                 'coin':       None}
+                 'coin':       None,
+                 'fiat':       None},
                 ]
-        # Add regex for each configured cryptocoin
+        # Add regex for each enabled cryptocoin and fiat
         _cc = _ctb._config['cc']
         _fiat = _ctb._config['fiat']
         for c in _cc:
@@ -754,16 +759,16 @@ def _eval_message(_message, _ctb):
                     'fiat':       None,
                     'rg-amount':  6,
                     'rg-address': 4})
-        for f in _fiat:
-            if _fiat[f]['enabled']:
-                _ctb._rlist_message.append(
-                   # +withdraw ADDR $0.25 UNIT
-                   {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['withdraw'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
-                    'action':     'withdraw',
-                    'coin':       _cc[c]['unit'],
-                    'fiat':       _fiat[f]['unit'],
-                    'rg-amount':  7,
-                    'rg-address': 4})
+            for f in _fiat:
+                if _fiat[f]['enabled']:
+                    _ctb._rlist_message.append(
+                       # +withdraw ADDR $0.25 UNIT
+                       {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['withdraw'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+                        'action':     'withdraw',
+                        'coin':       _cc[c]['unit'],
+                        'fiat':       _fiat[f]['unit'],
+                        'rg-amount':  7,
+                        'rg-address': 4})
 
     # Do the matching
     body = _message.body
@@ -787,7 +792,7 @@ def _eval_message(_message, _ctb):
                                 coin=r['coin'],
                                 coin_val=_amount if not bool(r['fiat']) else None,
                                 fiat=r['fiat'],
-                                fiat_val=_amount if bool(r['fiat']) else None
+                                fiat_val=_amount if bool(r['fiat']) else None,
                                 ctb=_ctb)
 
     # No match found
@@ -840,35 +845,35 @@ def _eval_comment(_comment, _ctb):
                      'rg-address':  None,
                      'coin':        _cc[c]['unit'],
                      'fiat':        None})
-        for f in _fiat:
-            if _fiat[f]['enabled']:
-                _ctb._rlist_comment.append(
-                    # +givetip ADDR $0.25 UNIT
-                    {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
-                     'action':      'givetip',
-                     'rg-to-user':  None,
-                     'rg-amount':   7,
-                     'rg-address':  4,
-                     'coin':        _cc[c]['unit'],
-                     'fiat':        _fiat[f]['unit']})
-                _ctb._rlist_comment.append(
-                    # +givetip $0.25 UNIT
-                    {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
-                     'action':      'givetip',
-                     'rg-to-user':  None,
-                     'rg-amount':   5,
-                     'rg-address':  None,
-                     'coin':        _cc[c]['unit'],
-                     'fiat':        _fiat[f]['unit']})
-                _ctb._rlist_comment.append(
-                    # +givetip @USER $0.25 UNIT
-                    {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + '(@\w+)' + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
-                     'action':      'givetip',
-                     'rg-to-user':  4,
-                     'rg-amount':   7,
-                     'rg-address':  None,
-                     'coin':        _cc[c]['unit'],
-                     'fiat':        _fiat[f]['unit']})
+            for f in _fiat:
+                if _fiat[f]['enabled']:
+                    _ctb._rlist_comment.append(
+                        # +givetip ADDR $0.25 UNIT
+                        {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+                         'action':      'givetip',
+                         'rg-to-user':  None,
+                         'rg-amount':   7,
+                         'rg-address':  4,
+                         'coin':        _cc[c]['unit'],
+                         'fiat':        _fiat[f]['unit']})
+                    _ctb._rlist_comment.append(
+                        # +givetip $0.25 UNIT
+                        {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+                         'action':      'givetip',
+                         'rg-to-user':  None,
+                         'rg-amount':   5,
+                         'rg-address':  None,
+                         'coin':        _cc[c]['unit'],
+                         'fiat':        _fiat[f]['unit']})
+                    _ctb._rlist_comment.append(
+                        # +givetip @USER $0.25 UNIT
+                        {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + '(@\w+)' + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount'] + '(\\s+)' + _cc[c]['regex']['units'],
+                         'action':      'givetip',
+                         'rg-to-user':  4,
+                         'rg-amount':   7,
+                         'rg-address':  None,
+                         'coin':        _cc[c]['unit'],
+                         'fiat':        _fiat[f]['unit']})
 
     # Do the matching
     body = _comment.body
