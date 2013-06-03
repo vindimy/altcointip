@@ -240,7 +240,7 @@ class CointipBot(object):
             pending_tips = float(0)
             actions = ctb_action._get_actions(atype='givetip', state='pending', coin=c, ctb=self)
             for a in actions:
-                pending_tips += a._TO_AMNT
+                pending_tips += a._COIN_VAL
             if (ctb_balance - pending_tips) < -0.000001:
                 raise Exception("CointipBot::_self_checks(): CointipBot's %s balance (%s) < total pending tips (%s)" % (c.upper(), ctb_balance, pending_tips))
 
@@ -392,7 +392,7 @@ class CointipBot(object):
 
                 # Perform action if necessary
                 if action != None:
-                    lg.info("_check_subreddits(): %s (%.6g %s) from %s (c.id %s)", action._TYPE, action._TO_AMNT, action._COIN, action._FROM_USER._NAME, str(c.id))
+                    lg.info("_check_subreddits(): %s (%.6g %s) from %s (c.id %s)", action._TYPE, action._COIN_VAL, action._COIN, action._FROM_USER._NAME, str(c.id))
                     action.do()
 
             lg.debug("_check_subreddits(): %s comments processed", counter)
