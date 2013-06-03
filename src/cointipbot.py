@@ -64,11 +64,13 @@ class CointipBot(object):
 
         # Get handlers
         if self._config['logging'].has_key('info-log-filename'):
+            # INFO-level log file in append mode
             hdlr_info = logging.FileHandler(self._config['logging']['info-log-filename'], mode='a')
         if self._config['logging'].has_key('debug-log-filename'):
+            # DEBUG-level log file in write mode
             hdlr_debug = logging.FileHandler(self._config['logging']['debug-log-filename'], mode='w')
 
-        if not hdlr_info and not hdlr_debug:
+        if not bool(hdlr_info) and not bool(hdlr_debug):
             print "CointipBot::_init_logging(): Warning: no logging handlers are set up. Logging is disabled."
             return False
 
@@ -76,13 +78,13 @@ class CointipBot(object):
         fmtr = logging.Formatter("%(levelname)s %(asctime)s %(message)s")
 
         # Set handlers
-        if hdlr_info:
+        if bool(hdlr_info):
             hdlr_info.setFormatter(fmtr)
             hdlr_info.addFilter(ctb_log.LevelFilter(logging.INFO))
             lg.addHandler(hdlr_info)
             bt.addHandler(hdlr_info)
 
-        if hdlr_debug:
+        if bool(hdlr_debug):
             hdlr_debug.setFormatter(fmtr)
             hdlr_debug.addFilter(ctb_log.LevelFilter(logging.DEBUG))
             lg.addHandler(hdlr_debug)
@@ -93,6 +95,11 @@ class CointipBot(object):
         bt.setLevel(logging.DEBUG)
 
         lg.info("CointipBot::_init_logging(): -------------------- logging initialized --------------------")
+        if bool(hdlr_info):
+            lg.info("Logging level INFO to %s", self._config['logging']['info-log-filename'])
+        if bool(hdlr_debug):
+            lg.info("Logging level DEBUG to %s", self._config['logging']['debug-log-filename'])
+
         return True
 
     def _parse_config(self, filename=_DEFAULT_CONFIG_FILENAME):
