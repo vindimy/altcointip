@@ -93,20 +93,22 @@ def _reddit_get_parent_author(_comment, _reddit, _ctb):
 
     while True:
         try:
-
-            parent_comment = None
-            comment_link_id = _comment.id
-            comment_parent_id = _comment.parent_id[3:]
-            parent_permalink = _comment.permalink.replace(comment_link_id, comment_parent_id)
-
-            if (comment_link_id == comment_parent_id):
-                parent_comment = _reddit.get_submission(parent_permalink)
+            parentpermalink = _comment.permalink.replace(_comment.id, _comment.parent_id[3:])
+            commentlinkid = None
+            if hasattr(_comment, 'link_id'):
+                commentlinkid = _comment.link_id[3:]
             else:
-                parent_comment = _reddit.get_submission(parent_permalink).comments[0]
+                _comment2 = _reddit.get_submission(_comment.permalink).comments[0]
+                commentlinkid = _comment2.link_id[3:]
+            parentid = _comment.parent_id[3:]
 
-            lg.debug("< _get_parent_comment_author(%s) -> %s", comment_link_id, parent_comment.author.name)
-            return parent_comment.author.name
+            if commentlinkid == parentid:
+                parentcomment = _reddit.get_submission(parentpermalink)
+            else:
+                parentcomment = _reddit.get_submission(parentpermalink).comments[0]
 
+            lg.debug("< _get_parent_comment_author(%s) -> %s", _comment.id, parentcomment.author.name)
+            return parentcomment.author.name
         except APIException as e:
             lg.error("_reddit_get_parent_author(%s): failed (%s)", _comment.id, str(e))
             raise
