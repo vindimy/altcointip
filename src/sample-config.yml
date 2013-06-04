@@ -12,7 +12,10 @@ reddit:
   pass: mybotpass
   batch-limit: 1000
   useragent: /u/mybotuser
-  all-subreddits: false
+  scan:
+    my-subreddits: false
+    these-subreddits: ["all"]
+    ignore-subreddits: ["test"]
   help-url: http://www.reddit.com/r/mybotuser/wiki/index
   comments:
     verify: true
@@ -32,7 +35,7 @@ regex:
     num: '([0-9]{1,6}(?:\.[0-9]{0,6})?)'
     word: '{all|flip|roll|quarter|half|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)'
   keywords:
-    givetip: '(givetip|altcointip|alttip|alt)'
+    givetip: '(/u/altcointip|altcointip|alttip|alt|givetip)'
     info: '(info)'
     register: '(register)'
     accept: '(accept)'

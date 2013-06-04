@@ -718,21 +718,26 @@ class CtbAction(object):
         lg.debug("< CtbAction::register() DONE")
         return result
 
+def _init_regex(_ctb):
+    """
+    Initialize regular expressions used to match
+    messages and comments
+    """
+    lg.debug("> _init_regex")
 
-def _eval_message(_message, _ctb):
-    """
-    Evaluate message body and return a CtbAction
-    object if successful
-    """
-    #lg.debug("> _eval_message()")
+    _cc = _ctb._config['cc']
+    _fiat = _ctb._config['fiat']
 
     if not bool(_ctb._rlist_message):
-        # rlist is a list of regular expressions to test _message against
+        # rlist_message is a list of regular expressions to test _message against
         #   'regex': regular expression
         #   'action': action type
         #   'coin': unit of cryptocurrency, if applicable
+        #   'fiat': unit of fiat, if applicable
         #   'rg-amount': group number to retrieve amount, if applicable
         #   'rg-address': group number to retrieve coin address, if applicable
+
+        # Add 'register', 'accept', 'decline', 'history', and 'info' regex
         _ctb._rlist_message = [
                 {'regex':      '(\\+)' + _ctb._config['regex']['keywords']['register'],
                  'action':     'register',
@@ -765,9 +770,8 @@ def _eval_message(_message, _ctb):
                  'coin':       None,
                  'fiat':       None},
                 ]
-        # Add regex for each enabled cryptocoin and fiat
-        _cc = _ctb._config['cc']
-        _fiat = _ctb._config['fiat']
+
+        # Add 'withdraw' regex for each enabled cryptocoin and fiat
         for c in _cc:
             if _cc[c]['enabled']:
                 _ctb._rlist_message.append(
@@ -789,52 +793,17 @@ def _eval_message(_message, _ctb):
                         'rg-amount':  7,
                         'rg-address': 4})
 
-    # Do the matching
-    body = _message.body
-    for r in _ctb._rlist_message:
-        rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
-        #lg.debug("matching '%s' with '%s'", _message.body, r['regex'])
-        m = rg.search(body)
-
-        if bool(m):
-            # Match found
-
-            # Extract matched fields into variables
-            _to_addr = m.group(r['rg-address']) if bool(r['rg-address']) else None
-            _amount = m.group(r['rg-amount']) if bool(r['rg-amount']) else None
-
-            # Return CtbAction instance with given variables
-            return CtbAction(   atype=r['action'],
-                                msg=_message,
-                                to_user=None,
-                                to_addr=_to_addr,
-                                coin=r['coin'],
-                                coin_val=_amount if not bool(r['fiat']) else None,
-                                fiat=r['fiat'],
-                                fiat_val=_amount if bool(r['fiat']) else None,
-                                ctb=_ctb)
-
-    # No match found
-    return None
-
-def _eval_comment(_comment, _ctb):
-    """
-    Evaluate comment body and return a CtbAction
-    object if successful
-    """
-    #lg.debug("> _eval_comment()")
-
-    _cc = _ctb._config['cc']
-    _fiat = _ctb._config['fiat']
-
     if not bool(_ctb._rlist_comment):
-        # rlist is a list of regular expressions to test _comment against
+        # rlist_comment is a list of regular expressions to test _comment against
         #   'regex': regular expression
         #   'action': action type
         #   'rg-to-user': group number to retrieve tip receiver username
         #   'rg-amount': group number to retrieve tip amount
         #   'rg-address': group number to retrieve tip receiver coin address
         #   'coin': unit of cryptocurrency
+        #   'fiat': unit of fiat, if applicable
+
+        # Add 'givetip' regex for each enabled cryptocoin and fiat
         for c in _cc:
             if _cc[c]['enabled']:
                 _ctb._rlist_comment.append(
@@ -893,6 +862,48 @@ def _eval_comment(_comment, _ctb):
                          'rg-address':  None,
                          'coin':        _cc[c]['unit'],
                          'fiat':        _fiat[f]['unit']})
+
+def _eval_message(_message, _ctb):
+    """
+    Evaluate message body and return a CtbAction
+    object if successful
+    """
+    #lg.debug("> _eval_message()")
+
+    # Do the matching
+    body = _message.body
+    for r in _ctb._rlist_message:
+        rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
+        #lg.debug("matching '%s' with '%s'", _message.body, r['regex'])
+        m = rg.search(body)
+
+        if bool(m):
+            # Match found
+
+            # Extract matched fields into variables
+            _to_addr = m.group(r['rg-address']) if bool(r['rg-address']) else None
+            _amount = m.group(r['rg-amount']) if bool(r['rg-amount']) else None
+
+            # Return CtbAction instance with given variables
+            return CtbAction(   atype=r['action'],
+                                msg=_message,
+                                to_user=None,
+                                to_addr=_to_addr,
+                                coin=r['coin'],
+                                coin_val=_amount if not bool(r['fiat']) else None,
+                                fiat=r['fiat'],
+                                fiat_val=_amount if bool(r['fiat']) else None,
+                                ctb=_ctb)
+
+    # No match found
+    return None
+
+def _eval_comment(_comment, _ctb):
+    """
+    Evaluate comment body and return a CtbAction
+    object if successful
+    """
+    #lg.debug("> _eval_comment()")
 
     # Do the matching
     body = _comment.body

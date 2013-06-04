@@ -181,50 +181,6 @@ class CointipBot(object):
         lg.info("Logged in to Reddit")
         return conn
 
-    def __init__(self, config_filename=_DEFAULT_CONFIG_FILENAME, self_checks=True):
-        """
-        Constructor.
-        Parses configuration file and initializes bot.
-        """
-        # Localization. After this, all output to user is localizable
-        # through use of _() function.
-        self._init_localization()
-
-        # Configuration file
-        self._config = self._parse_config(config_filename)
-        if 'batch-limit' in self._config['reddit']:
-            self._REDDIT_BATCH_LIMIT = self._config['reddit']['batch-limit']
-        if 'sleep-seconds' in self._config['misc']:
-            self._DEFAULT_SLEEP_TIME = self._config['misc']['sleep-seconds']
-
-        # Logging
-        if self._config.has_key('logging'):
-            self._init_logging()
-        else:
-            print "CointipBot::__init__(): Warning: no logging handlers are set up. Logging is disabled."
-
-        # MySQL
-        self._mysqlcon = self._connect_db(self._config)
-
-        # Coin daemons
-        num_coins = 0
-        for c in self._config['cc']:
-            if self._config['cc'][c]['enabled']:
-                self._coincon[self._config['cc'][c]['unit']] = self._connect_coin(self._config['cc'][c])
-                num_coins += 1
-        if not num_coins > 0:
-            lg.error("Error: please enable at least one type of coin")
-            sys.exit(1)
-
-        # Reddit
-        self._redditcon = self._connect_reddit(self._config)
-
-        # Self-checks
-        if self_checks:
-            self._self_checks()
-
-        lg.info("CointipBot::__init__(): DONE, batch-limit = %s, sleep-seconds = %s", self._REDDIT_BATCH_LIMIT, self._DEFAULT_SLEEP_TIME)
-
     def _self_checks(self):
         """
         Run self-checks before starting the bot
@@ -294,23 +250,22 @@ class CointipBot(object):
                 # Process messages
                 for m in messages:
 
-                    # Ignore replies to bot's comments
-                    if m.was_comment:
-                        lg.debug("_check_inbox(): ignoring reply to bot's comments")
-                        m.mark_as_read()
-                        continue
-
                     # Ignore self messages
                     if bool(m.author) and m.author.name.lower() == self._config['reddit']['user'].lower():
                         lg.debug("_check_inbox(): ignoring message from self")
                         m.mark_as_read()
                         continue
 
-                    # Attempt to evaluate message
-                    action = ctb_action._eval_message(m, self)
+                    action = None
+                    if m.was_comment:
+                        # Attempt to evaluate as comment / mention
+                        action = ctb_action._eval_comment(m, self)
+                    else:
+                        # Attempt to evaluate as inbox message
+                        action = ctb_action._eval_message(m, self)
 
-                    # Perform action if necessary
-                    if action != None:
+                    # Perform action, if found
+                    if bool(action):
                         if action.do():
                             lg.info("_check_inbox(): %s from %s (m.id %s)", action._TYPE, action._FROM_USER._NAME, str(m.id))
 
@@ -334,30 +289,49 @@ class CointipBot(object):
         lg.debug("< check_inbox() DONE")
         return True
 
-    def _check_subreddits(self):
-        lg.debug("> _check_subreddits()")
+    def _init_subreddits(self):
+        """
+        Determine a list of subreddits and create a PRAW object
+        """
+        lg.debug("> _init_subreddits()")
 
-        my_comments = None
         while True:
             try:
-                seconds = int(1 * 3600)
                 if not bool(self._subreddits):
-                    # Get subscribed subreddits
-                    if self._config['reddit']['all-subreddits']:
-                        my_reddits_list = ['all']
-                    else:
+                    # Get subreddits
+
+                    my_reddits_list = None
+                    my_ignore_list = None
+                    my_reddits_string = None
+
+                    if self._config['reddit']['scan'].has_key('these-subreddits'):
+                        # Subreddits are specified in config.yml
+                        my_reddits_list = list(self._config['reddit']['scan']['these-subreddits'])
+                        if self._config['reddit']['scan'].has_key('ignore-subreddits'):
+                            my_ignore_list = list(self._config['reddit']['scan']['ignore-subreddits'])
+
+                    elif self._config['reddit']['scan']['my-subreddits']:
+                        # Subreddits are subscribed to by bot user
                         my_reddits = self._redditcon.get_my_subreddits(limit=None)
                         my_reddits_list = []
                         for my_reddit in my_reddits:
                             my_reddits_list.append(my_reddit.display_name.lower())
                         my_reddits_list.sort()
 
-                    lg.debug("_check_subreddits(): subreddits: %s", '+'.join(my_reddits_list))
+                    else:
+                        # No subreddits configured
+                        lg.debug("< _check_subreddits() DONE (no subreddits configured to scan)")
+                        return False
 
-                    self._subreddits = self._redditcon.get_subreddit('+'.join(my_reddits_list))
+                    # Build subreddits string
+                    my_reddits_string = "+".join(my_reddits_list)
+                    if bool(my_ignore_list):
+                        my_reddits_string += ( "-" + "-".join(my_ignore_list) )
 
-                # Fetch comments from subreddits
-                my_comments = self._subreddits.get_comments(limit=self._REDDIT_BATCH_LIMIT)
+                    # Get multi-reddit PRAW object
+                    lg.debug("_check_subreddits(): multi-reddit string: %s", my_reddits_string)
+                    self._subreddits = self._redditcon.get_subreddit(my_reddits_string)
+
                 break
 
             except (HTTPError, RateLimitExceeded) as e:
@@ -372,11 +346,27 @@ class CointipBot(object):
                 lg.error("_check_subreddits(): coudln't fetch comments: %s", str(e))
                 raise
 
-        # Process comments until old comment reached
-        if self._last_processed_comment_time <= 0:
-            self._last_processed_comment_time = ctb_misc._get_value(conn=self._mysqlcon, param0='last_processed_comment_time')
-        _updated_last_processed_time = 0
+        lg.debug("< _init_subreddits() DONE")
+        return True
+
+    def _check_subreddits(self):
+        """
+        Evaluate new comments from configured subreddits
+        """
+        lg.debug("> _check_subreddits()")
+
         try:
+            # Process comments until old comment reached
+
+            # Get last_processed_comment_time if necessary
+            if self._last_processed_comment_time <= 0:
+                self._last_processed_comment_time = ctb_misc._get_value(conn=self._mysqlcon, param0='last_processed_comment_time')
+            _updated_last_processed_time = 0
+
+            # Fetch comments from subreddits
+            my_comments = self._subreddits.get_comments(limit=self._REDDIT_BATCH_LIMIT)
+
+            # Match each comment against regex
             counter = 0
             for c in my_comments:
                 # Stop processing if old comment reached
@@ -426,6 +416,56 @@ class CointipBot(object):
         lg.debug("< _clean_up() DONE")
         return None
 
+    def __init__(self, config_filename=_DEFAULT_CONFIG_FILENAME, self_checks=True):
+        """
+        Constructor.
+        Parses configuration file and initializes bot.
+        """
+        lg.info("CointipBot::__init__()...")
+
+        # Localization. After this, all output to user is localizable
+        # through use of _() function.
+        self._init_localization()
+
+        # Configuration file
+        self._config = self._parse_config(config_filename)
+        if 'batch-limit' in self._config['reddit']:
+            self._REDDIT_BATCH_LIMIT = self._config['reddit']['batch-limit']
+        if 'sleep-seconds' in self._config['misc']:
+            self._DEFAULT_SLEEP_TIME = self._config['misc']['sleep-seconds']
+
+        # Logging
+        if self._config.has_key('logging'):
+            self._init_logging()
+        else:
+            print "CointipBot::__init__(): Warning: no logging handlers configured. Logging is disabled."
+
+        # MySQL
+        self._mysqlcon = self._connect_db(self._config)
+
+        # Coin daemons
+        num_coins = 0
+        for c in self._config['cc']:
+            if self._config['cc'][c]['enabled']:
+                self._coincon[self._config['cc'][c]['unit']] = self._connect_coin(self._config['cc'][c])
+                num_coins += 1
+        if not num_coins > 0:
+            lg.error("Error: please enable at least one type of coin")
+            sys.exit(1)
+
+        # Reddit
+        self._redditcon = self._connect_reddit(self._config)
+        self._init_subreddits()
+
+        # Regex
+        ctb_action._init_regex(self)
+
+        # Self-checks
+        if self_checks:
+            self._self_checks()
+
+        lg.info("< CointipBot::__init__(): DONE, batch-limit = %s, sleep-seconds = %s", self._REDDIT_BATCH_LIMIT, self._DEFAULT_SLEEP_TIME)
+
     def main(self):
         """
         Main loop
@@ -433,22 +473,28 @@ class CointipBot(object):
         while (True):
             lg.debug("Beginning main() iteration...")
             try:
+
                 # Refresh exchange rates
                 ctb_misc._refresh_exchange_rate(self)
+
                 # Expire pending tips
-                if self._expire_pending_tips():
-                    time.sleep(2)
+                self._expire_pending_tips()
+
                 # Check personal messages
                 self._check_inbox()
-                time.sleep(2)
+
                 # Check subreddit comments for tips
-                self._check_subreddits()
+                if bool(self._subreddits):
+                    self._check_subreddits()
+
                 # Sleep
                 lg.debug("Sleeping for %s seconds...", self._DEFAULT_SLEEP_TIME)
                 time.sleep(self._DEFAULT_SLEEP_TIME)
+
             except Exception as e:
                 lg.exception("Caught exception in main() loop: %s", str(e))
+
                 # Clean up
                 self._clean_up()
-                sys.exit(1)
 
+                sys.exit(1)
