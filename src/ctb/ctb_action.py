@@ -199,7 +199,7 @@ class CtbAction(object):
         _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
-        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB)):
+        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, ctb=self._CTB)):
             lg.debug("CtbAction::accept(): duplicate action %s, ignoring", self._MSG.id)
             return False
 
@@ -242,7 +242,7 @@ class CtbAction(object):
         _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
-        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB)):
+        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, ctb=self._CTB)):
             lg.debug("CtbAction::decline(): duplicate action %s, ignoring", self._MSG.id)
             return False
 
@@ -487,7 +487,7 @@ class CtbAction(object):
         _redditcon = self._CTB._redditcon
 
         # Check if action has been processed
-        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB, is_pending=is_pending)):
+        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, ctb=self._CTB, is_pending=is_pending)):
             # Found action in database, returning
             lg.warning("CtbAction::givetip(): duplicate action (msg_id=%s, created_utc=%s)", self._MSG.id, self._MSG.created_utc)
             return False
@@ -624,7 +624,7 @@ class CtbAction(object):
         _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
-        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB)):
+        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, ctb=self._CTB)):
             lg.debug("CtbAction::info(): duplicate action %s, ignoring", self._MSG.id)
             return False
 
@@ -700,7 +700,7 @@ class CtbAction(object):
         """
         lg.debug("> CtbAction::register()")
 
-        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, created_utc=self._MSG.created_utc, ctb=self._CTB)):
+        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, ctb=self._CTB)):
             lg.debug("CtbAction::register(): duplicate action %s, ignoring", self._MSG.id)
             return False
 
