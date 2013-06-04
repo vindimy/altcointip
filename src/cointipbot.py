@@ -266,8 +266,8 @@ class CointipBot(object):
 
                     # Perform action, if found
                     if bool(action):
-                        if action.do():
-                            lg.info("_check_inbox(): %s from %s (m.id %s)", action._TYPE, action._FROM_USER._NAME, str(m.id))
+                        lg.info("_check_inbox(): %s from %s (m.id %s)", action._TYPE, action._FROM_USER._NAME, str(m.id))
+                        action.do()
 
                     # Mark message as read
                     m.mark_as_read()

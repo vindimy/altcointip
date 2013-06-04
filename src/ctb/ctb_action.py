@@ -150,7 +150,7 @@ class CtbAction(object):
 
         if self._TYPE == 'accept':
             if self.accept():
-                action._TYPE = 'info'
+                self._TYPE = 'info'
                 return self.info()
             else:
                 return False
@@ -218,7 +218,7 @@ class CtbAction(object):
                 a.givetip(is_pending=True)
         else:
             # No pending actouns found, reply with error message
-            txt = "I'm sorry %s, you don't have any pending tips. Perhaps they've been already confirmed or already expired." % self._FROM_USER._NAME
+            txt = "I'm sorry %s, you don't have any pending tips. Perhaps they've been already confirmed, or already expired (tips are auto-confirmed after you've registered)." % self._FROM_USER._NAME
             lg.debug("CtbAction::accept(): %s", txt)
             txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
             ctb_misc._reddit_reply(msg=self._MSG, txt=txt)
