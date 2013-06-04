@@ -261,9 +261,9 @@ class CtbAction(object):
                 # Save transaction as declined
                 a.save('declined')
                 # Respond to tip comment
-                cmnt = "^__[Declined]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (a._FROM_USER._NAME, a._TO_USER._NAME, a._COIN_VAL, _cc[self._COIN]['name'])
-                if bool(self._FIAT_VAL):
-                    cmnt += "&nbsp;^__(%s%.4g)__" % (_fiat[self._FIAT]['symbol'], self._FIAT_VAL)
+                cmnt = "^__[Declined]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (a._FROM_USER._NAME, a._TO_USER._NAME, a._COIN_VAL, _cc[a._COIN]['name'])
+                if bool(a._FIAT_VAL):
+                    cmnt += "&nbsp;^__(%s%.4g)__" % (_fiat[a._FIAT]['symbol'], a._FIAT_VAL)
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::decline(): " + cmnt)
                 if _config['reddit']['comments']['declined']:
