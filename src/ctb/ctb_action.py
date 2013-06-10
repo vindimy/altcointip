@@ -295,9 +295,9 @@ class CtbAction(object):
                 lg.info("CtbAction::decline(): " + cmnt)
                 if _config['reddit']['comments']['declined']:
                     if not ctb_misc._reddit_reply(msg=a._MSG, txt=cmnt):
-                        a._FROM_USER.tell(subj="+givetip declined", msg=cmnt)
+                        a._FROM_USER.tell(subj="+tip declined", msg=cmnt)
                 else:
-                    a._FROM_USER.tell(subj="+givetip declined", msg=cmnt)
+                    a._FROM_USER.tell(subj="+tip declined", msg=cmnt)
 
             # Notify self._FROM_USER
             txt = "Hello %s, your pending tips have been declined." % self._FROM_USER._NAME
@@ -350,9 +350,9 @@ class CtbAction(object):
         lg.info("CtbAction::expire(): " + cmnt)
         if _config['reddit']['comments']['expired']:
             if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
-                self._FROM_USER.tell(subj="+givetip expired", msg=cmnt)
+                self._FROM_USER.tell(subj="+tip expired", msg=cmnt)
         else:
-            self._FROM_USER.tell(subj="+givetip expired", msg=cmnt)
+            self._FROM_USER.tell(subj="+tip expired", msg=cmnt)
 
         lg.debug("< CtbAction::expire() DONE")
         return True
@@ -376,8 +376,8 @@ class CtbAction(object):
                 msg = "I'm sorry %s, we've never met. Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (re.escape(self._FROM_USER._NAME), self._CTB._config['reddit']['user'])
                 lg.info("CtbAction::validate(): %s", msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
-                self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
+                self._FROM_USER.tell(subj="+tip failed", msg=msg)
                 self.save('failed')
                 return False
 
@@ -386,8 +386,8 @@ class CtbAction(object):
                 msg = "Sorry %s, you don't have any coin balances enough for a __%s%.4g tip__." % (re.escape(self._FROM_USER._NAME), _fiat[self._FIAT]['symbol'], self._FIAT_VAL)
                 lg.info("CtbAction::__init__(): %s", msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
-                self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
+                self._FROM_USER.tell(subj="+tip failed", msg=msg)
                 self.save('failed')
                 return False
 
@@ -396,8 +396,8 @@ class CtbAction(object):
                 msg = "I'm sorry %s, you don't seem to have a %s address." % (re.escape(self._FROM_USER._NAME), self._COIN.upper())
                 lg.info("CtbAction::validate(): " + msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
-                self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
+                self._FROM_USER.tell(subj="+tip failed", msg=msg)
                 self.save('failed')
                 return False
 
@@ -407,8 +407,8 @@ class CtbAction(object):
                 msg = "I'm sorry %s, your tip/withdraw of __%.6g %s__ is below minimum of __%.6g__." % (re.escape(self._FROM_USER._NAME), self._COIN_VAL, self._COIN.upper(), _cc[self._COIN]['txmin'][txkind])
                 lg.info("CtbAction::validate(): " + msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
-                self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
+                self._FROM_USER.tell(subj="+tip failed", msg=msg)
                 self.save('failed')
                 return False
 
@@ -420,8 +420,8 @@ class CtbAction(object):
                     msg = "I'm sorry %s, your confirmed _tip_ balance of __%.6g %s__ is insufficient for this tip." % (re.escape(self._FROM_USER._NAME), balance_avail, self._COIN.upper())
                     lg.info("CtbAction::validate(): " + msg)
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                    msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
-                    self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                    msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
+                    self._FROM_USER.tell(subj="+tip failed", msg=msg)
                     self.save('failed')
                     return False
             elif bool(self._TO_ADDR):
@@ -431,8 +431,8 @@ class CtbAction(object):
                     msg = "I'm sorry %s, your confirmed _withdraw_ balance of __%.6g %s__ is insufficient for this action." % (re.escape(self._FROM_USER._NAME), balance_avail, self._COIN.upper())
                     lg.info("CtbAction::validate(): " + msg)
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                    msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
-                    self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                    msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
+                    self._FROM_USER.tell(subj="+tip failed", msg=msg)
                     self.save('failed')
                     return False
 
@@ -444,8 +444,8 @@ class CtbAction(object):
                     lg.info("CtbAction::validate(): " + msg)
                     msg += " Pending tips expire in %.1g days." % ( float(_config['misc']['expire-pending-hours']) / float(24) )
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                    msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
-                    self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                    msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
+                    self._FROM_USER.tell(subj="+tip failed", msg=msg)
                     self.save('failed')
                     return False
 
@@ -477,9 +477,9 @@ class CtbAction(object):
                 lg.info("CtbAction::validate(): " + cmnt)
                 if _config['reddit']['comments']['verify']:
                     if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
-                        self._FROM_USER.tell(subj="+givetip pending +accept", msg=cmnt)
+                        self._FROM_USER.tell(subj="+tip pending +accept", msg=cmnt)
                 else:
-                    self._FROM_USER.tell(subj="+givetip pending +accept", msg=cmnt)
+                    self._FROM_USER.tell(subj="+tip pending +accept", msg=cmnt)
 
                 # Send notice to _TO_USER
                 msg = "Hey %s, /u/%s sent you a __%.6g %s(s) (%s%.4g)__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
@@ -488,8 +488,8 @@ class CtbAction(object):
                 msg += " Pending tips expire in %.1g days." % ( float(_config['misc']['expire-pending-hours']) / float(24) )
                 lg.info("CtbAction::validate(): %s", msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
-                self._TO_USER.tell(subj="+givetip pending", msg=msg)
+                msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
+                self._TO_USER.tell(subj="+tip pending", msg=msg)
 
                 # Action saved as 'pending', return false to avoid processing it
                 return False
@@ -501,8 +501,8 @@ class CtbAction(object):
                     msg = "I'm sorry %s, __%s__ address __%s__ appears to be invalid (is there a typo?)." % (re.escape(self._FROM_USER._NAME), self._COIN.upper(), self._TO_ADDR)
                     lg.info("CtbAction::validate(): " + msg)
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                    msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
-                    self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                    msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
+                    self._FROM_USER.tell(subj="+tip failed", msg=msg)
                     self.save('failed')
                     return False
 
@@ -555,7 +555,7 @@ class CtbAction(object):
                 # Send notice to _FROM_USER
                 msg = "Hey %s, something went wrong, and your tip of __%.6g %s(s)__ to /u/%s has failed to process." % (re.escape(self._FROM_USER._NAME), self._COIN_VAL, _cc[self._COIN]['name'], re.escape(self._TO_USER._NAME))
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                self._FROM_USER.tell(subj="+tip failed", msg=msg)
 
                 # Log error
                 lg.error("CtbAction::givetip(): move of %s %s from %s to %s failed: %s" % (self._COIN_VAL, self._COIN, (self._FROM_USER._NAME if is_pending else _config['reddit']['user']), self._TO_USER._NAME, str(e)))
@@ -571,8 +571,8 @@ class CtbAction(object):
                 msg = "Hey %s, you have received a __%.6g %s(s) (%s%.4g)__ tip from /u/%s." % (re.escape(self._TO_USER._NAME), self._COIN_VAL, _cc[self._COIN]['name'], _fiat[self._FIAT]['symbol'], self._FIAT_VAL, re.escape(self._FROM_USER._NAME))
                 lg.info("CtbAction::givetip(): " + msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                msg += "\n* [+givetip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
-                self._TO_USER.tell(subj="+givetip received", msg=msg)
+                msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
+                self._TO_USER.tell(subj="+tip received", msg=msg)
 
                 if not is_pending:
                     # This is not an +accept, so post verification comment
@@ -583,9 +583,9 @@ class CtbAction(object):
                     cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                     if _config['reddit']['comments']['verify']:
                         if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
-                            self._FROM_USER.tell(subj="+givetip succeeded", msg=cmnt)
+                            self._FROM_USER.tell(subj="+tip succeeded", msg=cmnt)
                     else:
-                        self._FROM_USER.tell(subj="+givetip succeeded", msg=cmnt)
+                        self._FROM_USER.tell(subj="+tip succeeded", msg=cmnt)
 
             except Exception as e:
                 # Couldn't post to Reddit
@@ -615,7 +615,7 @@ class CtbAction(object):
                 # Send notice to _FROM_USER
                 msg = "Hey %s, something went wrong, and your tip of __%.6g %s(s)__ to __%s__ has failed to process." % (re.escape(self._FROM_USER._NAME), self._COIN_VAL, _cc[self._COIN]['name'], self._TO_ADDR)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                self._FROM_USER.tell(subj="+givetip failed", msg=msg)
+                self._FROM_USER.tell(subj="+tip failed", msg=msg)
                 lg.error("CtbAction::givetip(): tx of %f %s from %s to %s failed: %s" % (self._COIN_VAL, self._COIN, self._FROM_USER._NAME, self._TO_ADDR, str(e)))
                 raise
 
@@ -634,9 +634,9 @@ class CtbAction(object):
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 if _config['reddit']['comments']['verify']:
                     if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
-                        self._FROM_USER.tell(subj="+givetip succeeded", msg=cmnt)
+                        self._FROM_USER.tell(subj="+tip succeeded", msg=cmnt)
                 else:
-                    self._FROM_USER.tell(subj="+givetip succeeded", msg=cmnt)
+                    self._FROM_USER.tell(subj="+tip succeeded", msg=cmnt)
             except Exception as e:
                 # Couldn't post to Reddit
                 lg.error("CtbAction::givetip(): error communicating with Reddit: %s" % str(e))
