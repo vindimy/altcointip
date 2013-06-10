@@ -249,6 +249,7 @@ class CointipBot(object):
 
                 # Process messages
                 for m in messages:
+                    lg.info("_check_inbox(): %s from %s", "comment" if m.was_comment else "message", m.author.name)
 
                     # Ignore self messages
                     if bool(m.author) and m.author.name.lower() == self._config['reddit']['user'].lower():
@@ -268,6 +269,8 @@ class CointipBot(object):
                     if bool(action):
                         lg.info("_check_inbox(): %s from %s (m.id %s)", action._TYPE, action._FROM_USER._NAME, str(m.id))
                         action.do()
+                    else:
+                        lg.info("_check_inbox(): no match")
 
                     # Mark message as read
                     m.mark_as_read()
