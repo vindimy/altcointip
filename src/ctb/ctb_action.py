@@ -115,8 +115,9 @@ class CtbAction(object):
                     self._COIN_VAL = float(0)
 
         # Subtract tx fee if needed
-        if bool(self._TO_ADDR):
-            self._COIN_VAL -= self._CTB._config['cc'][self._COIN]['txfee']
+        if self._CTB._config['misc']['subtract-txfee']:
+            if bool(self._TO_ADDR):
+                self._COIN_VAL -= self._CTB._config['cc'][self._COIN]['txfee']
 
         lg.debug("< CtbAction::__init__(atype=%s, from_user=%s) DONE", self._TYPE, self._FROM_USER._NAME)
 
@@ -427,8 +428,13 @@ class CtbAction(object):
             elif bool(self._TO_ADDR):
                 # Tip/withdrawal to address (requires more confirmations)
                 balance_avail = self._FROM_USER.get_balance(coin=self._COIN, kind='withdraw')
-                if not ( balance_avail > self._COIN_VAL or abs(balance_avail - self._COIN_VAL) < 0.000001 ):
-                    msg = "I'm sorry %s, your confirmed _withdraw_ balance of __%.6g %s__ is insufficient for this action." % (re.escape(self._FROM_USER._NAME), balance_avail, self._COIN.upper())
+                balance_need = self._COIN_VAL
+                if not _config['misc']['subtract-txfee']:
+                    balance_need += _cc[self._COIN]['txfee']
+                if not ( balance_avail > balance_need or abs(balance_avail - balance_need) < 0.000001 ):
+                    msg = "I'm sorry %s, your confirmed _withdraw_ balance of __%.6g %s__ is insufficient for this action (%s confirmations needed)." % (re.escape(self._FROM_USER._NAME), balance_avail, self._COIN.upper(), _cc[self._COIN]['minconf']['withdraw'])
+                    if not _config['misc']['subtract-txfee']:
+                        msg += " There is a %.6g %s network transaction fee." % (_cc[self._COIN]['txfee'], self._COIN.upper())
                     lg.info("CtbAction::validate(): " + msg)
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                     msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
@@ -540,10 +546,10 @@ class CtbAction(object):
             try:
                 if is_pending:
                     lg.info("CtbAction::givetip(): sending %f %s from %s to %s...", self._COIN_VAL, self._COIN.upper(), _config['reddit']['user'].lower(), self._TO_USER._NAME.lower())
-                    self._TXID = _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._TO_USER._NAME.lower(), self._COIN_VAL, _cc[self._COIN]['minconf'][self._TYPE])
+                    _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._TO_USER._NAME.lower(), self._COIN_VAL, _cc[self._COIN]['minconf'][self._TYPE])
                 else:
                     lg.info("CtbAction::givetip(): sending %f %s from %s to %s...", self._COIN_VAL, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower())
-                    self._TXID = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._COIN_VAL, _cc[self._COIN]['minconf'][self._TYPE])
+                    _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._COIN_VAL, _cc[self._COIN]['minconf'][self._TYPE])
                 # Sleep for 0.5 seconds to not overwhelm coin daemon
                 time.sleep(0.5)
             except Exception as e:
