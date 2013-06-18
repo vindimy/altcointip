@@ -36,7 +36,7 @@ regex:
     num: '([0-9]{1,9}(?:\.[0-9]{0,8})?)'
     word: '{all|flip|roll|quarter|half|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)'
   keywords:
-    givetip: '(/u/altcointip|altcointip|alttip|alt|givetip)'
+    givetip: '(/u/mybotuser|mybotuser)'
     info: '(info)'
     register: '(register)'
     accept: '(accept)'
