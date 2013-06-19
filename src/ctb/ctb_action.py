@@ -89,7 +89,6 @@ class CtbAction(object):
                 else:
                     lg.warning("CtbAction::__init__(atype=%s, from_user=%s): could not determine _COIN_VAL given %s" % (self._TYPE, self._FROM_USER._NAME, self._COIN_VAL))
                     return None
-                lg.info("_COIN_VAL=%s", self._COIN_VAL)
             if bool(self._FIAT) and not type(self._FIAT_VAL) in [float, int] and not self._FIAT_VAL == None:
                 # Determine fiat value
                 val = self._CTB._config['kw'][self._FIAT_VAL.lower()]
@@ -103,7 +102,6 @@ class CtbAction(object):
                 else:
                     lg.warning("CtbAction::__init__(atype=%s, from_user=%s): could not determine _FIAT_VAL given %s" % (self._TYPE, self._FROM_USER._NAME, self._FIAT_VAL))
                     return None
-                lg.info("_FIAT_VAL = %s", self._FIAT_VAL)
 
         # Determine coin, if applicable
         if self._TYPE in ['givetip']:
