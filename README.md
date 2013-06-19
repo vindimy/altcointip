@@ -59,6 +59,7 @@ Most configuration options are self-explanatory, the ones that are not are expla
 
 1. Ensure MySQL is running and accepting connections given configured username/password
 1. Ensure each configured coin daemon is running and responding to commands
+1. Ensure Reddit authenticates configured user. _Note that from new users Reddit will require CAPTCHA responses when posting and sending messages._
 1. Execute _python [src/_run.py](_run.py)_ from _[src](src/)_ directory. The command will not return for as long as the bot is running.
 1. Monitor configured INFO-level or DEBUG-level log file wth _tail -f filename.log_ (on Unix/Linux)
 
