@@ -63,6 +63,27 @@ Most configuration options are self-explanatory, the ones that are not are expla
 1. Execute _python [src/_run.py](_run.py)_ from _[src](src/)_ directory. The command will not return for as long as the bot is running.
 1. Monitor configured INFO-level or DEBUG-level log file wth _tail -f filename.log_ (on Unix/Linux)
 
+Here's the first few lines of INFO-level log after successful initialization:
+
+    INFO 2013-06-19 06:51:12,216 CointipBot::_init_logging(): -------------------- logging initialized --------------------
+    INFO 2013-06-19 06:51:12,217 Logging level INFO to ctb-info.log
+    INFO 2013-06-19 06:51:12,417 Connected to database
+    INFO 2013-06-19 06:51:12,418 Connected to Peercoin
+    INFO 2013-06-19 06:51:12,418 Setting tx fee of 0.010000
+    INFO 2013-06-19 06:51:12,421 Connected to Litecoin
+    INFO 2013-06-19 06:51:12,421 Setting tx fee of 0.010000
+    INFO 2013-06-19 06:51:12,423 Connected to Novacoin
+    INFO 2013-06-19 06:51:12,423 Setting tx fee of 0.010000
+    INFO 2013-06-19 06:51:12,426 Connected to Namecoin
+    INFO 2013-06-19 06:51:12,426 Setting tx fee of 0.010000
+    INFO 2013-06-19 06:51:12,428 Connected to Terracoin
+    INFO 2013-06-19 06:51:12,428 Setting tx fee of 0.010000
+    INFO 2013-06-19 06:51:12,430 Connected to Devcoin
+    INFO 2013-06-19 06:51:12,431 Setting tx fee of 1.000000
+    INFO 2013-06-19 06:51:15,132 Logged in to Reddit
+    INFO 2013-06-19 06:51:25,492 < CointipBot::__init__(): DONE, batch-limit = 99999, sleep-seconds = 30
+
+
 ### What If I Want To Enable More Cryptocoins Later?
 
 If you want to add a new cryptocoin after you already have a few registered users, you need to retroactively create the new cryptocoin address for users who have already registered. See _[src/_add_coin.py](src/_add_coin.py)_ for details on how to do that.
