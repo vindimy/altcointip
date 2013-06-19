@@ -13,17 +13,17 @@ The following Python libraries are necessary to run ALTcointip bot:
 * praw (https://github.com/praw-dev/praw)
 * pifkoin (https://github.com/dpifke/pifkoin)
 
-You can install praw using pip or built-in package manager. For _pifkoin_, you'll need to copy or symlink contents of "python" subdirectory to "src/pifkoin".
+You can install _praw_ using _pip_ (Python Package Index tool) or a package manager in your OS. For _pifkoin_, you'll need to copy or symlink its "python" subdirectory to "src/pifkoin".
 
 ### Database
 
-Create a new MySQL database instance and run included SQL file altcointip.sql to create necessary tables. Create a MySQL user and grant it all privileges on the database. If you don't like to deal with command-line MySQL, use phpMyAdmin.
+Create a new MySQL database instance and run included SQL file _altcointip.sql_ to create necessary tables. Create a MySQL user and grant it all privileges on the database. If you don't like to deal with command-line MySQL, use _phpMyAdmin_.
 
 ### Configuration
 
-Rename or copy included _sample-config.yml_ to _config.yml_ and configure necessary settings. Configure at least one type of cryptocoin in _cc_ section.
+Rename or copy included _src/sample-config.yml_ to _src/config.yml_ and configure necessary settings. Configure at least one type of cryptocoin in _cc_ section.
 
-Most configuration options are self-explanatory, the ones that are not are explaines below.
+Most configuration options are self-explanatory, the ones that are not are explained below.
 
 * _reddit.scan.my-subreddits_: If true, scan subscribed subreddits for new comments (not recommended).
 * _reddit.scan.these-subreddits_: If specified, scan given subreddits for comments (not recommended).
@@ -58,5 +58,9 @@ Most configuration options are self-explanatory, the ones that are not are expla
 
 1. Ensure MySQL is running and accepting connections given configured username/password
 1. Ensure each configured coin daemon is running and responding to commands
-1. Execute _python _run.py_
+1. Execute _python _run.py_ from _src_ directory
 1. Monitor configured INFO-level or DEBUG-level log file wth _tail -f filename.log_ (on Unix/Linux)
+
+### What If I Want To Enable More Cryptocoins Later?
+
+If you want to add a new cryptocoin after you already have a few registered users, you need to retroactively create the new cryptocoin address for users who have already registered. See _src/\_add_coin.py_ for details on how to do that.
