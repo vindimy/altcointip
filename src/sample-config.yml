@@ -34,7 +34,7 @@ misc:
 regex:
   amount:
     num: '([0-9]{1,9}(?:\.[0-9]{0,8})?)'
-    word: '{all|flip|roll|quarter|half|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)'
+    keyword: '(all|flip|roll|upvote|pi|e|leet|quarter|half|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)'
   keywords:
     givetip: '(/u/mybotuser|mybotuser)'
     info: '(info)'
@@ -43,6 +43,29 @@ regex:
     decline: '(decline)'
     withdraw: '(withdraw)'
     history: '(history)'
+
+# Amount keywords
+kw:
+   all: "float( self._FROM_USER.get_balance(coin=self._COIN, kind=('withdraw' if bool(self._TO_ADDR) else 'givetip')) - (self._CTB._config['cc'][self._COIN]['txfee'] if bool(self._TO_ADDR) and self._CTB._config['misc']['subtract-txfee']$
+   flip: "float( 0.1 * float(randint(1,2)) )"
+   roll: "float( 0.1 * float(randint(1,6)) )"
+   upvote: 0.1
+   pi: 3.14159265
+   e: 2.7182818
+   leet: 1.337
+   quarter: 0.25
+   half: 0.5
+   one: 1.0
+   two: 2.0
+   three: 3.0
+   four: 4.0
+   five: 5.0
+   six: 6.0
+   seven: 7.0
+   eight: 8.0
+   nine: 9.0
+   ten: 10.0
+   eleven: 11.0
 
 # Logging
 logging:
