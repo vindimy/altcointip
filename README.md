@@ -21,6 +21,14 @@ You can install _praw_, _sqlalchemy_, and _yaml_ using _pip_ (Python Package Ind
 
 Create a new MySQL database instance and run included SQL file _[altcointip.sql](altcointip.sql)_ to create necessary tables. Create a MySQL user and grant it all privileges on the database. If you don't like to deal with command-line MySQL, use _phpMyAdmin_.
 
+### Coin Daemons
+
+Download one or more coin daemon executable. Create a configuration file for it in appropriate directory (such as `~/.litecoin/litecoin.conf` for Litecoin), specifying `rpcuser`, `rpcpassword`, `rpcport`, and `server=1`, then start the daemon. It will take some time for the daemon to download the blockchain, after which you should verify that it's accepting commands (such as `getinfo`).
+
+### Reddit Account
+
+You should create a dedicated Reddit account for your bot. Initially, Reddit will ask for CAPTCHA input when bot posts a comment or message. To remove CAPTCHA requirement, the bot account needs to accumulate positive karma.
+
 ### Configuration
 
 Rename or copy included _[src/sample-config.yml](src/sample-config.yml)_ to _src/config.yml_ and configure necessary settings. Configure at least one type of cryptocoin in _cc_ section.
@@ -33,11 +41,11 @@ Most configuration options are self-explanatory, the ones that are not are expla
 
 >__Note:__ Setting _reddit.scan.my-subreddits_ to false and not specifying _reddit.scan.these-subreddits_ will result in ALTcointip bot checking its inbox only. In such case the bot will rely on the Reddit Gold "mention" feature, where users "mention" bot's username when tipping (such as +/u/mybotuser 1 ltc). Reddit "mention" feature is the most reliable way to operate ALTcointip bot.
 
-* _misc.subtract-txfee_: If true, network transaction fee is subtracted from the amount specified (when required). Otherwise, it is added to the amount specified.
+* _misc.subtract-txfee_: If true, network transaction fee is subtracted from the amount specified (when required). Otherwise, it is added to the amount specified. If you'd like to disable transaction fees (not recommended), set _cc.COIN.txfee_ setting to `0.0` for particular _COIN_.
 
 * _regex.keywords_: Regular expressions that are used to recognize commands like tipping, info, and withdrawing. Make sure that your tipping keywords are unique on Reddit, otherwise it will conflict with other tip bots.
 
-* _kw_: Here you can define keywords that can be used in place of amount. You can specify a float value, or a string of Python code that will be executed (from within `CtbAction::__init()__`) to determine the value. The string of Python code should return a float. Don't forget to update _regex.amount.keyword_ when you make changes to to _kw_.
+* _kw_: Here you can define keywords that can be used in place of amount. You can specify a float value, or a string of Python code that will be executed (from within `CtbAction::__init()__`) to determine the value. The string of Python code should return a float. Don't forget to update _regex.amount.keyword_ when you make changes to _kw_.
 
 * _logging_: Provide INFO-level and DEBUG-level filename to which ALTcointip bot will log its activity. On Unix/Linux, you can use `tail -f filename.log` to monitor the log file.
 
