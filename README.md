@@ -37,7 +37,7 @@ Most configuration options are self-explanatory, the ones that are not are expla
 
 * _regex.keywords_: Regular expressions that are used to recognize commands like tipping, info, and withdrawing. Make sure that your tipping keywords are unique on Reddit, otherwise it will conflict with other tip bots.
 
-* _kw_: Here you can define keywords that can be used in place of amount. You can specify a float value, or a string of Python code that will be executed (from within `CtbAction::__init()__`) to determine the value. The string of Python code should return a float.
+* _kw_: Here you can define keywords that can be used in place of amount. You can specify a float value, or a string of Python code that will be executed (from within `CtbAction::__init()__`) to determine the value. The string of Python code should return a float. Don't forget to update _regex.amount.keyword_ when you make changes to to _kw_.
 
 * _logging_: Provide INFO-level and DEBUG-level filename to which ALTcointip bot will log its activity. On Unix/Linux, you can use `tail -f filename.log` to monitor the log file.
 
