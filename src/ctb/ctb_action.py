@@ -76,7 +76,7 @@ class CtbAction(object):
 
         # Determine amount, if keyword is given instead of numeric value
         if self._TYPE in ['givetip', 'withdraw']:
-            if bool(self._COIN) and not type(self._COIN_VAL) in [float, int]:
+            if bool(self._COIN) and not type(self._COIN_VAL) in [float, int] and not self._COIN_VAL == None:
                 # Determine coin value
                 val = self._CTB._config['kw'][self._COIN_VAL.lower()]
                 if type(val) == float:
