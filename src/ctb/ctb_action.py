@@ -90,7 +90,7 @@ class CtbAction(object):
                     lg.warning("CtbAction::__init__(atype=%s, from_user=%s): could not determine _COIN_VAL given %s" % (self._TYPE, self._FROM_USER._NAME, self._COIN_VAL))
                     return None
                 lg.info("_COIN_VAL=%s", self._COIN_VAL)
-            if bool(self._FIAT) and not type(self._FIAT_VAL) in [float, int]:
+            if bool(self._FIAT) and not type(self._FIAT_VAL) in [float, int] and not self._FIAT_VAL == None:
                 # Determine fiat value
                 val = self._CTB._config['kw'][self._FIAT_VAL.lower()]
                 if type(val) == float:
@@ -1247,8 +1247,8 @@ def _get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=Non
                                       to_addr=m['to_addr'] if not bool(m['to_user']) else None,
                                       coin=m['coin'],
                                       fiat=m['fiat'],
-                                      coin_val=m['coin_val'],
-                                      fiat_val=m['fiat_val'],
+                                      coin_val=float(m['coin_val']) if bool(m['coin_val']) else None,
+                                      fiat_val=float(m['fiat_val']) if bool(m['fiat_val']) else None,
                                       subr=m['subreddit'],
                                       ctb=ctb))
 
