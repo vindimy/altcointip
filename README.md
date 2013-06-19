@@ -10,18 +10,19 @@ For introduction to and use of ALTcointip bot, see __http://www.reddit.com/r/ALT
 
 The following Python libraries are necessary to run ALTcointip bot:
 
-* praw (https://github.com/praw-dev/praw)
-* pifkoin (https://github.com/dpifke/pifkoin)
+* __praw__ (https://github.com/praw-dev/praw)
+* __pifkoin__ (https://github.com/dpifke/pifkoin)
+* __sqlalchemy__ (http://www.sqlalchemy.org/)
 
-You can install _praw_ using _pip_ (Python Package Index tool) or a package manager in your OS. For _pifkoin_, you'll need to copy or symlink its "python" subdirectory to "src/pifkoin".
+You can install _praw_ and _sqlalchemy_ using _pip_ (Python Package Index tool) or a package manager in your OS. For _pifkoin_, you'll need to copy or symlink its "python" subdirectory to "src/pifkoin".
 
 ### Database
 
-Create a new MySQL database instance and run included SQL file _altcointip.sql_ to create necessary tables. Create a MySQL user and grant it all privileges on the database. If you don't like to deal with command-line MySQL, use _phpMyAdmin_.
+Create a new MySQL database instance and run included SQL file _[altcointip.sql](altcointip.sql)_ to create necessary tables. Create a MySQL user and grant it all privileges on the database. If you don't like to deal with command-line MySQL, use _phpMyAdmin_.
 
 ### Configuration
 
-Rename or copy included _src/sample-config.yml_ to _src/config.yml_ and configure necessary settings. Configure at least one type of cryptocoin in _cc_ section.
+Rename or copy included _[src/sample-config.yml](src/sample-config.yml)_ to _src/config.yml_ and configure necessary settings. Configure at least one type of cryptocoin in _cc_ section.
 
 Most configuration options are self-explanatory, the ones that are not are explained below.
 
@@ -58,9 +59,10 @@ Most configuration options are self-explanatory, the ones that are not are expla
 
 1. Ensure MySQL is running and accepting connections given configured username/password
 1. Ensure each configured coin daemon is running and responding to commands
-1. Execute _python _run.py_ from _src_ directory
+1. Ensure Reddit authenticates configured user. _Note that from new users Reddit will require CAPTCHA responses when posting and sending messages._
+1. Execute _python [src/_run.py](_run.py)_ from _[src](src/)_ directory. The command will not return for as long as the bot is running.
 1. Monitor configured INFO-level or DEBUG-level log file wth _tail -f filename.log_ (on Unix/Linux)
 
 ### What If I Want To Enable More Cryptocoins Later?
 
-If you want to add a new cryptocoin after you already have a few registered users, you need to retroactively create the new cryptocoin address for users who have already registered. See _src/\_add_coin.py_ for details on how to do that.
+If you want to add a new cryptocoin after you already have a few registered users, you need to retroactively create the new cryptocoin address for users who have already registered. See _[src/_add_coin.py](src/_add_coin.py)_ for details on how to do that.
