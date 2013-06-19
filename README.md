@@ -2,7 +2,7 @@
 
 ## Introduction
 
-For introduction and how to use ALTcointip bot, see http://www.reddit.com/r/ALTcointip/wiki/index
+For introduction to and use of ALTcointip bot, see __http://www.reddit.com/r/ALTcointip/wiki/index__
 
 ## Getting Started
 
@@ -29,7 +29,7 @@ Most configuration options are self-explanatory, the ones that are not are expla
 * _reddit.scan.these-subreddits_: If specified, scan given subreddits for comments (not recommended).
 * _reddit.scan.ignore-subreddits_: If specified, ignore given subreddits (when these-subreddits is specified) - Reddit Gold required.
 
->__Note:__ Setting reddit.scan.my-subreddits to false and not specifying reddit.scan.these-subreddits will result in ALTcointip bot checking its inbox only. In such case the bot will rely on the Reddit Gold "mention" feature, where users "mention" bot's username when tipping (such as +/u/mybotuser 1 ltc). Reddit "mention" feature is the most reliable way to operate ALTcointip bot.
+>__Note:__ Setting _reddit.scan.my-subreddits_ to false and not specifying _reddit.scan.these-subreddits_ will result in ALTcointip bot checking its inbox only. In such case the bot will rely on the Reddit Gold "mention" feature, where users "mention" bot's username when tipping (such as +/u/mybotuser 1 ltc). Reddit "mention" feature is the most reliable way to operate ALTcointip bot.
 
 * _misc.subtract-txfee_: If true, network transaction fee is subtracted from the amount specified (when required). Otherwise, it is added to the amount specified.
 
@@ -41,7 +41,7 @@ Most configuration options are self-explanatory, the ones that are not are expla
 
 * _fiat_: Fiat (such as USD) parameters are defined here. At the very least, fiat.usd is required to be present and configured.
 
-* _cc_: Croptocoin (such as Litecoin) parameters are defined here. At least one cryptocoin needs to be configured. A few are provided for your convenience.
+* _cc_: Each cryptocoin (such as Litecoin) parameters are defined here. At least one cryptocoin needs to be configured. A few cryptocoin configurations are provided (but disabled) for your convenience. Set _cc.COIN.enabled_ to _true_ to enable particular cryptocoin.
 
 >__Note:__ You can see that ALTcointip is relying on coin daemon configuration file in order to connect to coin daemon. For example, _cc.ltc.conf-file_ provides the location of Litecoin coin daemon configuration file. The following settings should be specified in the coin daemon configuration file:
 
