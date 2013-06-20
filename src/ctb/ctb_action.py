@@ -69,9 +69,9 @@ class CtbAction(object):
                 raise Exception("CtbAction::__init__(atype=%s, from_user=%s): _COIN_VAL or _FIAT_VAL must be set" % (self._TYPE, self._FROM_USER._NAME))
 
         # Convert _COIN_VAL and _FIAT_VAL to float, if necesary
-        if bool(self._COIN_VAL) and type(self._COIN_VAL) == unicode and self._COIN_VAL.isnumeric():
+        if bool(self._COIN_VAL) and type(self._COIN_VAL) == unicode and self._COIN_VAL.replace('.', '').isnumeric():
             self._COIN_VAL = float(self._COIN_VAL)
-        if bool(self._FIAT_VAL) and type(self._FIAT_VAL) == unicode and self._FIAT_VAL.isnumeric():
+        if bool(self._FIAT_VAL) and type(self._FIAT_VAL) == unicode and self._FIAT_VAL.replace('.', '').isnumeric():
             self._FIAT_VAL = float(self._FIAT_VAL)
 
         # Determine amount, if keyword is given instead of numeric value
