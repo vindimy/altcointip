@@ -66,6 +66,7 @@ kw:
    nine: 9.0
    ten: 10.0
    eleven: 11.0
+   twelve: 12.0
 
 # Logging
 logging:
