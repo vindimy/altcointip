@@ -46,7 +46,7 @@ regex:
 
 # Amount keywords
 kw:
-   all: "float( self._FROM_USER.get_balance(coin=self._COIN, kind=('withdraw' if bool(self._TO_ADDR) else 'givetip')) - (self._CTB._config['cc'][self._COIN]['txfee'] if bool(self._TO_ADDR) and self._CTB._config['misc']['subtract-txfee'] else 0.0) ) if self._FROM_USER.is_registered() and bool(self._COIN) else None"
+   all: "float( self._FROM_USER.get_balance(coin=self._COIN, kind=('withdraw' if bool(self._TO_ADDR) else 'givetip')) - (self._CTB._config['cc'][self._COIN]['txfee'] if bool(self._TO_ADDR) and not self._CTB._config['misc']['subtract-txfee'] else 0.0) ) if self._FROM_USER.is_registered() and bool(self._COIN) else None"
    flip: "float( 0.1 * float(randint(1,2)) )"
    roll: "float( 0.1 * float(randint(1,6)) )"
    upvote: 0.1
