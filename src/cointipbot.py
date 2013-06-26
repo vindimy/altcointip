@@ -469,6 +469,14 @@ class CointipBot(object):
 
         lg.info("< CointipBot::__init__(): DONE, batch-limit = %s, sleep-seconds = %s", self._REDDIT_BATCH_LIMIT, self._DEFAULT_SLEEP_TIME)
 
+    def __str__(self):
+        """
+        Return string representation of self
+        """
+        me = "<CointipBot: dcf=%s, dst=%s, rbl=%s, ticker_val=%s, lpct=%s>"
+        me = me % (self._DEFAULT_CONFIG_FILENAME, self._DEFAULT_SLEEP_TIME, self._REDDIT_BATCH_LIMIT, self._ticker_val, self._last_processed_comment_time)
+        return me
+
     def main(self):
         """
         Main loop

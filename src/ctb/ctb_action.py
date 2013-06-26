@@ -74,6 +74,8 @@ class CtbAction(object):
         if bool(self._FIAT_VAL) and type(self._FIAT_VAL) == unicode and self._FIAT_VAL.replace('.', '').isnumeric():
             self._FIAT_VAL = float(self._FIAT_VAL)
 
+        lg.debug("CtbAction::__init__(): %s", self)
+
         # Determine amount, if keyword is given instead of numeric value
         if self._TYPE in ['givetip', 'withdraw']:
             if bool(self._COIN) and not type(self._COIN_VAL) in [float, int] and not self._COIN_VAL == None:
@@ -160,6 +162,14 @@ class CtbAction(object):
                 self._COIN_VAL -= self._CTB._config['cc'][self._COIN]['txfee']
 
         lg.debug("< CtbAction::__init__(atype=%s, from_user=%s) DONE", self._TYPE, self._FROM_USER._NAME)
+
+    def __str__(self):
+        """""
+        Return string representation of self
+        """
+        me = "<CtbAction: atype=%s, msg=%s, to_user=%s, to_addr=%s, coin=%s, fiat=%s, coin_val=%s, fiat_val=%s, subr=%s, ctb=%s>"
+        me = me % (self._TYPE, self._MSG, self._TO_USER, self._TO_ADDR, self._COIN, self._FIAT, self._COIN_VAL, self._FIAT_VAL, self._SUBR, self._CTB)
+        return me
 
     def save(self, state=None):
         """
@@ -994,24 +1004,6 @@ def _init_regex(_ctb):
                          'coin':        _cc[c]['unit'],
                          'fiat':        _fiat[f]['unit']})
                     _ctb._rlist_comment.append(
-                        # +givetip $0.25
-                        {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount']['num'],
-                         'action':      'givetip',
-                         'rg-to-user':  None,
-                         'rg-amount':   5,
-                         'rg-address':  None,
-                         'coin':        None,
-                         'fiat':        _fiat[f]['unit']})
-                    _ctb._rlist_comment.append(
-                        # +givetip @USER $0.25
-                        {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + '(@\w+)' + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount']['num'],
-                         'action':      'givetip',
-                         'rg-to-user':  4,
-                         'rg-amount':   7,
-                         'rg-address':  None,
-                         'coin':        None,
-                         'fiat':        _fiat[f]['unit']})
-                    _ctb._rlist_comment.append(
                         # +givetip ADDR $KEYWORD UNIT
                         {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _cc[c]['regex']['address'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount']['keyword'] + '(\\s+)' + _cc[c]['regex']['units'],
                          'action':      'givetip',
@@ -1038,24 +1030,46 @@ def _init_regex(_ctb):
                          'rg-address':  None,
                          'coin':        _cc[c]['unit'],
                          'fiat':        _fiat[f]['unit']})
-                    _ctb._rlist_comment.append(
-                        # +givetip $KEYWORD
-                        {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount']['keyword'],
-                         'action':      'givetip',
-                         'rg-to-user':  None,
-                         'rg-amount':   5,
-                         'rg-address':  None,
-                         'coin':        None,
-                         'fiat':        _fiat[f]['unit']})
-                    _ctb._rlist_comment.append(
-                        # +givetip @USER $KEYWORD
-                        {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + '(@\w+)' + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount']['keyword'],
-                         'action':      'givetip',
-                         'rg-to-user':  4,
-                         'rg-amount':   7,
-                         'rg-address':  None,
-                         'coin':        None,
-                         'fiat':        _fiat[f]['unit']})
+
+    # These should always be last because they're very general
+    for f in _fiat:
+        if _fiat[f]['enabled']:
+            _ctb._rlist_comment.append(
+                # +givetip $0.25
+                {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount']['num'],
+                 'action':      'givetip',
+                 'rg-to-user':  None,
+                 'rg-amount':   5,
+                 'rg-address':  None,
+                 'coin':        None,
+                 'fiat':        _fiat[f]['unit']})
+            _ctb._rlist_comment.append(
+                # +givetip $KEYWORD
+                {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount']['keyword'],
+                 'action':      'givetip',
+                 'rg-to-user':  None,
+                 'rg-amount':   5,
+                 'rg-address':  None,
+                 'coin':        None,
+                 'fiat':        _fiat[f]['unit']})
+            _ctb._rlist_comment.append(
+                # +givetip @USER $0.25
+                {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + '(@\w+)' + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount']['num'],
+                 'action':      'givetip',
+                 'rg-to-user':  4,
+                 'rg-amount':   7,
+                 'rg-address':  None,
+                 'coin':        None,
+                 'fiat':        _fiat[f]['unit']})
+            _ctb._rlist_comment.append(
+                # +givetip @USER $KEYWORD
+                {'regex':       '(\\+)' + _ctb._config['regex']['keywords']['givetip'] + '(\\s+)' + '(@\w+)' + '(\\s+)' + _fiat[f]['regex']['units'] + _ctb._config['regex']['amount']['keyword'],
+                 'action':      'givetip',
+                 'rg-to-user':  4,
+                 'rg-amount':   7,
+                 'rg-address':  None,
+                 'coin':        None,
+                 'fiat':        _fiat[f]['unit']})
 
 def _eval_message(_message, _ctb):
     """

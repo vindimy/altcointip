@@ -45,6 +45,14 @@ class CtbUser(object):
 
         lg.debug("< CtbUser::__init__(%s) DONE", name)
 
+    def __str__(self):
+        """
+        Return string representation of self
+        """
+        me = "<CtbUser: name=%s, giftamnt=%s, joindate=%s, addr=%s, trans=%s, redditobj=%s, ctb=%s>"
+        me = me % (self._NAME, self._GIFTAMNT, self._JOINDATE, self._ADDR, self._TRANS, self._REDDITOBJ, self._CTB)
+        return me
+
     def get_balance(self, coin=None, kind=None):
         """
         If coin is specified, return float with coin balance for user
