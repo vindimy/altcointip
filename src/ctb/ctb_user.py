@@ -201,6 +201,8 @@ class CtbUser(object):
         """
         lg.debug("> CtbUser::register(%s)", self._NAME)
 
+        _cc = self._CTB._config['cc']
+
         # Add user to database
         try:
             sql_adduser = "INSERT INTO t_users (username) VALUES (%s)"
@@ -216,6 +218,11 @@ class CtbUser(object):
         for c in self._CTB._coincon:
             try:
                 # Generate new address for user
+                # Unlock wallet for keypoolrefill (otherwise coin daemon will run out of keys)
+                if hasattr(_cc[c], 'walletpassphrase'):
+                    self._CTB._coincon[c].walletpassphrase(_cc[c]['walletpassphrase'], 1)
+                    self._CTB._coincon[c].keypoolrefill()
+                    self._CTB._coincon[c].walletlock()
                 new_addrs[c] = self._CTB._coincon[c].getnewaddress(self._NAME.lower())
                 # Sleep for 2 seconds to not overwhelm coin daemon
                 time.sleep(2)
