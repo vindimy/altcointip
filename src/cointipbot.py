@@ -133,7 +133,7 @@ class CointipBot(object):
         except Exception as e:
             lg.error("Error connecting to database: "+str(e))
             sys.exit(1)
-        lg.info("Connected to database")
+        lg.info("Connected to database %s as %s", config['mysql']['host'], config['mysql']['user'])
         return conn
 
     def _connect_coin(self, c):
@@ -178,7 +178,7 @@ class CointipBot(object):
                 lg.error("CointipBot::_connect_reddit(): Error connecting to Reddit: %s", str(e))
                 raise
 
-        lg.info("Logged in to Reddit")
+        lg.info("Logged in to Reddit as %s", config['reddit']['user'])
         return conn
 
     def _self_checks(self):
