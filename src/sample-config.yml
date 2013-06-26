@@ -248,7 +248,7 @@ cc:
       withdraw: 10
     txmin:
       givetip: 1
-      withdraw: 49
+      withdraw: 4
     txfee: 1
     explorer:
       address: 'http://glari.ch:2750/address/'
