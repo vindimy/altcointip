@@ -78,10 +78,12 @@ class CtbAction(object):
         if self._TYPE in ['givetip', 'withdraw']:
             if bool(self._COIN) and not type(self._COIN_VAL) in [float, int] and not self._COIN_VAL == None:
                 # Determine coin value
+                lg.debug("CtbAction::__init__(): determining coin value given '%s'", self._COIN_VAL)
                 val = self._CTB._config['kw'][self._COIN_VAL.lower()]
                 if type(val) == float:
                     self._COIN_VAL = val
                 elif type(val) == str:
+                    lg.debug("CtbAction::__init__(): evaluating '%s'", val)
                     self._COIN_VAL = eval(val)
                     if not type(self._COIN_VAL) == float:
                         lg.warning("CtbAction::__init__(atype=%s, from_user=%s): could not determine _COIN_VAL given %s" % (self._TYPE, self._FROM_USER._NAME, self._COIN_VAL))
@@ -91,10 +93,12 @@ class CtbAction(object):
                     return None
             if bool(self._FIAT) and not type(self._FIAT_VAL) in [float, int] and not self._FIAT_VAL == None:
                 # Determine fiat value
+                lg.debug("CtbAction::__init__(): determining fiat value given '%s'", self._FIAT_VAL)
                 val = self._CTB._config['kw'][self._FIAT_VAL.lower()]
                 if type(val) == float:
                     self._FIAT_VAL = val
                 elif type(val) == str:
+                    lg.debug("CtbAction::__init__(): evaluating '%s'", val)
                     self._FIAT_VAL = eval(val)
                     if not type(self._FIAT_VAL) == float:
                         lg.warning("CtbAction::__init__(atype=%s, from_user=%s): could not determine _FIAT_VAL given %s" % (self._TYPE, self._FROM_USER._NAME, self._FIAT_VAL))
@@ -642,9 +646,14 @@ class CtbAction(object):
 
             try:
                 lg.info("CtbAction::givetip(): sending %f %s to %s...", self._COIN_VAL, self._COIN, self._TO_ADDR)
+                # Unlock wallet, if applicable
                 if _cc[self._COIN].has_key('walletpassphrase'):
-                    res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 3)
+                    res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 1)
+                # Perform transaction
                 self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER._NAME.lower(), self._TO_ADDR, self._COIN_VAL, _cc[self._COIN]['minconf'][self._TYPE])
+                # Lock wallet, if applicable
+                if _cc[self._COIN].has_key('walletpassphrase'):
+                    _coincon[self._COIN].walletlock()
                 # Sleep for 2 seconds to not overwhelm coin daemon
                 time.sleep(2)
 
