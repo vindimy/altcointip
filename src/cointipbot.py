@@ -28,7 +28,7 @@ class CointipBot(object):
 
     _ticker = None
     _ticker_pairs = None
-    _ticket_val = {}
+    _ticker_val = {}
     _ticker_last_refresh = 0
 
     _subreddits = None
