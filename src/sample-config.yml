@@ -123,7 +123,7 @@ cc:
     enabled: false
     unit: btc
     name: Bitcoin
-    confile: '~/.bitcoin/bitcoin.conf'
+    conf-file: '~/.bitcoin/bitcoin.conf'
     minconf:
       givetip: 1
       withdraw: 10
