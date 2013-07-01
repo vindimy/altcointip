@@ -44,6 +44,13 @@ def _refresh_exchange_rate(ctb=None):
     if bool(ticker_val):
         ctb._ticker_val = ticker_val
 
+    # Set btc_btc ticker value to 1.0
+    ctb._ticker_val['btc_btc']['avg'] = 1.0
+
+    # Set dvc_btc ticker value manually until there's a ticker for it
+    ctb._ticker_val['dvc_btc']['avg'] = 0.00000077
+
+
     # Update last refresh time
     ctb._ticker_last_refresh = int(time.mktime(time.gmtime()))
 
