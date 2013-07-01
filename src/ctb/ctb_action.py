@@ -119,7 +119,7 @@ class CtbAction(object):
                 # Set the coin based on from_user's available balance
                 _cc = self._CTB._config['cc']
                 _fiat = self._CTB._config['fiat']
-                for c in _cc:
+                for c in sorted(_cc):
                     if _cc[c]['enabled']:
                         # First, check if we have a ticker value for this coin and fiat
                         if not ( hasattr(ctb, '_ticker_val') and ctb._ticker_val.has_key(_cc[c]['unit']+'_btc') and ctb._ticker_val.has_key('btc_'+self._FIAT) and ctb._ticker_val[_cc[c]['unit']+'_btc']['avg'] > 0 and ctb._ticker_val['btc_'+self._FIAT]['avg'] > 0 ):
