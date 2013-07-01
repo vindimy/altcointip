@@ -110,6 +110,7 @@ class CointipBot(object):
             The filename from which the configuration should be read.
         """
         lg.debug("Parsing config file...")
+
         try:
             config = yaml.load(open(filename))
         except yaml.YAMLError as e:
@@ -117,6 +118,7 @@ class CointipBot(object):
             if hasattr(e, 'problem_mark'):
                 lg.error("Error position: (line "+str(e.problem_mark.line+1)+", column "+str(e.problem_mark.column+1));
             sys.exit(1)
+
         lg.info("Config file has been read")
         return config
 
@@ -125,14 +127,17 @@ class CointipBot(object):
         Returns a database connection object
         """
         lg.debug("Connecting to MySQL...")
+
         dsn = "mysql+mysqldb://" + str(config['mysql']['user']) + ":" + str(config['mysql']['pass'])
         dsn += "@" + str(config['mysql']['host']) + ":" + str(config['mysql']['port']) + "/" + str(config['mysql']['db'])
         dbobj = ctb_db.CointipBotDatabase(dsn)
+
         try:
             conn = dbobj.connect()
         except Exception as e:
             lg.error("Error connecting to database: "+str(e))
             sys.exit(1)
+
         lg.info("Connected to database %s as %s", config['mysql']['host'], config['mysql']['user'])
         return conn
 
@@ -141,15 +146,18 @@ class CointipBot(object):
         Returns a coin daemon connection object
         """
         lg.debug("Connecting to %s...", c['name'])
+
         try:
             conn = Bitcoind(c['conf-file'])
         except BitcoindException as e:
             lg.error("Error connecting to %s: %s", c['name'], str(e))
             sys.exit(1)
         lg.info("Connected to %s", c['name'])
+
         # Set tx fee
         lg.info("Setting tx fee of %f", c['txfee'])
         conn.settxfee(c['txfee'])
+
         # Done
         return conn
 

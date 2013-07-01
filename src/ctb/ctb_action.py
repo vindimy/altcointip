@@ -736,7 +736,7 @@ class CtbAction(object):
 
         # Gather data for info message
         info = []
-        for c in _coincon:
+        for c in sorted(_coincon):
             coininfo = {}
             coininfo['coin'] = c
             try:
