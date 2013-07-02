@@ -226,6 +226,10 @@ class CtbAction(object):
         """
         lg.debug("> CtbAction::do()")
 
+        if bool(_check_action(msg_id=self._MSG.id, ctb=self._CTB)):
+            lg.warning("CtbAction::do(): duplicate action %s (msg.id %s), ignoring", self._TYPE, self._MSG.id)
+            return False
+
         if self._TYPE == 'accept':
             if self.accept():
                 self._TYPE = 'info'
@@ -277,10 +281,6 @@ class CtbAction(object):
         _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
-        if bool(_check_action(msg_id=self._MSG.id, ctb=self._CTB)):
-            lg.warning("CtbAction::accept(): duplicate action %s (from %s), ignoring", self._TYPE, self._MSG.id)
-            return False
-
         # Register as new user
         if not self._FROM_USER.is_registered():
             if not self._FROM_USER.register():
@@ -319,10 +319,6 @@ class CtbAction(object):
         _cc = self._CTB._config['cc']
         _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
-
-        if bool(_check_action(msg_id=self._MSG.id, ctb=self._CTB)):
-            lg.warning("CtbAction::decline(): duplicate action %s (from %s), ignoring", self._TYPE, self._MSG.id)
-            return False
 
         actions = _get_actions(atype='givetip', to_user=self._FROM_USER._NAME, state='pending', ctb=self._CTB)
         if bool(actions):
@@ -582,7 +578,7 @@ class CtbAction(object):
         # Check if action has been processed
         if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, ctb=self._CTB, is_pending=is_pending)):
             # Found action in database, returning
-            lg.warning("CtbAction::givetipt(): duplicate action %s (from %s), ignoring", self._TYPE, self._MSG.id)
+            lg.warning("CtbAction::givetipt(): duplicate action %s (msg.id %s), ignoring", self._TYPE, self._MSG.id)
             return False
 
         # Validate action
@@ -722,10 +718,6 @@ class CtbAction(object):
         _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
-        if bool(_check_action(msg_id=self._MSG.id, ctb=self._CTB)):
-            lg.warning("CtbAction::info(): duplicate action %s (from %s), ignoring", self._TYPE, self._MSG.id)
-            return False
-
         # Check if user exists
         if not self._FROM_USER.is_registered():
             msg = "I'm sorry %s, we've never met. " % (re.escape(self._FROM_USER._NAME))
@@ -797,10 +789,6 @@ class CtbAction(object):
         Register a new user
         """
         lg.debug("> CtbAction::register()")
-
-        if bool(_check_action(msg_id=self._MSG.id, ctb=self._CTB)):
-            lg.warning("CtbAction::register(): duplicate action %s (from %s), ignoring", self._TYPE, self._MSG.id)
-            return False
 
         # If user exists, do nothing
         if self._FROM_USER.is_registered():
