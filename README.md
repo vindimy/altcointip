@@ -92,7 +92,16 @@ Here's the first few lines of INFO-level log after successful initialization:
     INFO 2013-06-19 06:51:15,132 Logged in to Reddit
     INFO 2013-06-19 06:51:25,492 < CointipBot::__init__(): DONE, batch-limit = 99999, sleep-seconds = 30
 
+### Backups
 
+Backups are very important! The last thing you want is losing user wallets or record of transactions in the databse. 
+
+There are two simple backup scripts included (`src/_backup_db.py` and `src/_backup_wallets.py`) that support backup to local directory and (optionally) to a remote host with `rsync`. Here's a `crontab` crontab entry scheduling a backup every 15 minutes to a local directory `~/backups` as well as to remote server `my-server-1.example.com:backups/`:
+
+    */15    *       *       *       *       cd ~/git/altcointip/src && python _backup_db.py ~/backups my-server-1.example.com:backups/ && python _backup_wallets.py ~/backups my-server-1.example.com:backups/
+    
+Make sure to create all destination directories, and test whether backup is actually being performed.
+    
 ### What If I Want To Enable More Cryptocoins Later?
 
 If you want to add a new cryptocoin after you already have a few registered users, you need to retroactively create the new cryptocoin address for users who have already registered. See _[src/_add_coin.py](src/_add_coin.py)_ for details on how to do that.
