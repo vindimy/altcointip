@@ -277,7 +277,7 @@ class CtbAction(object):
         _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
-        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, ctb=self._CTB)):
+        if bool(_check_action(msg_id=self._MSG.id, ctb=self._CTB)):
             lg.warning("CtbAction::accept(): duplicate action %s (from %s), ignoring", self._TYPE, self._MSG.id)
             return False
 
@@ -320,7 +320,7 @@ class CtbAction(object):
         _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
-        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, ctb=self._CTB)):
+        if bool(_check_action(msg_id=self._MSG.id, ctb=self._CTB)):
             lg.warning("CtbAction::decline(): duplicate action %s (from %s), ignoring", self._TYPE, self._MSG.id)
             return False
 
@@ -722,7 +722,7 @@ class CtbAction(object):
         _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
-        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, ctb=self._CTB)):
+        if bool(_check_action(msg_id=self._MSG.id, ctb=self._CTB)):
             lg.warning("CtbAction::info(): duplicate action %s (from %s), ignoring", self._TYPE, self._MSG.id)
             return False
 
@@ -798,7 +798,7 @@ class CtbAction(object):
         """
         lg.debug("> CtbAction::register()")
 
-        if bool(_check_action(atype=self._TYPE, msg_id=self._MSG.id, ctb=self._CTB)):
+        if bool(_check_action(msg_id=self._MSG.id, ctb=self._CTB)):
             lg.warning("CtbAction::register(): duplicate action %s (from %s), ignoring", self._TYPE, self._MSG.id)
             return False
 
