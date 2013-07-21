@@ -110,7 +110,7 @@ fiat:
       units: (¥|jpy)
   # RUR
   rur:
-    enabled: true
+    enabled: false
     unit: rur
     symbol: 'R'
     name: Russian Ruble

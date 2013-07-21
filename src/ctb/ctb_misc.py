@@ -97,12 +97,22 @@ def _refresh_exchange_rate_vircurex(ctb=None):
             if not c == 'btc':
                 ctb._ticker_pairs[c+'_btc'] = 'True'
 
-    # Update values
-    for p in ctb._ticker_pairs:
-        lg.debug("_refresh_exchange_rate_vircurex(): getting pair %s", p)
-        pair = pyvircurex.Pair(p)
-        ctb._ticker_val[p] = {}
-        ctb._ticker_val[p]['avg'] = (float(pair.lowest_ask) + float(pair.highest_bid)) / 2.0
+    try:
+        # Update values
+        for p in ctb._ticker_pairs:
+            lg.debug("_refresh_exchange_rate_vircurex(): getting pair %s", p)
+            pair = pyvircurex.Pair(p)
+            ctb._ticker_val[p] = {}
+            ctb._ticker_val[p]['avg'] = (float(pair.lowest_ask) + float(pair.highest_bid)) / 2.0
+    except urllib2.URLError:
+        lg.warning("_refresh_exchange_rate_vircurex(): caught URL error")
+        return False
+    except urllib2.HTTPError:
+        lg.warning("_refresh_exchange_rate_vircurex(): caught HTTP error")
+        return False
+    except Exception, e:
+        lg.warning("_refresh_exchange_rate_vircurex(): caught Exception: %s", str(e))
+        return False
 
     # Set btc_btc ticker value to 1.0
     ctb._ticker_val['btc_btc'] = {}
