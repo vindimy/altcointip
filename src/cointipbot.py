@@ -11,6 +11,7 @@ from praw.errors import ExceptionList, APIException, InvalidCaptcha, InvalidUser
 from socket import timeout
 
 # Configure CointipBot logger
+logging.basicConfig()
 lg = logging.getLogger('cointipbot')
 
 class CointipBot(object):
@@ -116,7 +117,7 @@ class CointipBot(object):
         except yaml.YAMLError as e:
             lg.error("Error reading config file "+filename)
             if hasattr(e, 'problem_mark'):
-                lg.error("Error position: (line "+str(e.problem_mark.line+1)+", column "+str(e.problem_mark.column+1));
+                lg.error("Error position: (line "+str(e.problem_mark.line+1)+", column "+str(e.problem_mark.column+1)+")");
             sys.exit(1)
 
         lg.info("Config file has been read")
