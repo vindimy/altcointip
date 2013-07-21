@@ -496,7 +496,7 @@ class CointipBot(object):
             try:
 
                 # Refresh exchange rates
-                ctb_misc._refresh_exchange_rate(self)
+                ctb_misc._refresh_exchange_rate(self, exchange=self._config['misc']['exchange'])
 
                 # Expire pending tips
                 self._expire_pending_tips()

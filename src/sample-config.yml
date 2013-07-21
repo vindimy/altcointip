@@ -29,6 +29,7 @@ misc:
   sleep-seconds: 30
   expire-pending-hours: 48
   subtract-txfee: false
+  exchange: vircurex
 
 # Regex
 regex:
