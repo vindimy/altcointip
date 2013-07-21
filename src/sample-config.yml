@@ -256,5 +256,24 @@ cc:
     regex:
       address: '(1[1-9a-z]{20,40})'
       units: '(dvc|devcoin|devcoins)'
+  # Primecoin
+  xpm:
+    enabled: false
+    unit: xpm
+    name: Primecoin
+    conf-file: '~/.primecoin/primecoin.conf'
+    minconf:
+      givetip: 10
+      withdraw: 180
+    txmin:
+      givetip: 0.01
+      withdraw: 0.49
+    txfee: 0.01
+    walletpassphrase: mypass1
+    explorer:
+      address: 'http://primecoin.21stcenturymoneytalk.org/?addr='
+      transaction: 'http://primecoin.21stcenturymoneytalk.org/?tx='
+    regex:
+      address: '(A[1-9a-z]{20,40})'
+      units: '(xpm|primecoin|primecoins)'
 ﻿# -*- coding: utf-8 -*-
-
