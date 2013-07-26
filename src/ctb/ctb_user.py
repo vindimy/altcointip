@@ -227,7 +227,7 @@ class CtbUser(object):
             try:
                 # Generate new address for user
                 # Unlock wallet for keypoolrefill (otherwise coin daemon will run out of keys)
-                if hasattr(_cc[c], 'walletpassphrase'):
+                if _cc[c].has_key('walletpassphrase'):
                     self._CTB._coincon[c].walletpassphrase(_cc[c]['walletpassphrase'], 1)
                     self._CTB._coincon[c].keypoolrefill()
                     self._CTB._coincon[c].walletlock()
