@@ -104,12 +104,6 @@ def _refresh_exchange_rate_vircurex(ctb=None):
             pair = pyvircurex.Pair(p)
             ctb._ticker_val[p] = {}
             ctb._ticker_val[p]['avg'] = (float(pair.lowest_ask) + float(pair.highest_bid)) / 2.0
-    except urllib2.URLError:
-        lg.warning("_refresh_exchange_rate_vircurex(): caught URL error")
-        return False
-    except urllib2.HTTPError:
-        lg.warning("_refresh_exchange_rate_vircurex(): caught HTTP error")
-        return False
     except Exception, e:
         lg.warning("_refresh_exchange_rate_vircurex(): caught Exception: %s", str(e))
         return False
