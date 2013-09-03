@@ -1064,17 +1064,18 @@ def _eval_message(_message, _ctb):
     Evaluate message body and return a CtbAction
     object if successful
     """
-    #lg.debug("> _eval_message()")
+    lg.debug("> _eval_message()")
 
     # Do the matching
     body = _message.body
     for r in _ctb._rlist_message:
         rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
-        #lg.debug("matching '%s' with '%s'", _message.body, r['regex'])
+        lg.debug("matching '%s' with '%s'", _message.body, r['regex'])
         m = rg.search(body)
 
         if bool(m):
             # Match found
+            lg.debug("match found")
 
             # Extract matched fields into variables
             _to_addr = m.group(r['rg-address']) if bool(r['rg-address']) else None
@@ -1092,6 +1093,7 @@ def _eval_message(_message, _ctb):
                                 ctb=_ctb)
 
     # No match found
+    lg.debug("no match found")
     return None
 
 def _eval_comment(_comment, _ctb):
@@ -1099,17 +1101,18 @@ def _eval_comment(_comment, _ctb):
     Evaluate comment body and return a CtbAction
     object if successful
     """
-    #lg.debug("> _eval_comment()")
+    lg.debug("> _eval_comment()")
 
     # Do the matching
     body = _comment.body
     for r in _ctb._rlist_comment:
         rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
-        #lg.debug("_eval_comment(): matching '%s' using <%s>", _comment.body, r['regex'])
+        lg.debug("_eval_comment(): matching '%s' with <%s>", _comment.body, r['regex'])
         m = rg.search(body)
 
         if bool(m):
             # Match found
+            lg.debug("_eval_comment(): match found")
 
             # Extract matched fields into variables
             _to_user = m.group(r['rg-to-user'])[1:] if bool(r['rg-to-user']) else None
@@ -1141,7 +1144,7 @@ def _eval_comment(_comment, _ctb):
                                 ctb=_ctb)
 
     # No match found
-    #lg.debug("< _eval_comment() DONE (no)")
+    lg.debug("< _eval_comment() DONE (no match)")
     return None
 
 def _check_action(atype=None, state=None, coin=None, msg_id=None, created_utc=None, from_user=None, to_user=None, subr=None, ctb=None, is_pending=False):
