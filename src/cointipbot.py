@@ -286,8 +286,9 @@ class CointipBot(object):
                             msg = "Sorry %s, I didn't understand your %s. Please [verify the syntax](%s#wiki_commands) and try again by issuing a new one." % (user._NAME, "comment" if m.was_comment else "message", self._config['reddit']['help-url'])
                             lg.debug("_check_inbox(): %s", msg)
                             msg += "\n\n* [%s help](%s)" % (self._config['reddit']['user'], self._config['reddit']['help-url'])
-                            msg += "\n* [source %s](%s)" % ("comment" if m.was_comment else "message", m.permalink if hasattr(m, 'permalink') else "")
-                            user.tell(subj="Sorry!", msg=msg)
+                            if hasattr(m, 'permalink'):
+                                msg += "\n* [source %s](%s)" % ("comment" if m.was_comment else "message", m.permalink)
+                            user.tell(subj="Sorry!", msg=msg, msgobj=m if not m.was_comment else None)
 
                     # Mark message as read
                     m.mark_as_read()

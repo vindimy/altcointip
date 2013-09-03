@@ -164,7 +164,7 @@ class CtbUser(object):
         lg.warning("< CtbUser::is_registered(%s): returning None (shouldn't happen)", self._NAME)
         return None
 
-    def tell(self, subj=None, msg=None):
+    def tell(self, subj=None, msg=None, msgobj=None):
         """
         Send a Reddit message to user
         """
@@ -179,8 +179,12 @@ class CtbUser(object):
         while True:
             # This loop retries sending message if Reddit is down
             try:
-                lg.debug("CtbUser::tell(%s): sending message", self._NAME)
-                self._REDDITOBJ.send_message(subj, msg)
+                if bool(msgobj):
+                    lg.debug("CtbUser::tell(%s): replying to message", msgobj.id)
+                    msgobj.reply(msg)
+                else:
+                    lg.debug("CtbUser::tell(%s): sending message", self._NAME)
+                    self._REDDITOBJ.send_message(subj, msg)
                 break
             except APIException as e:
                 lg.warning("CtbUser::tell(%s): failed (%s)", self._NAME, str(e))
