@@ -22,6 +22,8 @@ reddit:
     pending: false
     expired: false
     declined: false
+  messages:
+    sorry: true
 
 # Other
 misc:

@@ -281,6 +281,13 @@ class CointipBot(object):
                         action.do()
                     else:
                         lg.info("_check_inbox(): no match")
+                        if self._config['reddit']['messages']['sorry']:
+                            user = ctb_user.CtbUser(name=m.author.name, redditobj=m.author, ctb=self)
+                            msg = "Sorry %s, I didn't understand your %s. Please [verify the syntax](%s#wiki_commands) and try again by issuing a new one." % (user._NAME, "comment" if m.was_comment else "message", self._config['reddit']['help-url'])
+                            lg.debug("_check_inbox(): %s", msg)
+                            msg += "\n\n* [%s help](%s)" % (self._config['reddit']['user'], self._config['reddit']['help-url'])
+                            msg += "\n* [source %s](%s)" % ("comment" if m.was_comment else "message", m.permalink if hasattr(m, 'permalink') else "")
+                            user.tell(subj="Sorry!", msg=msg)
 
                     # Mark message as read
                     m.mark_as_read()
@@ -387,7 +394,6 @@ class CointipBot(object):
                 if c.created_utc <= self._last_processed_comment_time:
                     lg.debug("_check_subreddits(): old comment reached")
                     break
-
                 counter += 1
                 if c.created_utc > _updated_last_processed_time:
                     _updated_last_processed_time = c.created_utc
@@ -395,10 +401,19 @@ class CointipBot(object):
                 # Attempt to evaluate comment
                 action = ctb_action._eval_comment(c, self)
 
-                # Perform action if necessary
-                if action != None:
-                    lg.info("_check_subreddits(): %s (%.6g %s) from %s (c.id %s)", action._TYPE, action._COIN_VAL, action._COIN, action._FROM_USER._NAME, str(c.id))
+                # Perform action, if found
+                if bool(action):
+                    lg.info("_check_subreddits(): %s from %s (m.id %s)", action._TYPE, action._FROM_USER._NAME, str(c.id))
                     action.do()
+                else:
+                    lg.info("_check_subreddits(): no match")
+                    if self._config['reddit']['messages']['sorry']:
+                        user = ctb_user.CtbUser(name=c.author.name, redditobj=c.author, ctb=self)
+                        msg = "Sorry %s, I didn't understand your comment. Please [verify the syntax](%s#wiki_commands) and try again by issuing a new one." % (user._NAME, self._config['reddit']['help-url'])
+                        lg.debug("_check_inbox(): %s", msg)
+                        msg += "\n\n* [%s help](%s)" % (self._config['reddit']['user'], self._config['reddit']['help-url'])
+                        msg += "\n* [source comment](%s)" % (c.permalink)
+                        user.tell(subj="Sorry!", msg=msg)
 
             lg.debug("_check_subreddits(): %s comments processed", counter)
             if counter >= self._REDDIT_BATCH_LIMIT - 1:
