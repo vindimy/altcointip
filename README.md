@@ -6,6 +6,8 @@ For introduction to and use of ALTcointip bot, see __http://www.reddit.com/r/ALT
 
 ## Getting Started
 
+>**NEW: See [altcointip-chef](https://github.com/vindimy/altcointip-chef) for Chef-automated installation and configuration of ALTcointip bot.**
+
 ### Python Dependencies
 
 The following Python libraries are necessary to run ALTcointip bot:
