@@ -32,35 +32,47 @@ def update_stats(ctb=None):
         return None
 
     for s in ctb._config['reddit']['stats']['sql']:
+        lg.debug("update_stats(): getting stats for '%s'" % s)
         sql = ctb._config['reddit']['stats']['sql'][s]['query']
         stats += "\n\n### %s\n\n" % ctb._config['reddit']['stats']['sql'][s]['name']
         stats += "%s\n\n" % ctb._config['reddit']['stats']['sql'][s]['desc']
 
         mysqlexec = mysqlcon.execute(sql)
         if mysqlexec.rowcount <= 0:
+            lg.warning("update_stats(): query <%s> returned nothing" % ctb._config['reddit']['stats']['sql'][s]['query'])
             continue
 
-        stats += ("|".join(mysqlexec.keys())) + "\n"
-        stats += ("|".join([":---"] * len(mysqlexec.keys()))) + "\n"
-
-        for m in mysqlexec:
-            values = []
-            for k in mysqlexec.keys():
-                if type(m[k]) == float and k.find("coin") > -1:
-                    values.append("%.8g" % m[k])
-                elif type(m[k]) == float and k.find("fiat") > -1:
-                    values.append("$%.2f" % m[k])
-                elif k.find("user") > -1:
-                    values.append("/u/" + str(m[k]))
-                elif k.find("subreddit") > -1:
-                    values.append("/r/" + str(m[k]))
-                elif k.find("link") > -1:
-                    values.append("[link](%s)" % m[k])
-                else:
-                    values.append(str(m[k]))
-            stats += ("|".join(values)) + "\n"
+        if ctb._config['reddit']['stats']['sql'][s]['type'] == "line":
+            m = mysqlexec.fetchone()
+            k = mysqlexec.keys()[0]
+            if k.find("usd") > -1:
+                stats += "%s = **$%.2f**\n" % (k, m[k])
+            else:
+                stats += "%s = **%s**\n" % (k, m[k])
+        elif ctb._config['reddit']['stats']['sql'][s]['type'] == "table":
+            stats += ("|".join(mysqlexec.keys())) + "\n"
+            stats += ("|".join([":---"] * len(mysqlexec.keys()))) + "\n"
+            for m in mysqlexec:
+                values = []
+                for k in mysqlexec.keys():
+                    if type(m[k]) == float and k.find("coin") > -1:
+                        values.append("%.8g" % m[k])
+                    elif type(m[k]) == float and k.find("fiat") > -1:
+                        values.append("$%.2f" % m[k])
+                    elif k.find("user") > -1:
+                        values.append("/u/" + str(m[k]))
+                    elif k.find("subreddit") > -1:
+                        values.append("/r/" + str(m[k]))
+                    elif k.find("link") > -1:
+                        values.append("[link](%s)" % m[k])
+                    else:
+                        values.append(str(m[k]))
+                stats += ("|".join(values)) + "\n"
+        else:
+            lg.error("update_stats(): don't know what to do with type '%s'" % ctb._config['reddit']['stats']['sql'][s]['type'])
+            return False
 
         stats += "\n"
 
-    redditcon.edit_wiki_page(ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page'], stats, "Update by ALTcointip bot")
-    return True
+    lg.debug("update_stats(): updating subreddit '%s', page '%s'" % (ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page']))
+    return redditcon.edit_wiki_page(ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page'], stats, "Update by ALTcointip bot")
