@@ -24,6 +24,16 @@ reddit:
     declined: false
   messages:
     sorry: true
+  stats:
+    enabled: false
+    page: http://www.reddit.com/r/mybotuser/wiki/stats
+    sql:
+      top_10_tippers = "SELECT from_user, SUM(fiat_val) as total_fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') GROUP BY from_user ORDER BY total_fiat DESC LIMIT 10"
+      top_10_tips = "SELECT from_user, to_user, fiat, fiat_val, coin, coin_val FROM t_action WHERE type ='givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') ORDER BY fiat_val DESC LIMIT 10"
+      top_10_receivers = "SELECT to_user, SUM(fiat_val) as total_fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') GROUP BY to_user ORDER BY total_fiat DESC LIMIT 10"
+      top_10_subreddits = "SELECT subreddit, SUM(fiat_val) as total_fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') GROUP BY subreddit ORDER BY total_fiat DESC LIMIT 10"
+      total_by_coin = "SELECT coin, SUM(coin_val) AS total_coins, SUM(fiat_val) AS total_fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') GROUP BY coin ORDER BY coin ASC LIMIT 10"
+
 
 # Other
 misc:
