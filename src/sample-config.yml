@@ -28,6 +28,7 @@ reddit:
     enabled: false
     subreddit: mybotuser
     page: stats
+    url: http://www.reddit.com/r/ALTcointip/wiki/stats
     sql:
       top_10_tippers:
         name: "Top 10 Tippers"

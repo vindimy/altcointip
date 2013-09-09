@@ -543,6 +543,8 @@ class CtbAction(object):
                 if bool(self._FIAT_VAL):
                     cmnt += "&nbsp;^__(%s%.4g)__" % (_fiat[self._FIAT]['symbol'], self._FIAT_VAL)
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
+                if _config['reddit']['stats']['enabled']:
+                    cmnt += " ^**[[tipping_stats]](%s)**" % (_config['reddit']['stats']['url'])
                 lg.debug("CtbAction::validate(): " + cmnt)
                 if _config['reddit']['comments']['verify']:
                     if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
@@ -650,6 +652,8 @@ class CtbAction(object):
                         cmnt += "&nbsp;^__(%s%.4g)__" % (_fiat[self._FIAT]['symbol'], self._FIAT_VAL)
                     lg.debug("CtbAction::givetip(): " + cmnt)
                     cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
+                    if _config['reddit']['stats']['enabled']:
+                        cmnt += " ^**[[tipping_stats]](%s)**" % (_config['reddit']['stats']['url'])
                     if _config['reddit']['comments']['verify']:
                         if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
                             self._FROM_USER.tell(subj="+tip succeeded", msg=cmnt)
@@ -706,6 +710,8 @@ class CtbAction(object):
                     cmnt += "&nbsp;^__(%s%.4g)__" % (_fiat[self._FIAT]['symbol'], self._FIAT_VAL)
                 lg.debug("CtbAction::givetip(): " + cmnt)
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
+                if _config['reddit']['stats']['enabled']:
+                    cmnt += " ^**[[tipping_stats]](%s)**" % (_config['reddit']['stats']['url'])
                 if _config['reddit']['comments']['verify']:
                     if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
                         self._FROM_USER.tell(subj="+tip succeeded", msg=cmnt)
