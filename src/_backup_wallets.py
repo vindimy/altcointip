@@ -12,7 +12,7 @@ cb = cointipbot.CointipBot(self_checks=False)
 _c = cb._config
 
 for c in cb._coincon:
-	_filename = "%s/wallet_%s_%s.gz" % (sys.argv[1], _c['cc'][c]['unit'], datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+	_filename = "%s/wallet_%s_%s.dat" % (sys.argv[1], _c['cc'][c]['unit'], datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 	print "Backing up %s wallet to %s..." % (_c['cc'][c]['name'], _filename)
 	cb._coincon[c].backupwallet(_filename)
 
