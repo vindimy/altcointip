@@ -32,12 +32,13 @@ def update_stats(ctb=None):
         return None
 
     for s in ctb._config['reddit']['stats']['sql']:
-        sql = ctb._config['reddit']['stats']['sql'][s]
-        stats += "\n\n### %s\m\m" % s
+        sql = ctb._config['reddit']['stats']['sql'][s]['query']
+        stats += "\n\n### %s\n\n" % ctb._config['reddit']['stats']['sql'][s]['name']
+        stats += "%s\n\n" % ctb._config['reddit']['stats']['sql'][s]['desc']
 
         mysqlexec = mysqlcon.execute(sql)
         if mysqlexec.rowcount <= 0:
-            continue;
+            continue
 
         stats += ("|".join(mysqlexec.keys())) + "\n"
         stats += ("|".join([":---"] * len(mysqlexec.keys()))) + "\n"
@@ -45,9 +46,19 @@ def update_stats(ctb=None):
         for m in mysqlexec:
             values = []
             for k in mysqlexec.keys():
-                values.append(m[k])
+                if type(m[k]) == float and k.find("coin") > -1:
+                    values.append("%.8g" % m[k])
+                elif type(m[k]) == float and k.find("fiat") > -1:
+                    values.append("$%.2f" % m[k])
+                elif k.find("user") > -1:
+                    values.append("/u/" + str(m[k]))
+                elif k.find("subreddit") > -1:
+                    values.append("/r/" + str(m[k]))
+                else:
+                    values.append(str(m[k]))
             stats += ("|".join(values)) + "\n"
 
         stats += "\n"
 
-    return stats
+    redditcon.edit_wiki_page("ALTcointip", "stats", stats, "Update by ALTcointip bot")
+    return True

@@ -28,12 +28,26 @@ reddit:
     enabled: false
     page: http://www.reddit.com/r/mybotuser/wiki/stats
     sql:
-      top_10_tippers = "SELECT from_user, SUM(fiat_val) as total_fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') GROUP BY from_user ORDER BY total_fiat DESC LIMIT 10"
-      top_10_tips = "SELECT from_user, to_user, fiat, fiat_val, coin, coin_val FROM t_action WHERE type ='givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') ORDER BY fiat_val DESC LIMIT 10"
-      top_10_receivers = "SELECT to_user, SUM(fiat_val) as total_fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') GROUP BY to_user ORDER BY total_fiat DESC LIMIT 10"
-      top_10_subreddits = "SELECT subreddit, SUM(fiat_val) as total_fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') GROUP BY subreddit ORDER BY total_fiat DESC LIMIT 10"
-      total_by_coin = "SELECT coin, SUM(coin_val) AS total_coins, SUM(fiat_val) AS total_fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') GROUP BY coin ORDER BY coin ASC LIMIT 10"
-
+      top_10_tippers:
+        name: "Top 10 Tippers"
+        desc: "Top 10 all-time tippers as determined by total USD/EUR (fiat) value of their tips."
+        query: "SELECT from_user, SUM(fiat_val) as total_fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') GROUP BY from_user ORDER BY total_fiat DESC LIMIT 10"
+      top_10_tips:
+        name: "Top 10 Tips"
+        desc: "Top 10 all-time tips as determined by their USD/EUR (fiat) value."
+        query: "SELECT from_user, to_user, fiat_val, coin, coin_val, msg_link FROM t_action WHERE type ='givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') ORDER BY fiat_val DESC LIMIT 10"
+      top_10_receivers:
+        name: "Top 10 Receivers"
+        desc: "Top 10 all-time tip receivers as determined by total USD/EUR (fiat) value of their received tips."
+        query: "SELECT to_user, SUM(fiat_val) as total_fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') AND to_user IS NOT NULL GROUP BY to_user ORDER BY total_fiat DESC LIMIT 10"
+      top_10_subreddits:
+        name: "Top 10 Subreddits"
+        desc: "Top 10 subreddits as determined by total USD/EUR (fiat) value of the tips given in it."
+        query: "SELECT subreddit, SUM(fiat_val) as total_fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') GROUP BY subreddit ORDER BY total_fiat DESC LIMIT 10"
+      total_by_coin:
+        name: "Totals by Coin"
+        desc: "Total coins tipped to date, per coin."
+        query: "SELECT coin, SUM(coin_val) AS total_coins, SUM(fiat_val) AS total_fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') GROUP BY coin ORDER BY coin ASC LIMIT 10"
 
 # Other
 misc:
