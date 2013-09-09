@@ -26,7 +26,8 @@ reddit:
     sorry: true
   stats:
     enabled: false
-    page: http://www.reddit.com/r/mybotuser/wiki/stats
+    subreddit: mybotuser
+    page: stats
     sql:
       top_10_tippers:
         name: "Top 10 Tippers"

@@ -21,7 +21,7 @@ lg = logging.getLogger('cointipbot')
 
 def update_stats(ctb=None):
     """
-    Refresh stats wiki page
+    Update stats wiki page
     """
     mysqlcon = ctb._mysqlcon
     redditcon = ctb._redditcon
@@ -54,11 +54,13 @@ def update_stats(ctb=None):
                     values.append("/u/" + str(m[k]))
                 elif k.find("subreddit") > -1:
                     values.append("/r/" + str(m[k]))
+                elif k.find("link") > -1:
+                    values.append("[link](%s)" % m[k])
                 else:
                     values.append(str(m[k]))
             stats += ("|".join(values)) + "\n"
 
         stats += "\n"
 
-    redditcon.edit_wiki_page("ALTcointip", "stats", stats, "Update by ALTcointip bot")
+    redditcon.edit_wiki_page(ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page'], stats, "Update by ALTcointip bot")
     return True
