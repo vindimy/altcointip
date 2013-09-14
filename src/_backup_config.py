@@ -4,11 +4,11 @@ import sys, os, datetime
 import cointipbot
 
 if not len(sys.argv) in [2, 3] or not os.access(sys.argv[1], os.W_OK):
-	print "Usgae: %s DIRECTORY [RSYNC-TO]" % sys.argv[0]
+	print "Usage: %s DIRECTORY [RSYNC-TO]" % sys.argv[0]
 	print "(DIRECTORY must be writeable, RSYNC-TO is optional location to RSYNC the file to)"
 	sys.exit(1)
 
-cb = cointipbot.CointipBot(self_checks=False, init_reddit=False, init_coins=False, init_db=True)
+cb = cointipbot.CointipBot(self_checks=False, init_reddit=False, init_coins=False, init_db=False)
 
 _c = cb._config
 _filename = "%s/config_%s.yml.gz" % (sys.argv[1], datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
