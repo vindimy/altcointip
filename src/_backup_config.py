@@ -11,10 +11,10 @@ if not len(sys.argv) in [2, 3] or not os.access(sys.argv[1], os.W_OK):
 cb = cointipbot.CointipBot(self_checks=False, init_reddit=False, init_coins=False, init_db=True)
 
 _c = cb._config
-_filename = "%s/%s_%s.sql.gz" % (sys.argv[1], _c['mysql']['db'], datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+_filename = "%s/config_%s.yml.gz" % (sys.argv[1], datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 
 print "Backing up to %s..." % _filename
-os.popen("mysqldump -u %s -p%s -h %s -e --opt -c %s | gzip --best -c >%s" % (_c['mysql']['user'], _c['mysql']['pass'], _c['mysql']['host'], _c['mysql']['db'], _filename))
+os.popen("cat config.yml | gzip --best -c >%s" % _filename)
 
 try:
 	print "Encrypting..."

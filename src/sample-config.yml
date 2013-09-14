@@ -83,6 +83,7 @@ misc:
   expire-pending-hours: 48
   subtract-txfee: false
   exchange: vircurex
+  encryptionpassphrase: 'ChangeAndRememberMe11'
 
 # Regex
 regex:

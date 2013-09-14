@@ -462,7 +462,7 @@ class CointipBot(object):
         lg.debug("< _clean_up() DONE")
         return None
 
-    def __init__(self, config_filename=_DEFAULT_CONFIG_FILENAME, self_checks=True):
+    def __init__(self, config_filename=_DEFAULT_CONFIG_FILENAME, self_checks=True, init_reddit=True, init_coins=True, init_db=True):
         """
         Constructor.
         Parses configuration file and initializes bot.
@@ -487,24 +487,26 @@ class CointipBot(object):
             print "CointipBot::__init__(): Warning: no logging handlers configured. Logging is disabled."
 
         # MySQL
-        self._mysqlcon = self._connect_db(self._config)
+        if init_db:
+            self._mysqlcon = self._connect_db(self._config)
 
         # Coin daemons
-        num_coins = 0
-        for c in self._config['cc']:
-            if self._config['cc'][c]['enabled']:
-                self._coincon[self._config['cc'][c]['unit']] = self._connect_coin(self._config['cc'][c])
-                num_coins += 1
-        if not num_coins > 0:
-            lg.error("Error: please enable at least one type of coin")
-            sys.exit(1)
+        if init_coins:
+            num_coins = 0
+            for c in self._config['cc']:
+                if self._config['cc'][c]['enabled']:
+                    self._coincon[self._config['cc'][c]['unit']] = self._connect_coin(self._config['cc'][c])
+                    num_coins += 1
+            if not num_coins > 0:
+                lg.error("Error: please enable at least one type of coin")
+                sys.exit(1)
 
         # Reddit
-        self._redditcon = self._connect_reddit(self._config)
-        self._init_subreddits()
-
-        # Regex
-        ctb_action._init_regex(self)
+        if init_reddit:
+            self._redditcon = self._connect_reddit(self._config)
+            self._init_subreddits()
+            # Regex for Reddit messages
+            ctb_action._init_regex(self)
 
         # Self-checks
         if self_checks:
