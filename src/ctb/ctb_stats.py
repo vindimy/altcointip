@@ -31,7 +31,7 @@ def update_stats(ctb=None):
     if not ctb._config['reddit']['stats']['enabled']:
         return None
 
-    for s in ctb._config['reddit']['stats']['sql']:
+    for s in sorted(ctb._config['reddit']['stats']['sql']):
         lg.debug("update_stats(): getting stats for '%s'" % s)
         sql = ctb._config['reddit']['stats']['sql'][s]['query']
         stats += "\n\n### %s\n\n" % ctb._config['reddit']['stats']['sql'][s]['name']
