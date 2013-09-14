@@ -1,4 +1,4 @@
-# Simple script to backup ALTcointip database
+# Simple script to backup ALTcointip config.yml
 
 import sys, os, datetime
 import cointipbot
