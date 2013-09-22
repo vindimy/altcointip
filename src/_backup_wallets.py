@@ -23,7 +23,8 @@ for c in cb._coincon:
 
 	try:
 		print "Encrypting..."
-		os.popen("echo %s | gpg --passphrase-fd 0 -c %s" % (_c['misc']['encryptionpassphrase'], _filename))
+		#os.popen("echo %s | gpg --batch --passphrase-fd 0 -c %s" % (_c['misc']['encryptionpassphrase'], _filename))
+		os.popen("gpg --batch --passphrase '%s' -c %s" % (_c['misc']['encryptionpassphrase'], _filename))
 		os.popen("rm -f %s" % _filename)
 		_filename += '.gpg'
 	except AttributeError:

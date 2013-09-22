@@ -18,7 +18,8 @@ os.popen("cat config.yml | gzip --best -c >%s" % _filename)
 
 try:
 	print "Encrypting..."
-	os.popen("echo %s | gpg --passphrase-fd 0 -c %s" % (_c['misc']['encryptionpassphrase'], _filename))
+	#os.popen("echo %s | gpg --batch --passphrase-fd 0 -c %s" % (_c['misc']['encryptionpassphrase'], _filename))
+	os.popen("gpg --batch --passphrase '%s' -c %s" % (_c['misc']['encryptionpassphrase'], _filename))
 	os.popen("rm -f %s" % _filename)
 	_filename += '.gpg'
 except AttributeError:
