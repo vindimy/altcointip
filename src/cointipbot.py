@@ -287,7 +287,6 @@ class CointipBot(object):
                     if m.was_comment:
                         # Attempt to evaluate as comment / mention
                         action = ctb_action._eval_comment(m, self)
-                        m.upvote()
                     else:
                         # Attempt to evaluate as inbox message
                         action = ctb_action._eval_message(m, self)
