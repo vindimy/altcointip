@@ -36,6 +36,7 @@ class CtbUser(object):
     _JOINDATE=None
     _ADDR={}
     _TRANS={}
+    _IS_BANNED=False
 
     # Objects
     _REDDITOBJ=None
@@ -60,14 +61,27 @@ class CtbUser(object):
         if bool(redditobj):
             self._REDDITOBJ = redditobj
 
+        # Determine if user is banned
+        if ctb._config['reddit'].has_key('banned_users'):
+            if ctb._config['reddit']['banned_users']['method'] == 'subreddit':
+                for u in cb._redditcon.get_banned(ctb._config['reddit']['subreddit']):
+                    if self._NAME.lower() == u.name.lower():
+                        self._IS_BANNED = True
+            elif ctb._config['reddit']['banned_users']['method'] == 'list':
+                for u in ctb._config['reddit']['banned_users']['list']:
+                    if self._NAME.lower() == u.lower():
+                        self._IS_BANNED = True
+            else:
+                lg.warning("CtbUser::__init__(): invalid method '%s' in banned_users config" % ctb._config['reddit']['banned_users']['method'])
+
         lg.debug("< CtbUser::__init__(%s) DONE", name)
 
     def __str__(self):
         """
         Return string representation of self
         """
-        me = "<CtbUser: name=%s, giftamnt=%s, joindate=%s, addr=%s, trans=%s, redditobj=%s, ctb=%s>"
-        me = me % (self._NAME, self._GIFTAMNT, self._JOINDATE, self._ADDR, self._TRANS, self._REDDITOBJ, self._CTB)
+        me = "<CtbUser: name=%s, giftamnt=%s, joindate=%s, addr=%s, trans=%s, redditobj=%s, ctb=%s, banned=%s>"
+        me = me % (self._NAME, self._GIFTAMNT, self._JOINDATE, self._ADDR, self._TRANS, self._REDDITOBJ, self._CTB, self._IS_BANNED)
         return me
 
     def get_balance(self, coin=None, kind=None):

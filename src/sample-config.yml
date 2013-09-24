@@ -24,6 +24,11 @@ reddit:
     declined: false
   messages:
     sorry: true
+  banned_users:
+#    method: subreddit
+#    subreddit: mybotuser
+    method: list
+    list: [mybotuser, bitcointip]
   stats:
     enabled: false
     subreddit: mybotuser

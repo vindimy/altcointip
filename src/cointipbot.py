@@ -283,6 +283,15 @@ class CointipBot(object):
                         m.mark_as_read()
                         continue
 
+                    # Ignore messages from banned users
+                    if bool(m.author) and self._config['reddit'].has_key('banned_users'):
+                        lg.debug("_check_inbox(): checking whether user '%s' is banned..." % m.author)
+                        u = ctb_user.CtbUser(name = m.author.name, redditobj = m.author, ctb = self)
+                        if u._IS_BANNED:
+                            lg.info("_check_inbox(): ignoring banned user '%s'" % m.author)
+                            m.mark_as_read()
+                            continue
+
                     action = None
                     if m.was_comment:
                         # Attempt to evaluate as comment / mention
@@ -414,6 +423,14 @@ class CointipBot(object):
                 counter += 1
                 if c.created_utc > _updated_last_processed_time:
                     _updated_last_processed_time = c.created_utc
+
+                # Ignore comments from banned users
+                if bool(c.author) and self._config['reddit'].has_key('banned_users'):
+                    lg.debug("_check_subreddits(): checking whether user '%s' is banned..." % c.author)
+                    u = ctb_user.CtbUser(name = c.author.name, redditobj = c.author, ctb = self)
+                    if u._IS_BANNED:
+                        lg.info("_check_subreddits(): ignoring banned user '%s'" % c.author)
+                        continue
 
                 # Attempt to evaluate comment
                 action = ctb_action._eval_comment(c, self)
