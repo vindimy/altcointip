@@ -342,7 +342,7 @@ class CtbAction(object):
             for a in actions:
                 # Move coins back into a._FROM_USER account
                 try:
-                    lg.debug("CtbAction::decline(): moving %s %s from %s to %s", str(a._COIN_VAL), a._COIN, _config['reddit']['user'].lower(), a._FROM_USER._NAME.lower())
+                    lg.debug("CtbAction::decline(): moving %s %s from %s to %s", str(a._COIN_VAL), a._COIN.upper(), _config['reddit']['user'].lower(), a._FROM_USER._NAME.lower())
                     m = _coincon[a._COIN].move(_config['reddit']['user'].lower(), a._FROM_USER._NAME.lower(), a._COIN_VAL)
                     # Sleep for 0.5 seconds to not overwhelm coin daemon
                     time.sleep(0.5)
@@ -395,7 +395,7 @@ class CtbAction(object):
 
         # Move coins back into self._FROM_USER account
         try:
-            lg.info("CtbAction::expire(): moving %s %s from %s to %s", str(self._COIN_VAL), self._COIN, _config['reddit']['user'], self._FROM_USER._NAME.lower())
+            lg.info("CtbAction::expire(): moving %s %s from %s to %s", str(self._COIN_VAL), self._COIN.upper(), _config['reddit']['user'], self._FROM_USER._NAME.lower())
             m = _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._FROM_USER._NAME.lower(), self._COIN_VAL)
             # Sleep for 0.5 seconds to not overwhelm coin daemon
             time.sleep(0.5)
@@ -527,7 +527,7 @@ class CtbAction(object):
 
                 # Move coins into pending account
                 try:
-                    lg.info("CtbAction::validate(): moving %s %s from %s to %s", str(self._COIN_VAL), self._COIN, self._FROM_USER._NAME.lower(), _config['reddit']['user'])
+                    lg.info("CtbAction::validate(): moving %s %s from %s to %s", str(self._COIN_VAL), self._COIN.upper(), self._FROM_USER._NAME.lower(), _config['reddit']['user'])
                     m = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), _config['reddit']['user'].lower(), self._COIN_VAL)
                     # Sleep for 0.5 seconds to not overwhelm coin daemon
                     time.sleep(0.5)
@@ -675,11 +675,15 @@ class CtbAction(object):
                 lg.info("CtbAction::givetip(): sending %f %s to %s...", self._COIN_VAL, self._COIN, self._TO_ADDR)
                 # Unlock wallet, if applicable
                 if _cc[self._COIN].has_key('walletpassphrase'):
+                    lg.debug("CtbAction::givetip(): unlocking wallet...")
                     res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 1)
                 # Perform transaction
+                lg.debug("CtbAction::givetip(): sending %s %s from %s to %s", self._COIN_VAL, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_ADDR)
                 self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER._NAME.lower(), self._TO_ADDR, self._COIN_VAL, _cc[self._COIN]['minconf'][self._TYPE])
+                lg.debug("CtbAction::givetip(): txid = %s", self._TXID)
                 # Lock wallet, if applicable
                 if _cc[self._COIN].has_key('walletpassphrase'):
+                    lg.debug("CtbAction::givetip(): locking wallet...")
                     _coincon[self._COIN].walletlock()
                 # Sleep for 2 seconds to not overwhelm coin daemon
                 time.sleep(2)
