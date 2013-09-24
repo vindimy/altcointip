@@ -45,6 +45,11 @@ reddit:
         desc: "Number of registered users"
         type: line
         query: "SELECT COUNT(username) AS total_users FROM t_users"
+      03a_total_tippers:
+        name: "Total Tippers"
+        desc: "Number of users who tipped at least once"
+        type: line
+        query: "SELECT COUNT(from_user) AS total_tippers FROM (SELECT DISTINCT from_user FROM t_action WHERE type = 'givetip') AS t_distinct_action"
       04_total_tips:
         name: "Total Number of Tips"
         desc: "Total number of tips given (accepted, expired, and declined)"
