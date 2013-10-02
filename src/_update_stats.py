@@ -23,3 +23,6 @@ cb = cointipbot.CointipBot(self_checks=False)
 
 result = ctb_stats.update_stats(ctb=cb)
 lg.debug(result)
+
+user_result = ctb_stats.update_user_stats(ctb=cb)
+lg.debug(user_result)
