@@ -174,7 +174,7 @@ def update_user_stats(ctb=None):
                         un = ("**%s**" % username) if m[k] == username else m[k]
                         toappend = "[%s](/u/%s)" % (un, re.escape(m[k]))
                         if m[k] != username:
-                            toappend += " ^[[stats](/r/%s/wiki/%s_%s)]" % (ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page'], m[k])
+                            toappend += " ^[[stats]](/r/%s/wiki/%s_%s)" % (ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page'], m[k])
                         values.append(toappend)
                     else:
                         values.append("None")

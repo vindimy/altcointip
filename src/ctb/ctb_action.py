@@ -539,7 +539,7 @@ class CtbAction(object):
                 self.save('pending')
 
                 # Respond to tip comment
-                cmnt = "^(__[Verified]__:) ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._COIN_VAL, _cc[self._COIN]['name'])
+                cmnt = "^(__[Verified]__:) ^/u/%s ^^[[stats]](/r/altcointip/wiki/stats_%s) ^-> ^/u/%s ^^[[stats]](/r/altcointip/wiki/stats_%s) __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_USER._NAME, self._COIN_VAL, _cc[self._COIN]['name'])
                 if bool(self._FIAT_VAL):
                     cmnt += "&nbsp;^__(%s%.4g)__" % (_fiat[self._FIAT]['symbol'], self._FIAT_VAL)
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
@@ -647,7 +647,7 @@ class CtbAction(object):
 
                 if not is_pending:
                     # This is not an +accept, so post verification comment
-                    cmnt = "^__[Verified]__: ^/u/%s ^-> ^/u/%s, __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._TO_USER._NAME, self._COIN_VAL, _cc[self._COIN]['name'])
+                    cmnt = "^__[Verified]__: ^/u/%s ^^[[stats]](/r/altcointip/wiki/stats_%s) ^-> ^/u/%s ^^[[stats]](/r/altcointip/wiki/stats_%s) __^%.6g ^%s(s)__" % (self._FROM_USER._NAME, self._FROM_USER._NAME, self._TO_USER._NAME, self._TO_USER._NAME, self._COIN_VAL, _cc[self._COIN]['name'])
                     if bool(self._FIAT_VAL):
                         cmnt += "&nbsp;^__(%s%.4g)__" % (_fiat[self._FIAT]['symbol'], self._FIAT_VAL)
                     lg.debug("CtbAction::givetip(): " + cmnt)
@@ -709,7 +709,7 @@ class CtbAction(object):
             try:
                 # Post verification comment
                 ex = _cc[self._COIN]['explorer']
-                cmnt = "^__[[Verified](%s)]__: ^/u/%s ^-> ^[%s](%s), __^%.6g ^%s(s)__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, self._COIN_VAL, _cc[self._COIN]['name'])
+                cmnt = "^__[[Verified](%s)]__: ^/u/%s ^^[[stats]](/r/altcointip/wiki/stats_%s) ^-> ^[%s](%s), __^%.6g ^%s(s)__" % (ex['transaction'] + self._TXID, self._FROM_USER._NAME, self._FROM_USER._NAME, self._TO_ADDR, ex['address'] + self._TO_ADDR, self._COIN_VAL, _cc[self._COIN]['name'])
                 if bool(self._FIAT_VAL):
                     cmnt += "&nbsp;^__(%s%.4g)__" % (_fiat[self._FIAT]['symbol'], self._FIAT_VAL)
                 lg.debug("CtbAction::givetip(): " + cmnt)
