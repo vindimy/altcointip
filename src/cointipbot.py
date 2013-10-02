@@ -478,7 +478,7 @@ class CointipBot(object):
         lg.debug("< _clean_up() DONE")
         return None
 
-    def __init__(self, config_filename=_DEFAULT_CONFIG_FILENAME, self_checks=True, init_reddit=True, init_coins=True, init_db=True):
+    def __init__(self, config_filename=_DEFAULT_CONFIG_FILENAME, self_checks=True, init_reddit=True, init_coins=True, init_db=True, init_logging=True):
         """
         Constructor.
         Parses configuration file and initializes bot.
@@ -497,10 +497,11 @@ class CointipBot(object):
             self._DEFAULT_SLEEP_TIME = self._config['misc']['sleep-seconds']
 
         # Logging
-        if self._config.has_key('logging'):
-            self._init_logging()
-        else:
-            print "CointipBot::__init__(): Warning: no logging handlers configured. Logging is disabled."
+        if init_logging:
+            if self._config.has_key('logging'):
+                self._init_logging()
+            else:
+                print "CointipBot::__init__(): Warning: no logging handlers configured. Logging is disabled."
 
         # MySQL
         if init_db:
