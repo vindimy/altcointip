@@ -364,12 +364,12 @@ class CtbAction(object):
                     a._FROM_USER.tell(subj="+tip declined", msg=cmnt)
 
             # Notify self._FROM_USER
-            txt = "Hello %s, your pending tips have been declined." % self._FROM_USER._NAME
+            txt = "Hello %s, your pending tips have been declined." % re.escape(self._FROM_USER._NAME)
             lg.debug("CtbAction::decline(): %s", txt)
             txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
             ctb_misc._reddit_reply(msg=self._MSG, txt=txt)
         else:
-            txt = "I'm sorry %s, you don't have any pending tips. Perhaps they've already expired." % self._FROM_USER._NAME
+            txt = "I'm sorry %s, you don't have any pending tips. Perhaps they've already expired." % re.escape(self._FROM_USER._NAME)
             lg.debug("CtbAction::decline(): %s", txt)
             txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
             ctb_misc._reddit_reply(msg=self._MSG, txt=txt)
@@ -509,7 +509,7 @@ class CtbAction(object):
             if (bool(self._TO_USER)) and not is_pending:
                 if _check_action(atype='givetip', state='pending', to_user=self._TO_USER._NAME, from_user=self._FROM_USER._NAME, coin=self._COIN, ctb=self._CTB):
                     # Send notice to _FROM_USER
-                    msg = "I'm sorry %s, /u/%s already has a pending %s tip from you. Please wait until he/she accepts or declines it." % (re.escape(self._FROM_USER._NAME), re.escape(self._TO_USER._NAME), self._COIN.upper())
+                    msg = "I'm sorry %s, /u/%s already has a pending %s tip from you. Please wait until he/she accepts or declines it." % (re.escape(self._FROM_USER._NAME), self._TO_USER._NAME, self._COIN.upper())
                     lg.debug("CtbAction::validate(): " + msg)
                     msg += " Pending tips expire in %.1g days." % ( float(_config['misc']['expire-pending-hours']) / float(24) )
                     msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
@@ -555,7 +555,7 @@ class CtbAction(object):
                 # Send notice to _TO_USER
                 msg = "Hey %s, /u/%s sent you a __%.6g %s(s) (%s%.4g)__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
                 msg += "Reply with __[+decline](http://www.reddit.com/message/compose?to=%s&subject=decline&message=%%2Bdecline)__ to decline it."
-                msg = msg % (re.escape(self._TO_USER._NAME), re.escape(self._FROM_USER._NAME), self._COIN_VAL, _cc[self._COIN]['name'], _fiat[self._FIAT]['symbol'], self._FIAT_VAL, self._CTB._config['reddit']['user'], self._CTB._config['reddit']['user'])
+                msg = msg % (re.escape(self._TO_USER._NAME), self._FROM_USER._NAME, self._COIN_VAL, _cc[self._COIN]['name'], _fiat[self._FIAT]['symbol'], self._FIAT_VAL, self._CTB._config['reddit']['user'], self._CTB._config['reddit']['user'])
                 msg += " Pending tips expire in %.1g days." % ( float(_config['misc']['expire-pending-hours']) / float(24) )
                 lg.debug("CtbAction::validate(): %s", msg)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
@@ -624,7 +624,7 @@ class CtbAction(object):
                 self.save('failed')
 
                 # Send notice to _FROM_USER
-                msg = "Hey %s, something went wrong, and your tip of __%.6g %s(s)__ to /u/%s has failed to process." % (re.escape(self._FROM_USER._NAME), self._COIN_VAL, _cc[self._COIN]['name'], re.escape(self._TO_USER._NAME))
+                msg = "Hey %s, something went wrong, and your tip of __%.6g %s(s)__ to /u/%s has failed to process." % (re.escape(self._FROM_USER._NAME), self._COIN_VAL, _cc[self._COIN]['name'], self._TO_USER._NAME)
                 msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
                 self._FROM_USER.tell(subj="+tip failed", msg=msg)
 
@@ -782,7 +782,7 @@ class CtbAction(object):
         # Format info message
         tbalance_usd_total = float(0)
         wbalance_usd_total = float(0)
-        txt = "Hello %s! Here's your account info.\n\n" % self._FROM_USER._NAME
+        txt = "Hello %s! Here's your account info.\n\n" % re.escape(self._FROM_USER._NAME)
         txt += "coin|deposit address|tip balance|withdraw balance\n:---|:---|:---|:---\n"
         for i in info:
             addr_ex_str = '[[ex]](' + _cc[i['coin']]['explorer']['address'] + '%s)'
