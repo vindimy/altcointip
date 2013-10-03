@@ -316,7 +316,7 @@ class CtbAction(object):
             txt = "I'm sorry %s, you don't have any pending tips. Perhaps they've been already confirmed, or already expired (tips are auto-confirmed after you've registered)." % self._FROM_USER._NAME
             lg.debug("CtbAction::accept(): %s", txt)
             txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-            ctb_misc._reddit_reply(msg=self._MSG, txt=txt)
+            ctb_misc._praw_call(self._MSG.reply, txt)
 
         # Save action to database
         self.save('completed')
@@ -358,7 +358,7 @@ class CtbAction(object):
                 cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
                 lg.debug("CtbAction::decline(): " + cmnt)
                 if _config['reddit']['comments']['declined']:
-                    if not ctb_misc._reddit_reply(msg=a._MSG, txt=cmnt):
+                    if not ctb_misc._praw_call(a._MSG.reply, cmnt):
                         a._FROM_USER.tell(subj="+tip declined", msg=cmnt)
                 else:
                     a._FROM_USER.tell(subj="+tip declined", msg=cmnt)
@@ -367,12 +367,12 @@ class CtbAction(object):
             txt = "Hello %s, your pending tips have been declined." % re.escape(self._FROM_USER._NAME)
             lg.debug("CtbAction::decline(): %s", txt)
             txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-            ctb_misc._reddit_reply(msg=self._MSG, txt=txt)
+            ctb_misc._praw_call(self._MSG.reply, txt)
         else:
             txt = "I'm sorry %s, you don't have any pending tips. Perhaps they've already expired." % re.escape(self._FROM_USER._NAME)
             lg.debug("CtbAction::decline(): %s", txt)
             txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-            ctb_misc._reddit_reply(msg=self._MSG, txt=txt)
+            ctb_misc._praw_call(self._MSG.reply, txt)
 
         # Save action to database
         self.save('completed')
@@ -413,7 +413,7 @@ class CtbAction(object):
         cmnt += " ^[[help]](%s)" % (_config['reddit']['help-url'])
         lg.debug("CtbAction::expire(): " + cmnt)
         if _config['reddit']['comments']['expired']:
-            if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
+            if not ctb_misc._praw_call(self._MSG.reply, cmnt):
                 self._FROM_USER.tell(subj="+tip expired", msg=cmnt)
         else:
             self._FROM_USER.tell(subj="+tip expired", msg=cmnt)
@@ -547,7 +547,7 @@ class CtbAction(object):
                     cmnt += " ^**[[tipping_stats]](%s)**" % (_config['reddit']['stats']['url'])
                 lg.debug("CtbAction::validate(): " + cmnt)
                 if _config['reddit']['comments']['verify']:
-                    if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
+                    if not ctb_misc._praw_call(self._MSG.reply, cmnt):
                         self._FROM_USER.tell(subj="+tip pending +accept", msg=cmnt)
                 else:
                     self._FROM_USER.tell(subj="+tip pending +accept", msg=cmnt)
@@ -655,7 +655,7 @@ class CtbAction(object):
                     if _config['reddit']['stats']['enabled']:
                         cmnt += " ^**[[tipping_stats]](%s)**" % (_config['reddit']['stats']['url'])
                     if _config['reddit']['comments']['verify']:
-                        if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
+                        if not ctb_misc._praw_call(self._MSG.reply, cmnt):
                             self._FROM_USER.tell(subj="+tip succeeded", msg=cmnt)
                     else:
                         self._FROM_USER.tell(subj="+tip succeeded", msg=cmnt)
@@ -717,7 +717,7 @@ class CtbAction(object):
                 if _config['reddit']['stats']['enabled']:
                     cmnt += " ^**[[tipping_stats]](%s)**" % (_config['reddit']['stats']['url'])
                 if _config['reddit']['comments']['verify']:
-                    if not ctb_misc._reddit_reply(msg=self._MSG, txt=cmnt):
+                    if not ctb_misc._praw_call(self._MSG.reply, cmnt):
                         self._FROM_USER.tell(subj="+tip succeeded", msg=cmnt)
                 else:
                     self._FROM_USER.tell(subj="+tip succeeded", msg=cmnt)
@@ -803,7 +803,7 @@ class CtbAction(object):
         txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
 
         # Send info message
-        ctb_misc._reddit_reply(msg=self._MSG, txt=txt)
+        ctb_misc._praw_call(self._MSG.reply, txt)
 
         # Save action to database
         self.save('completed')

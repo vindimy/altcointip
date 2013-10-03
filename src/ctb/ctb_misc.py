@@ -135,39 +135,35 @@ def _refresh_exchange_rate_vircurex(ctb=None):
     lg.debug("< _refresh_exchange_rate_vircurex() DONE")
     return True
 
-def _reddit_reply(msg, txt):
+def _praw_call(prawFunc, *extraArgs, **extraKwArgs):
     """
-    Reply to a comment/message on Reddit
+    Call prawFunc() with extraArgs and extraKwArgs
     Retry if Reddit is down
     """
-    lg.debug("> _reddit_reply()")
-
     while True:
         try:
-            msg.reply(txt)
-            break
+            res = prawFunc(*extraArgs, **extraKwArgs)
+            return res
         except APIException as e:
-            lg.warning("_reddit_reply(): failed (%s)", str(e))
+            lg.warning("_praw_call(): failed (%s)", str(e))
             return False
         except ExceptionList as el:
             for e in el:
-                lg.warning("_reddit_reply(): failed (%s)", str(e))
+                lg.warning("_praw_call(): failed (%s)", str(e))
             return False
         except (HTTPError, RateLimitExceeded) as e:
             if str(e) == "403 Client Error: Forbidden":
-                lg.warning("_reddit_reply(): banned to reply to %s", msg.permalink)
+                lg.warning("_praw_call(): 403 forbidden %s", msg.permalink)
                 return False
-            lg.warning("_reddit_reply(): Reddit is down (%s), sleeping...", str(e))
+            lg.warning("_praw_call(): Reddit is down (%s), sleeping...", str(e))
             time.sleep(10)
             pass
         except timeout:
-            lg.warning("_reddit_reply(): Reddit is down (timeout), sleeping...")
+            lg.warning("_praw_call(): Reddit is down (timeout), sleeping...")
             time.sleep(10)
             pass
         except Exception as e:
             raise
-
-    lg.debug("< _reddit_reply(%s) DONE", msg.id)
     return True
 
 def _reddit_get_parent_author(_comment, _reddit, _ctb):

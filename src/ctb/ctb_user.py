@@ -207,33 +207,12 @@ class CtbUser(object):
         if not self.is_on_reddit():
             raise Exception("CtbUser::tell(%s): not a Reddit user", self._NAME)
 
-        while True:
-            # This loop retries sending message if Reddit is down
-            try:
-                if bool(msgobj):
-                    lg.debug("CtbUser::tell(%s): replying to message", msgobj.id)
-                    msgobj.reply(msg)
-                else:
-                    lg.debug("CtbUser::tell(%s): sending message", self._NAME)
-                    self._REDDITOBJ.send_message(subj, msg)
-                break
-            except APIException as e:
-                lg.warning("CtbUser::tell(%s): failed (%s)", self._NAME, str(e))
-                return False
-            except ExceptionList as el:
-                for e in el:
-                    lg.warning("CtbUser::tell(%s): failed (%s)", self._NAME, str(e))
-                return False
-            except (HTTPError, RateLimitExceeded) as e:
-                lg.warning("CtbUser::tell(%s): Reddit is down (%s), sleeping...", self._NAME, str(e))
-                time.sleep(self._CTB._DEFAULT_SLEEP_TIME)
-                pass
-            except timeout:
-                lg.warning("CtbUser::tell(%s): Reddit is down (timeout), sleeping...", self._NAME)
-                time.sleep(self._CTB._DEFAULT_SLEEP_TIME)
-                pass
-            except Exception, e:
-                raise
+        if bool(msgobj):
+            lg.debug("CtbUser::tell(%s): replying to message", msgobj.id)
+            ctb_misc._praw_call(msgobj.reply, msg)
+        else:
+            lg.debug("CtbUser::tell(%s): sending message", self._NAME)
+            ctb_misc._praw_call(self._REDDITOBJ.send_message, subj, msg)
 
         lg.debug("< CtbUser::tell(%s) DONE", self._NAME)
         return True

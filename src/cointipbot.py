@@ -189,9 +189,7 @@ class CointipBot(object):
             try:
                 conn = praw.Reddit(user_agent = config['reddit']['useragent'])
                 conn.login(config['reddit']['user'], config['reddit']['pass'])
-
                 break
-
             except HTTPError as e:
                 lg.warning("CointipBot::_connect_reddit(): Reddit is down (%s), sleeping...", str(e))
                 time.sleep(self._DEFAULT_SLEEP_TIME)
@@ -268,69 +266,59 @@ class CointipBot(object):
         """
         lg.debug("> _check_inbox()")
 
-        while True:
-            try:
-                # Try to fetch some messages
-                messages = self._redditcon.get_unread(limit=self._REDDIT_BATCH_LIMIT)
+        try:
 
-                # Process messages
-                for m in messages:
-                    lg.info("_check_inbox(): %s from %s", "comment" if m.was_comment else "message", m.author.name)
+            # Try to fetch some messages
+            messages = ctb_misc._praw_call(self._redditcon.get_unread, limit=self._REDDIT_BATCH_LIMIT)
 
-                    # Ignore self messages
-                    if bool(m.author) and m.author.name.lower() == self._config['reddit']['user'].lower():
-                        lg.debug("_check_inbox(): ignoring message from self")
-                        m.mark_as_read()
+            # Process messages
+            for m in messages:
+                lg.info("_check_inbox(): %s from %s", "comment" if m.was_comment else "message", m.author.name)
+
+                # Ignore self messages
+                if bool(m.author) and m.author.name.lower() == self._config['reddit']['user'].lower():
+                    lg.debug("_check_inbox(): ignoring message from self")
+                    ctb_misc._praw_call(m.mark_as_read)
+                    continue
+
+                # Ignore messages from banned users
+                if bool(m.author) and self._config['reddit'].has_key('banned_users'):
+                    lg.debug("_check_inbox(): checking whether user '%s' is banned..." % m.author)
+                    u = ctb_user.CtbUser(name = m.author.name, redditobj = m.author, ctb = self)
+                    if u._IS_BANNED:
+                        lg.info("_check_inbox(): ignoring banned user '%s'" % m.author)
+                        ctb_misc._praw_call(m.mark_as_read)
                         continue
 
-                    # Ignore messages from banned users
-                    if bool(m.author) and self._config['reddit'].has_key('banned_users'):
-                        lg.debug("_check_inbox(): checking whether user '%s' is banned..." % m.author)
-                        u = ctb_user.CtbUser(name = m.author.name, redditobj = m.author, ctb = self)
-                        if u._IS_BANNED:
-                            lg.info("_check_inbox(): ignoring banned user '%s'" % m.author)
-                            m.mark_as_read()
-                            continue
+                action = None
+                if m.was_comment:
+                    # Attempt to evaluate as comment / mention
+                    action = ctb_action._eval_comment(m, self)
+                else:
+                    # Attempt to evaluate as inbox message
+                    action = ctb_action._eval_message(m, self)
 
-                    action = None
-                    if m.was_comment:
-                        # Attempt to evaluate as comment / mention
-                        action = ctb_action._eval_comment(m, self)
-                    else:
-                        # Attempt to evaluate as inbox message
-                        action = ctb_action._eval_message(m, self)
+                # Perform action, if found
+                if bool(action):
+                    lg.info("_check_inbox(): %s from %s (m.id %s)", action._TYPE, action._FROM_USER._NAME, str(m.id))
+                    action.do()
+                else:
+                    lg.info("_check_inbox(): no match")
+                    if self._config['reddit']['messages']['sorry']:
+                        user = ctb_user.CtbUser(name=m.author.name, redditobj=m.author, ctb=self)
+                        msg = "Sorry %s, I didn't understand your %s. Please [verify the syntax](%s#wiki_commands) and try again by issuing a new one." % (user._NAME, "comment" if m.was_comment else "message", self._config['reddit']['help-url'])
+                        lg.debug("_check_inbox(): %s", msg)
+                        msg += "\n\n* [%s help](%s)" % (self._config['reddit']['user'], self._config['reddit']['help-url'])
+                        if hasattr(m, 'permalink'):
+                            msg += "\n* [source %s](%s)" % ("comment" if m.was_comment else "message", m.permalink)
+                        user.tell(subj="Sorry!", msg=msg, msgobj=m if not m.was_comment else None)
 
-                    # Perform action, if found
-                    if bool(action):
-                        lg.info("_check_inbox(): %s from %s (m.id %s)", action._TYPE, action._FROM_USER._NAME, str(m.id))
-                        action.do()
-                    else:
-                        lg.info("_check_inbox(): no match")
-                        if self._config['reddit']['messages']['sorry']:
-                            user = ctb_user.CtbUser(name=m.author.name, redditobj=m.author, ctb=self)
-                            msg = "Sorry %s, I didn't understand your %s. Please [verify the syntax](%s#wiki_commands) and try again by issuing a new one." % (user._NAME, "comment" if m.was_comment else "message", self._config['reddit']['help-url'])
-                            lg.debug("_check_inbox(): %s", msg)
-                            msg += "\n\n* [%s help](%s)" % (self._config['reddit']['user'], self._config['reddit']['help-url'])
-                            if hasattr(m, 'permalink'):
-                                msg += "\n* [source %s](%s)" % ("comment" if m.was_comment else "message", m.permalink)
-                            user.tell(subj="Sorry!", msg=msg, msgobj=m if not m.was_comment else None)
+                # Mark message as read
+                ctb_misc._praw_call(m.mark_as_read)
 
-                    # Mark message as read
-                    m.mark_as_read()
-
-                break
-
-            except (HTTPError, RateLimitExceeded) as e:
-                lg.warning("_check_inbox(): Reddit is down (%s), sleeping...", str(e))
-                time.sleep(self._DEFAULT_SLEEP_TIME)
-                pass
-            except timeout:
-                lg.warning("_check_inbox(): Reddit is down (timeout), sleeping...")
-                time.sleep(self._DEFAULT_SLEEP_TIME)
-                pass
-            except Exception as e:
-                lg.error("_check_inbox(): %s", str(e))
-                raise
+        except Exception as e:
+            lg.error("_check_inbox(): %s", str(e))
+            raise
 
         lg.debug("< check_inbox() DONE")
         return True
@@ -341,56 +329,45 @@ class CointipBot(object):
         """
         lg.debug("> _init_subreddits()")
 
-        while True:
-            try:
-                if not bool(self._subreddits):
-                    # Get subreddits
+        try:
+            if not bool(self._subreddits):
+                # Get subreddits
 
-                    my_reddits_list = None
-                    my_ignore_list = None
-                    my_reddits_string = None
+                my_reddits_list = None
+                my_ignore_list = None
+                my_reddits_string = None
 
-                    if self._config['reddit']['scan'].has_key('these-subreddits'):
-                        # Subreddits are specified in config.yml
-                        my_reddits_list = list(self._config['reddit']['scan']['these-subreddits'])
-                        if self._config['reddit']['scan'].has_key('ignore-subreddits'):
-                            my_ignore_list = list(self._config['reddit']['scan']['ignore-subreddits'])
+                if self._config['reddit']['scan'].has_key('these-subreddits'):
+                    # Subreddits are specified in config.yml
+                    my_reddits_list = list(self._config['reddit']['scan']['these-subreddits'])
+                    if self._config['reddit']['scan'].has_key('ignore-subreddits'):
+                        my_ignore_list = list(self._config['reddit']['scan']['ignore-subreddits'])
 
-                    elif self._config['reddit']['scan']['my-subreddits']:
-                        # Subreddits are subscribed to by bot user
-                        my_reddits = self._redditcon.get_my_subreddits(limit=None)
-                        my_reddits_list = []
-                        for my_reddit in my_reddits:
-                            my_reddits_list.append(my_reddit.display_name.lower())
-                        my_reddits_list.sort()
+                elif self._config['reddit']['scan']['my-subreddits']:
+                    # Subreddits are subscribed to by bot user
+                    my_reddits = ctb_misc._praw_call(self._redditcon.get_my_subreddits, limit=None)
+                    my_reddits_list = []
+                    for my_reddit in my_reddits:
+                        my_reddits_list.append(my_reddit.display_name.lower())
+                    my_reddits_list.sort()
 
-                    else:
-                        # No subreddits configured
-                        lg.debug("< _check_subreddits() DONE (no subreddits configured to scan)")
-                        return False
+                else:
+                    # No subreddits configured
+                    lg.debug("< _check_subreddits() DONE (no subreddits configured to scan)")
+                    return False
 
-                    # Build subreddits string
-                    my_reddits_string = "+".join(my_reddits_list)
-                    if bool(my_ignore_list):
-                        my_reddits_string += ( "-" + "-".join(my_ignore_list) )
+                # Build subreddits string
+                my_reddits_string = "+".join(my_reddits_list)
+                if bool(my_ignore_list):
+                    my_reddits_string += ( "-" + "-".join(my_ignore_list) )
 
-                    # Get multi-reddit PRAW object
-                    lg.debug("_check_subreddits(): multi-reddit string: %s", my_reddits_string)
-                    self._subreddits = self._redditcon.get_subreddit(my_reddits_string)
+                # Get multi-reddit PRAW object
+                lg.debug("_check_subreddits(): multi-reddit string: %s", my_reddits_string)
+                self._subreddits = ctb_misc._praw_call(self._redditcon.get_subreddit, my_reddits_string)
 
-                break
-
-            except (HTTPError, RateLimitExceeded) as e:
-                lg.warning("_check_subreddits(): Reddit is down (%s), sleeping...", str(e))
-                time.sleep(self._DEFAULT_SLEEP_TIME)
-                pass
-            except timeout:
-                lg.warning("_check_subreddits(): Reddit is down (timeout), sleeping...")
-                time.sleep(self._DEFAULT_SLEEP_TIME)
-                pass
-            except Exception as e:
-                lg.error("_check_subreddits(): coudln't fetch comments: %s", str(e))
-                raise
+        except Exception as e:
+            lg.error("_check_subreddits(): coudln't fetch comments: %s", str(e))
+            raise
 
         lg.debug("< _init_subreddits() DONE")
         return True
@@ -410,7 +387,7 @@ class CointipBot(object):
             _updated_last_processed_time = 0
 
             # Fetch comments from subreddits
-            my_comments = self._subreddits.get_comments(limit=self._REDDIT_BATCH_LIMIT)
+            my_comments = ctb_misc._praw_call(self._subreddits.get_comments, limit=self._REDDIT_BATCH_LIMIT)
 
             # Match each comment against regex
             counter = 0
@@ -453,14 +430,6 @@ class CointipBot(object):
             if counter >= self._REDDIT_BATCH_LIMIT - 1:
                 lg.warning("_check_subreddits(): _REDDIT_BATCH_LIMIT (%s) was not large enough to process all comments", self._REDDIT_BATCH_LIMIT)
 
-        except (HTTPError, RateLimitExceeded) as e:
-            lg.warning("_check_subreddits(): Reddit is down (%s), sleeping...", str(e))
-            time.sleep(self._DEFAULT_SLEEP_TIME)
-            pass
-        except timeout:
-            lg.warning("_check_subreddits(): Reddit is down (timeout), sleeping...")
-            time.sleep(self._DEFAULT_SLEEP_TIME)
-            pass
         except Exception as e:
             lg.error("_check_subreddits(): coudln't fetch comments: %s", str(e))
             raise

@@ -16,6 +16,7 @@
 """
 
 import logging, re, time
+import ctb_misc
 
 lg = logging.getLogger('cointipbot')
 
@@ -78,7 +79,7 @@ def update_stats(ctb=None):
         stats += "\n"
 
     lg.debug("update_stats(): updating subreddit '%s', page '%s'" % (ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page']))
-    return redditcon.edit_wiki_page(ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page'], stats, "Update by ALTcointip bot")
+    return ctb_misc._praw_call(redditcon.edit_wiki_page, ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page'], stats, "Update by ALTcointip bot")
 
 def update_user_stats(ctb=None):
     """
@@ -204,6 +205,6 @@ def update_user_stats(ctb=None):
             user_stats += ("|".join(values)) + "\n"
 
         lg.debug("update_user_stats(): updating subreddit '%s', page '%s'" % (ctb._config['reddit']['stats']['subreddit'], page))
-        redditcon.edit_wiki_page(ctb._config['reddit']['stats']['subreddit'], page, user_stats, "Update by ALTcointip bot")
+        ctb_misc._praw_call(redditcon.edit_wiki_page, ctb._config['reddit']['stats']['subreddit'], page, user_stats, "Update by ALTcointip bot")
 
     return True
