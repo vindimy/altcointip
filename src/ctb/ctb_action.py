@@ -1097,7 +1097,7 @@ def _eval_message(_message, _ctb):
     body = _message.body
     for r in _ctb._rlist_message:
         rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
-        lg.debug("matching '%s' with '%s'", _message.body, r['regex'])
+        #lg.debug("matching '%s' with '%s'", _message.body, r['regex'])
         m = rg.search(body)
 
         if bool(m):
@@ -1134,7 +1134,7 @@ def _eval_comment(_comment, _ctb):
     body = _comment.body
     for r in _ctb._rlist_comment:
         rg = re.compile(r['regex'], re.IGNORECASE|re.DOTALL)
-        lg.debug("_eval_comment(): matching '%s' with <%s>", _comment.body, r['regex'])
+        #lg.debug("_eval_comment(): matching '%s' with <%s>", _comment.body, r['regex'])
         m = rg.search(body)
 
         if bool(m):
