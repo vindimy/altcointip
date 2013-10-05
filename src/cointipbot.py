@@ -403,13 +403,6 @@ class CointipBot(object):
                     action.do()
                 else:
                     lg.info("_check_subreddits(): no match")
-                    if self._config['reddit']['messages']['sorry']:
-                        user = ctb_user.CtbUser(name=c.author.name, redditobj=c.author, ctb=self)
-                        msg = "Sorry %s, I didn't understand your comment. Please [verify the syntax](%s#wiki_commands) and try again by issuing a new one." % (user._NAME, self._config['reddit']['help-url'])
-                        lg.debug("_check_inbox(): %s", msg)
-                        msg += "\n\n* [%s help](%s)" % (self._config['reddit']['user'], self._config['reddit']['help-url'])
-                        msg += "\n* [source comment](%s)" % (c.permalink)
-                        user.tell(subj="Sorry!", msg=msg)
 
             lg.debug("_check_subreddits(): %s comments processed", counter)
             if counter >= self._REDDIT_BATCH_LIMIT - 1:
