@@ -56,21 +56,6 @@ class CointipBot(object):
 
     _last_processed_comment_time = 0
 
-    def _init_localization(self):
-        """
-        Prepare localization
-        """
-        locale.setlocale(locale.LC_ALL, '')
-        filename = "res/messages_%s.mo" % locale.getlocale()[0][0:2]
-        try:
-            lg.debug("Opening message file %s for locale %s", filename, locale.getlocale()[0])
-            trans = gettext.GNUTranslations(open(filename, "rb"))
-        except IOError:
-            lg.debug("Locale not found (file %s, locale %s). Using default messages", filename, locale.getlocale()[0])
-            trans = gettext.NullTranslations()
-        trans.install()
-        lg.debug(_("Testing localization..."))
-
     def _init_logging(self):
         """
         Set up logging
@@ -453,10 +438,6 @@ class CointipBot(object):
         Parses configuration file and initializes bot.
         """
         lg.info("CointipBot::__init__()...")
-
-        # Localization. After this, all output to user is localizable
-        # through use of _() function.
-        self._init_localization()
 
         # Configuration file
         self._config = self._parse_config(config_filename)
