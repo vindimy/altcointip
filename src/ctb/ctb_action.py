@@ -725,23 +725,29 @@ class CtbAction(object):
             self._FROM_USER.tell(subj="+info failed", msg=msg)
             return False
 
-        # Gather data for info message
+        # Info array to pass to template
         info = []
+
+        # Get coin balances
         for c in sorted(_coincon):
             coininfo = {}
             coininfo['coin'] = c
             try:
-                coininfo['tbalance'] = float(_coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['givetip']))
+                # Get tip balance
+                coininfo['balance'] = float(_coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['givetip']))
                 time.sleep(0.5)
-                coininfo['wbalance'] = float(_coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['withdraw']))
-                time.sleep(0.5)
-                # wbalance can be negative since tips require less confirmations, so set it to 0 if negative
-                if coininfo['wbalance'] < 0:
-                    coininfo['wbalance'] = 0
                 info.append(coininfo)
             except Exception as e:
                 lg.error("CtbAction::info(%s): error retrieving %s coininfo: %s", self._FROM_USER._NAME, c, str(e))
                 raise
+
+        # Get fiat balances
+        fiat_total = 0.0
+        for i in info:
+            i['fiat_symbol'] = '$'
+            if i['coin']+'_btc' in self._CTB._ticker_val:
+                i['fiat_balance'] = self._CTB._ticker_val[i['coin']+'_btc']['avg'] * self._CTB._ticker_val['btc_usd']['avg'] * float(i['balance'])
+                fiat_total += i['fiat_balance']
 
         # Get coin addresses from MySQL
         for i in info:
@@ -751,31 +757,9 @@ class CtbAction(object):
                 raise Exception("CtbAction::info(%s): no result from <%s>" % (self._FROM_USER._NAME, sql))
             i['address'] = mysqlrow['address']
 
-        # Format info message
-        tbalance_usd_total = float(0)
-        wbalance_usd_total = float(0)
-        txt = "Hello %s! Here's your account info.\n\n" % re.escape(self._FROM_USER._NAME)
-        txt += "coin|deposit address|tip balance|withdraw balance\n:---|:---|:---|:---\n"
-        for i in info:
-            addr_ex_str = '[[ex]](' + _cc[i['coin']]['explorer']['address'] + '%s)'
-            addr_ex_str = addr_ex_str % (i['address'])
-            addr_qr_str = '[[qr]](' + _config['misc']['qr-service-url'] + '%s%%3A%s)'
-            addr_qr_str = addr_qr_str % (_cc[i['coin']]['name'].lower(), i['address'])
-            tbalance_usd = float(0)
-            wbalance_usd = float(0)
-            if hasattr(self._CTB, '_ticker_val'): # and hasattr(self._CTB._ticker_val, i['coin']+'_btc') and hasattr(self._CTB._ticker_val, 'btc_usd'):
-                tbalance_usd = self._CTB._ticker_val[i['coin']+'_btc']['avg'] * self._CTB._ticker_val['btc_usd']['avg'] * float(i['tbalance'])
-                wbalance_usd = self._CTB._ticker_val[i['coin']+'_btc']['avg'] * self._CTB._ticker_val['btc_usd']['avg'] * float(i['wbalance'])
-                tbalance_usd_total += tbalance_usd
-                wbalance_usd_total += wbalance_usd
-            txt += "__%s (%s)__|%s&nbsp;^%s&nbsp;%s|__%.6g&nbsp;^$%.4g__|%.6g&nbsp;^$%.4g\n" % (_cc[i['coin']]['name'], i['coin'].upper(), i['address'], addr_ex_str, addr_qr_str, i['tbalance'], tbalance_usd, i['wbalance'], wbalance_usd)
-        txt += "&nbsp;|&nbsp;|&nbsp;|&nbsp;\n"
-        txt += "__TOTAL $__|&nbsp;|__$%.4g__|$%.4g\n" % (tbalance_usd_total, wbalance_usd_total)
-        txt += "\n\nUse addresses above to deposit coins into your account. Tip and withdraw balances differ while newly deposited coins are confirmed."
-        txt += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-
-        # Send info message
-        ctb_misc._praw_call(self._MSG.reply, txt)
+        # Format and send message
+        msg = self._CTB._jenv.get_template('info.tpl').render(info=info, fiat_symbol='$', fiat_total=fiat_total, a=self)
+        ctb_misc._praw_call(self._MSG.reply, msg)
 
         # Save action to database
         self.save('completed')

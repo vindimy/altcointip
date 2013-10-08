@@ -16,7 +16,9 @@ reddit:
     my-subreddits: false
     these-subreddits: ["all"]
     ignore-subreddits: ["test"]
-  help-url: http://www.reddit.com/r/mybotuser/wiki/index
+  help:
+    enabled: true
+    url: http://www.reddit.com/r/ALTcointiptest/wiki/index
   comments:
     verify: true
     pending: false
@@ -88,7 +90,7 @@ reddit:
 
 # Other
 misc:
-  qr-service-url: 'https://chart.googleapis.com/chart?cht=qr&choe=UTF-8&chs=300x300&chl='
+  qr_service_url: 'https://chart.googleapis.com/chart?cht=qr&choe=UTF-8&chs=300x300&chl='
   sleep-seconds: 30
   expire-pending-hours: 48
   subtract-txfee: false
