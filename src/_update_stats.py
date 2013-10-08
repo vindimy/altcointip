@@ -19,7 +19,7 @@ import cointipbot, logging
 from ctb import ctb_stats
 
 lg = logging.getLogger('cointipbot')
-cb = cointipbot.CointipBot(self_checks=False)
+cb = cointipbot.CointipBot(self_checks=False, init_reddit=True, init_coins=False, init_db=True, init_logging=False)
 
 result = ctb_stats.update_stats(ctb=cb)
 lg.debug(result)

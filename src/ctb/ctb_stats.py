@@ -62,7 +62,7 @@ def update_stats(ctb=None):
                         values.append("$%.2f" % m[k])
                     elif k.find("user") > -1:
                         if m[k] != None:
-                            values.append("/u/%s ^[[stats](/r/%s/wiki/%s_%s)]" % (m[k], ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page'], m[k]))
+                            values.append("/u/%s ^[[stats]](/r/%s/wiki/%s_%s)" % (m[k], ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page'], m[k]))
                         else:
                             values.append("None")
                     elif k.find("subreddit") > -1:
