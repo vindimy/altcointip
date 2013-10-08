@@ -23,6 +23,8 @@ import gettext, locale, logging, sys, time
 import praw, re, sqlalchemy, yaml
 from pifkoin.bitcoind import Bitcoind, BitcoindException
 
+from jinja2 import Environment, PackageLoader
+
 from requests.exceptions import HTTPError
 from praw.errors import ExceptionList, APIException, InvalidCaptcha, InvalidUser, RateLimitExceeded
 from socket import timeout
@@ -43,6 +45,7 @@ class CointipBot(object):
     _mysqlcon = None
     _redditcon = None
     _coincon = {}
+    _jenv = None
 
     _ticker = None
     _ticker_pairs = None
@@ -445,6 +448,9 @@ class CointipBot(object):
                 self._init_logging()
             else:
                 print "CointipBot::__init__(): Warning: no logging handlers configured. Logging is disabled."
+
+        # Templating
+        self._jenv = Environment(trim_blocks=True, loader=PackageLoader('cointipbot', 'tpl/jinja2'))
 
         # MySQL
         if init_db:
