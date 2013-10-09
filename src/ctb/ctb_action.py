@@ -313,7 +313,7 @@ class CtbAction(object):
                 a.givetip(is_pending=True)
         else:
             # No pending actions found, reply with error message
-            msg = self._CTB._jenv.get_template('no-pending-tips.tpl').render(user=self._FROM_USER._NAME, a=self)
+            msg = self._CTB._jenv.get_template('no-pending-tips.tpl').render(user_from=self._FROM_USER._NAME, a=self, ctb=self._CTB)
             lg.debug("CtbAction::accept(): %s", msg)
             ctb_misc._praw_call(self._MSG.reply, msg)
 
@@ -351,7 +351,7 @@ class CtbAction(object):
                 # Save transaction as declined
                 a.save('declined')
                 # Respond to tip comment
-                msg = self._CTB._jenv.get_template('confirmation.tpl').render(title="Declined", a=self)
+                msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Declined', a=self, ctb=self._CTB)
                 lg.debug("CtbAction::decline(): " + msg)
                 if _config['reddit']['comments']['declined']:
                     if not ctb_misc._praw_call(a._MSG.reply, msg):
@@ -360,11 +360,11 @@ class CtbAction(object):
                     a._FROM_USER.tell(subj="+tip declined", msg=msg)
 
             # Notify self._FROM_USER
-            msg = self._CTB._jenv.get_template('pending-tips-declined.tpl').render(user=re.escape(self._FROM_USER._NAME))
+            msg = self._CTB._jenv.get_template('pending-tips-declined.tpl').render(user_from=self._FROM_USER._NAME, ctb=self._CTB)
             lg.debug("CtbAction::decline(): %s", msg)
             ctb_misc._praw_call(self._MSG.reply, msg)
         else:
-            msg = self._CTB._jenv.get_template('no-pending-tips.tpl').render(user=re.escape(self._FROM_USER._NAME))
+            msg = self._CTB._jenv.get_template('no-pending-tips.tpl').render(user_from=self._FROM_USER._NAME, ctb=self._CTB)
             lg.debug("CtbAction::decline(): %s", msg)
             ctb_misc._praw_call(self._MSG.reply, msg)
 
@@ -401,7 +401,7 @@ class CtbAction(object):
         self.save('declined')
 
         # Respond to tip comment
-        msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Expired', a=self)
+        msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Expired', a=self, ctb=self._CTB)
         lg.debug("CtbAction::expire(): " + msg)
         if _config['reddit']['comments']['expired']:
             if not ctb_misc._praw_call(self._MSG.reply, msg):
@@ -428,7 +428,7 @@ class CtbAction(object):
         if self._TYPE in ['givetip', 'withdraw']:
             # Check if _FROM_USER has registered
             if not self._FROM_USER.is_registered():
-                msg = self._CTB._jenv.get_template('not-registered.tpl').render(a=self)
+                msg = self._CTB._jenv.get_template('not-registered.tpl').render(a=self, ctb=self._CTB)
                 lg.debug("CtbAction::validate(): %s", msg)
                 self._FROM_USER.tell(subj="+tip failed", msg=msg)
                 self.save('failed')
@@ -436,7 +436,7 @@ class CtbAction(object):
 
             # Verify that coin type is set
             if not bool(self._COIN):
-                msg = self._CTB._jenv.get_template('no-coin-balances.tpl').render(a=self)
+                msg = self._CTB._jenv.get_template('no-coin-balances.tpl').render(a=self, ctb=self._CTB)
                 lg.debug("CtbAction::validate(): %s", msg)
                 self._FROM_USER.tell(subj="+tip failed", msg=msg)
                 self.save('failed')
@@ -451,7 +451,7 @@ class CtbAction(object):
             # Verify minimum transaction size
             txkind = 'givetip' if bool(self._TO_USER) else 'withdraw'
             if self._COIN_VAL < _cc[self._COIN]['txmin'][txkind]:
-                msg = self._CTB._jenv.get_template('tip-below-minimum.tpl').render(min_value=_cc[self._COIN]['txmin'][txkind], a=self)
+                msg = self._CTB._jenv.get_template('tip-below-minimum.tpl').render(min_value=_cc[self._COIN]['txmin'][txkind], a=self, ctb=self._CTB)
                 lg.debug("CtbAction::validate(): " + msg)
                 self._FROM_USER.tell(subj="+tip failed", msg=msg)
                 self.save('failed')
@@ -462,7 +462,7 @@ class CtbAction(object):
                 # Tip to user (requires less confirmations)
                 balance_avail = self._FROM_USER.get_balance(coin=self._COIN, kind='givetip')
                 if not ( balance_avail > self._COIN_VAL or abs(balance_avail - self._COIN_VAL) < 0.000001 ):
-                    msg = self._CTB._jenv.get_template('tip-low-balance.tpl').render(balance=balance_avail, action_name='tip', a=self)
+                    msg = self._CTB._jenv.get_template('tip-low-balance.tpl').render(balance=balance_avail, action_name='tip', a=self, ctb=self._CTB)
                     lg.debug("CtbAction::validate(): " + msg)
                     self._FROM_USER.tell(subj="+tip failed", msg=msg)
                     self.save('failed')
@@ -474,7 +474,7 @@ class CtbAction(object):
                 if not _config['misc']['subtract-txfee']:
                     balance_need += _cc[self._COIN]['txfee']
                 if not ( balance_avail > balance_need or abs(balance_avail - balance_need) < 0.000001 ):
-                    msg = self._CTB._jenv.get_template('tip-low-balance.tpl').render(balance=balance_avail, action_name='withdraw', a=self)
+                    msg = self._CTB._jenv.get_template('tip-low-balance.tpl').render(balance=balance_avail, action_name='withdraw', a=self, ctb=self._CTB)
                     lg.debug("CtbAction::validate(): " + msg)
                     self._FROM_USER.tell(subj="+tip failed", msg=msg)
                     self.save('failed')
@@ -484,7 +484,7 @@ class CtbAction(object):
             if (bool(self._TO_USER)) and not is_pending:
                 if _check_action(atype='givetip', state='pending', to_user=self._TO_USER._NAME, from_user=self._FROM_USER._NAME, coin=self._COIN, ctb=self._CTB):
                     # Send notice to _FROM_USER
-                    self._CTB._jenv.get_template('tip-already-pending').render(a=self)
+                    msg = self._CTB._jenv.get_template('tip-already-pending.tpl').render(a=self, ctb=self._CTB)
                     lg.debug("CtbAction::validate(): " + msg)
                     self._FROM_USER.tell(subj="+tip failed", msg=msg)
                     self.save('failed')
@@ -511,7 +511,7 @@ class CtbAction(object):
                 self.save('pending')
 
                 # Respond to tip comment
-                msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Verified', a=self)
+                msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Verified', a=self, ctb=self._CTB)
                 lg.debug("CtbAction::validate(): " + msg)
                 if _config['reddit']['comments']['verify']:
                     if not ctb_misc._praw_call(self._MSG.reply, msg):
@@ -520,7 +520,7 @@ class CtbAction(object):
                     self._FROM_USER.tell(subj="+tip pending +accept", msg=msg)
 
                 # Send notice to _TO_USER
-                msg = self._CTB._jenv.get_template('tip-incoming.tpl').render(a=self)
+                msg = self._CTB._jenv.get_template('tip-incoming.tpl').render(a=self, ctb=self._CTB)
                 lg.debug("CtbAction::validate(): %s", msg)
                 self._TO_USER.tell(subj="+tip pending", msg=msg)
 
@@ -531,7 +531,7 @@ class CtbAction(object):
             if bool(self._TO_ADDR):
                 addr_valid = _coincon[self._COIN].validateaddress(self._TO_ADDR)
                 if not addr_valid['isvalid']:
-                    msg = self._CTB._jenv.get_template('address-invalid.tpl').render(a=self)
+                    msg = self._CTB._jenv.get_template('address-invalid.tpl').render(a=self, ctb=self._CTB)
                     lg.debug("CtbAction::validate(): " + msg)
                     self._FROM_USER.tell(subj="+tip failed", msg=msg)
                     self.save('failed')
@@ -584,7 +584,7 @@ class CtbAction(object):
                 self.save('failed')
 
                 # Send notice to _FROM_USER
-                msg = self._CTB._jenv.get_template('tip-went-wrong.tpl').render(a=self)
+                msg = self._CTB._jenv.get_template('tip-went-wrong.tpl').render(a=self, ctb=self._CTB)
                 self._FROM_USER.tell(subj="+tip failed", msg=msg)
 
                 # Log error
@@ -598,13 +598,13 @@ class CtbAction(object):
 
             try:
                 # Send confirmation to _TO_USER
-                msg = self._CTB._jenv.get_template('tip-received.tpl').render(a=self)
+                msg = self._CTB._jenv.get_template('tip-received.tpl').render(a=self, ctb=self._CTB)
                 lg.debug("CtbAction::givetip(): " + msg)
                 self._TO_USER.tell(subj="+tip received", msg=msg)
 
                 if not is_pending:
                     # This is not an +accept, so post verification comment
-                    msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Verified', a=self)
+                    msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Verified', a=self, ctb=self._CTB)
                     lg.debug("CtbAction::givetip(): " + msg)
                     if _config['reddit']['comments']['verify']:
                         if not ctb_misc._praw_call(self._MSG.reply, msg):
@@ -647,7 +647,7 @@ class CtbAction(object):
                 self.save('failed')
 
                 # Send notice to _FROM_USER
-                msg = self._CTB._jenv.get_template('tip-went-wrong.tpl').render(a=self)
+                msg = self._CTB._jenv.get_template('tip-went-wrong.tpl').render(a=self, ctb=self._CTB)
                 self._FROM_USER.tell(subj="+tip failed", msg=msg)
                 lg.error("CtbAction::givetip(): tx of %f %s from %s to %s failed: %s" % (self._COIN_VAL, self._COIN, self._FROM_USER._NAME, self._TO_ADDR, str(e)))
                 raise
@@ -659,13 +659,14 @@ class CtbAction(object):
 
             try:
                 # Post verification comment
-                msg = self._CTB._jenv.get_template('confirmation.tpl').render(title="Verified", a=self)
+                msg = self._CTB._jenv.get_template('confirmation.tpl').render(title="Verified", a=self, ctb=self._CTB)
                 lg.debug("CtbAction::givetip(): " + msg)
                 if _config['reddit']['comments']['verify']:
                     if not ctb_misc._praw_call(self._MSG.reply, msg):
                         self._FROM_USER.tell(subj="+tip succeeded", msg=msg)
                 else:
                     self._FROM_USER.tell(subj="+tip succeeded", msg=msg)
+
             except Exception as e:
                 # Couldn't post to Reddit
                 lg.error("CtbAction::givetip(): error communicating with Reddit: %s" % str(e))
@@ -692,7 +693,7 @@ class CtbAction(object):
 
         # Check if user exists
         if not self._FROM_USER.is_registered():
-            msg = self._CTB._jenv.get_template('not-registered.tpl').render(a=self)
+            msg = self._CTB._jenv.get_template('not-registered.tpl').render(a=self, ctb=self._CTB)
             self._FROM_USER.tell(subj="+info failed", msg=msg)
             return False
 
@@ -729,7 +730,7 @@ class CtbAction(object):
             i['address'] = mysqlrow['address']
 
         # Format and send message
-        msg = self._CTB._jenv.get_template('info.tpl').render(info=info, fiat_symbol='$', fiat_total=fiat_total, a=self)
+        msg = self._CTB._jenv.get_template('info.tpl').render(info=info, fiat_symbol='$', fiat_total=fiat_total, a=self, ctb=self._CTB)
         ctb_misc._praw_call(self._MSG.reply, msg)
 
         # Save action to database

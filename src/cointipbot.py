@@ -294,12 +294,10 @@ class CointipBot(object):
                     lg.info("_check_inbox(): no match")
                     if self._config['reddit']['messages']['sorry']:
                         user = ctb_user.CtbUser(name=m.author.name, redditobj=m.author, ctb=self)
-                        msg = "Sorry %s, I didn't understand your %s. Please [verify the syntax](%s#wiki_commands) and try again by issuing a new one." % (user._NAME, "comment" if m.was_comment else "message", self._config['reddit']['help-url'])
+                        tpl = self._jenv.get_template('didnt-understand.tpl')
+                        msg = tpl.render(user_from=user._NAME, what='comment' if m.was_comment else 'message', source_link=m.permalink if hasattr(m, 'permalink') else None, ctb=self)
                         lg.debug("_check_inbox(): %s", msg)
-                        msg += "\n\n* [%s help](%s)" % (self._config['reddit']['user'], self._config['reddit']['help-url'])
-                        if hasattr(m, 'permalink'):
-                            msg += "\n* [source %s](%s)" % ("comment" if m.was_comment else "message", m.permalink)
-                        user.tell(subj="Sorry!", msg=msg, msgobj=m if not m.was_comment else None)
+                        user.tell(subj='What?', msg=msg, msgobj=m if not m.was_comment else None)
 
                 # Mark message as read
                 ctb_misc._praw_call(m.mark_as_read)

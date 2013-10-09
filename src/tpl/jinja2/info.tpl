@@ -1,7 +1,7 @@
-{% set from_user = a._FROM_USER._NAME %}
+{% set user_from = a._FROM_USER._NAME %}
 {% set fiat_total_fmt = "%s%.2f" % (fiat_symbol, fiat_total) %}
 
-Hello {{ from_user }}! Here's your account info.
+Hello {{ user_from }}! Here's your account info.
 
 coin|deposit address|balance
 :---|:---|---:
@@ -18,3 +18,5 @@ __{{ name_fmt }}__|{{ address_fmt }}|__{{ coin_bal_fmt }}{{ fiat_bal_fmt }}__
 __TOTAL__| |__{{ fiat_total_fmt }}__
 
 Use addresses above to deposit coins into your account.
+
+{% include 'footer.tpl' %}

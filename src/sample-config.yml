@@ -19,6 +19,9 @@ reddit:
   help:
     enabled: true
     url: http://www.reddit.com/r/ALTcointiptest/wiki/index
+  contact:
+    enabled: true
+    url: http://www.reddit.com/message/compose/?to=im14
   comments:
     verify: true
     pending: false
