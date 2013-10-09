@@ -236,7 +236,7 @@ class CointipBot(object):
         Decline any pending tips that have reached expiration time limit
         """
         # Calculate timestamp
-        seconds = int(self._config['misc']['expire-pending-hours'] * 3600)
+        seconds = int(self._config['misc']['expire_pending_hours'] * 3600)
         created_before = time.mktime(time.gmtime()) - seconds
         counter = 0
 

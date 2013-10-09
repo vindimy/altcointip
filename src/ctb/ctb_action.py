@@ -428,41 +428,31 @@ class CtbAction(object):
         if self._TYPE in ['givetip', 'withdraw']:
             # Check if _FROM_USER has registered
             if not self._FROM_USER.is_registered():
-                msg = "I'm sorry %s, we've never met. Please __[+register](http://www.reddit.com/message/compose?to=%s&subject=register&message=%%2Bregister)__ first!" % (re.escape(self._FROM_USER._NAME), self._CTB._config['reddit']['user'])
+                msg = self._CTB._jenv.get_template('not-registered.tpl').render(a=self)
                 lg.debug("CtbAction::validate(): %s", msg)
-                msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                 self._FROM_USER.tell(subj="+tip failed", msg=msg)
                 self.save('failed')
                 return False
 
             # Verify that coin type is set
             if not bool(self._COIN):
-                msg = "Sorry %s, you don't have any coin balances enough for a __%s%.4g tip__." % (re.escape(self._FROM_USER._NAME), _fiat[self._FIAT]['symbol'], self._FIAT_VAL)
-                lg.debug("CtbAction::__init__(): %s", msg)
-                msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
+                msg = self._CTB._jenv.get_template('no-coin-balances.tpl').render(a=self)
+                lg.debug("CtbAction::validate(): %s", msg)
                 self._FROM_USER.tell(subj="+tip failed", msg=msg)
                 self.save('failed')
                 return False
 
             # Verify that _FROM_USER has coin address
             if not self._FROM_USER.get_addr(coin=self._COIN):
-                msg = "I'm sorry %s, you don't seem to have a %s address." % (re.escape(self._FROM_USER._NAME), self._COIN.upper())
-                lg.debug("CtbAction::validate(): " + msg)
-                msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
-                self._FROM_USER.tell(subj="+tip failed", msg=msg)
+                lg.error("CtbAction::validate(): user %s doesn't have %s address", self._FROM_USER._NAME, self._COIN.upper())
                 self.save('failed')
-                return False
+                raise Exception
 
             # Verify minimum transaction size
             txkind = 'givetip' if bool(self._TO_USER) else 'withdraw'
             if self._COIN_VAL < _cc[self._COIN]['txmin'][txkind]:
-                msg = "I'm sorry %s, your tip/withdraw of __%.6g %s__ is below minimum of __%.6g__." % (re.escape(self._FROM_USER._NAME), self._COIN_VAL, self._COIN.upper(), _cc[self._COIN]['txmin'][txkind])
+                msg = self._CTB._jenv.get_template('tip-below-minimum.tpl').render(min_value=_cc[self._COIN]['txmin'][txkind], a=self)
                 lg.debug("CtbAction::validate(): " + msg)
-                msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                 self._FROM_USER.tell(subj="+tip failed", msg=msg)
                 self.save('failed')
                 return False
@@ -472,10 +462,8 @@ class CtbAction(object):
                 # Tip to user (requires less confirmations)
                 balance_avail = self._FROM_USER.get_balance(coin=self._COIN, kind='givetip')
                 if not ( balance_avail > self._COIN_VAL or abs(balance_avail - self._COIN_VAL) < 0.000001 ):
-                    msg = "I'm sorry %s, your confirmed _tip_ balance of __%.6g %s__ is insufficient for this tip." % (re.escape(self._FROM_USER._NAME), balance_avail, self._COIN.upper())
+                    msg = self._CTB._jenv.get_template('tip-low-balance.tpl').render(balance=balance_avail, action_name='tip', a=self)
                     lg.debug("CtbAction::validate(): " + msg)
-                    msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                    msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                     self._FROM_USER.tell(subj="+tip failed", msg=msg)
                     self.save('failed')
                     return False
@@ -486,12 +474,8 @@ class CtbAction(object):
                 if not _config['misc']['subtract-txfee']:
                     balance_need += _cc[self._COIN]['txfee']
                 if not ( balance_avail > balance_need or abs(balance_avail - balance_need) < 0.000001 ):
-                    msg = "I'm sorry %s, your confirmed _withdraw_ balance of __%.6g %s__ is insufficient for this action (%s confirmations needed)." % (re.escape(self._FROM_USER._NAME), balance_avail, self._COIN.upper(), _cc[self._COIN]['minconf']['withdraw'])
-                    if not _config['misc']['subtract-txfee']:
-                        msg += " There is a %.6g %s network transaction fee." % (_cc[self._COIN]['txfee'], self._COIN.upper())
+                    msg = self._CTB._jenv.get_template('tip-low-balance.tpl').render(balance=balance_avail, action_name='withdraw', a=self)
                     lg.debug("CtbAction::validate(): " + msg)
-                    msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                    msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                     self._FROM_USER.tell(subj="+tip failed", msg=msg)
                     self.save('failed')
                     return False
@@ -500,11 +484,8 @@ class CtbAction(object):
             if (bool(self._TO_USER)) and not is_pending:
                 if _check_action(atype='givetip', state='pending', to_user=self._TO_USER._NAME, from_user=self._FROM_USER._NAME, coin=self._COIN, ctb=self._CTB):
                     # Send notice to _FROM_USER
-                    msg = "I'm sorry %s, /u/%s already has a pending %s tip from you. Please wait until he/she accepts or declines it." % (re.escape(self._FROM_USER._NAME), self._TO_USER._NAME, self._COIN.upper())
+                    self._CTB._jenv.get_template('tip-already-pending').render(a=self)
                     lg.debug("CtbAction::validate(): " + msg)
-                    msg += " Pending tips expire in %.1g days." % ( float(_config['misc']['expire-pending-hours']) / float(24) )
-                    msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                    msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                     self._FROM_USER.tell(subj="+tip failed", msg=msg)
                     self.save('failed')
                     return False
@@ -530,7 +511,7 @@ class CtbAction(object):
                 self.save('pending')
 
                 # Respond to tip comment
-                msg = self._CTB._jenv.get_template('confirmation.tpl').render(title="Verified", a=self)
+                msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Verified', a=self)
                 lg.debug("CtbAction::validate(): " + msg)
                 if _config['reddit']['comments']['verify']:
                     if not ctb_misc._praw_call(self._MSG.reply, msg):
@@ -539,13 +520,8 @@ class CtbAction(object):
                     self._FROM_USER.tell(subj="+tip pending +accept", msg=msg)
 
                 # Send notice to _TO_USER
-                msg = "Hey %s, /u/%s sent you a __%.6g %s(s) (%s%.4g)__ tip, reply with __[+accept](http://www.reddit.com/message/compose?to=%s&subject=accept&message=%%2Baccept)__ to claim it. "
-                msg += "Reply with __[+decline](http://www.reddit.com/message/compose?to=%s&subject=decline&message=%%2Bdecline)__ to decline it."
-                msg = msg % (re.escape(self._TO_USER._NAME), self._FROM_USER._NAME, self._COIN_VAL, _cc[self._COIN]['name'], _fiat[self._FIAT]['symbol'], self._FIAT_VAL, self._CTB._config['reddit']['user'], self._CTB._config['reddit']['user'])
-                msg += " Pending tips expire in %.1g days." % ( float(_config['misc']['expire-pending-hours']) / float(24) )
+                msg = self._CTB._jenv.get_template('tip-incoming.tpl').render(a=self)
                 lg.debug("CtbAction::validate(): %s", msg)
-                msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                 self._TO_USER.tell(subj="+tip pending", msg=msg)
 
                 # Action saved as 'pending', return false to avoid processing it
@@ -555,10 +531,8 @@ class CtbAction(object):
             if bool(self._TO_ADDR):
                 addr_valid = _coincon[self._COIN].validateaddress(self._TO_ADDR)
                 if not addr_valid['isvalid']:
-                    msg = "I'm sorry %s, __%s__ address __%s__ appears to be invalid (is there a typo?)." % (re.escape(self._FROM_USER._NAME), self._COIN.upper(), self._TO_ADDR)
+                    msg = self._CTB._jenv.get_template('address-invalid.tpl').render(a=self)
                     lg.debug("CtbAction::validate(): " + msg)
-                    msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                    msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                     self._FROM_USER.tell(subj="+tip failed", msg=msg)
                     self.save('failed')
                     return False
@@ -610,8 +584,7 @@ class CtbAction(object):
                 self.save('failed')
 
                 # Send notice to _FROM_USER
-                msg = "Hey %s, something went wrong, and your tip of __%.6g %s(s)__ to /u/%s has failed to process." % (re.escape(self._FROM_USER._NAME), self._COIN_VAL, _cc[self._COIN]['name'], self._TO_USER._NAME)
-                msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
+                msg = self._CTB._jenv.get_template('tip-went-wrong.tpl').render(a=self)
                 self._FROM_USER.tell(subj="+tip failed", msg=msg)
 
                 # Log error
@@ -625,15 +598,13 @@ class CtbAction(object):
 
             try:
                 # Send confirmation to _TO_USER
-                msg = "Hey %s, you have received a __%.6g %s(s) (%s%.4g)__ tip from /u/%s." % (re.escape(self._TO_USER._NAME), self._COIN_VAL, _cc[self._COIN]['name'], _fiat[self._FIAT]['symbol'], self._FIAT_VAL, re.escape(self._FROM_USER._NAME))
+                msg = self._CTB._jenv.get_template('tip-received.tpl').render(a=self)
                 lg.debug("CtbAction::givetip(): " + msg)
-                msg += "\n\n* [%s help](%s)" % (_config['reddit']['user'], _config['reddit']['help-url'])
-                msg += "\n* [+tip comment](%s)" % (self._MSG.permalink) if hasattr(self._MSG, 'permalink') else ""
                 self._TO_USER.tell(subj="+tip received", msg=msg)
 
                 if not is_pending:
                     # This is not an +accept, so post verification comment
-                    msg = self._CTB._jenv.get_template('confirmation.tpl').render(title="Verified", a=self)
+                    msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Verified', a=self)
                     lg.debug("CtbAction::givetip(): " + msg)
                     if _config['reddit']['comments']['verify']:
                         if not ctb_misc._praw_call(self._MSG.reply, msg):

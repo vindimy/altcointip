@@ -14,6 +14,7 @@ coin|deposit address|balance
 {%   endif %}
 __{{ name_fmt }}__|{{ address_fmt }}|__{{ coin_bal_fmt }}{{ fiat_bal_fmt }}__
 {% endfor %}
+&nbsp;|&nbsp;|&nbsp;
 __TOTAL__| |__{{ fiat_total_fmt }}__
 
 Use addresses above to deposit coins into your account.
