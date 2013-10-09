@@ -6,8 +6,8 @@ Hello {{ user_from }}! Here's your account info.
 coin|deposit address|balance
 :---|:---|---:
 {% for i in info %}
-{%   set name_fmt = "%s (%s)" % (a._CTB._config.cc[i.coin].name, i.coin.upper()) %}
-{%   set address_fmt = "%s ^[[ex]](%s%s) ^[[qr]](%s%s)" % (i.address, a._CTB._config.cc[i.coin].explorer.address, i.address, a._CTB._config.misc.qr_service_url, i.address) %}
+{%   set name_fmt = "%s (%s)" % (ctb._config.cc[i.coin].name, i.coin.upper()) %}
+{%   set address_fmt = "%s ^[[ex]](%s%s) ^[[qr]](%s%s)" % (i.address, ctb._config.cc[i.coin].explorer.address, i.address, ctb._config.misc.qr_service_url, i.address) %}
 {%   set coin_bal_fmt = "%.6g" % i.balance %}
 {%   if i.fiat_balance %}
 {%     set fiat_bal_fmt = " ^%s%.2f" % ( i.fiat_symbol, i.fiat_balance ) %}
