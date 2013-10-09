@@ -7,6 +7,6 @@
 {% set coin_amount = a._COIN_VAL %}
 {% set coin_name = ctb._config.cc[a._COIN].name %}
 {% set coin_amount_fmt = " __%.6g %(s)__" % (coin_amount, coin_name) %}
-Hey {{ user_from }}, something went wrong and your tip of {{ coin_amount_fmt }} to {{ user_to_fmt }} has failed to process.
+Hey {{ user_from | replace('_', '\_') }}, something went wrong and your tip of {{ coin_amount_fmt }} to {{ user_to_fmt }} has failed to process.
 
 {% include 'footer.tpl' %}

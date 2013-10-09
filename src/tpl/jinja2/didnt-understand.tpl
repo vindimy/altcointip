@@ -3,6 +3,6 @@
 {% else %}
 {%   set help_link = "verify syntax" %}
 {% endif %}
-Sorry {{ user_from }}, I didn't understand your {{ what }}. Please {{ help_link }} and try again.
+Sorry {{ user_from | replace('_', '\_') }}, I didn't understand your {{ what }}. Please {{ help_link }} and try again.
 
 {% include 'footer.tpl' %}

@@ -1,7 +1,7 @@
 {% set user_from = a._FROM_USER._NAME %}
 {% set fiat_total_fmt = "%s%.2f" % (fiat_symbol, fiat_total) %}
 
-Hello {{ user_from }}! Here's your account info.
+Hello {{ user_from | replace('_', '\_') }}! Here's your account info.
 
 coin|deposit address|balance
 :---|:---|---:
@@ -11,6 +11,8 @@ coin|deposit address|balance
 {%   set coin_bal_fmt = "%.6g" % i.balance %}
 {%   if i.fiat_balance %}
 {%     set fiat_bal_fmt = " ^%s%.2f" % ( i.fiat_symbol, i.fiat_balance ) %}
+{%   else %}
+{%     set fiat_bal_fmt = "" %}
 {%   endif %}
 __{{ name_fmt }}__|{{ address_fmt }}|__{{ coin_bal_fmt }}{{ fiat_bal_fmt }}__
 {% endfor %}

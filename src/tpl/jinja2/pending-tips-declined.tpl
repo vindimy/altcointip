@@ -1,3 +1,3 @@
-Hello {{ user_from }}, your pending tips have been declined.
+Hello {{ user_from | replace('_', '\_') }}, your pending tips have been declined.
 
 {% include 'footer.tpl' %}
