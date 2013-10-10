@@ -8,7 +8,7 @@
 {%   endif %}
 {% endif %}
 {% if a._TO_ADDR: %}
-{%   set ex = ctb._config.cc[a._COIN].explorer.address %}
+{%   set ex = ctb._config.cc[a._COIN].explorer %}
 {%   set user_to_fmt = " ^[%s](%s%s)" % (a._TO_ADDR, ex.address, a._TO_ADDR) %}
 {%   set arrow_fmt = " ^[->](%s%s)" % (ex.transaction, a._TXID) %}
 {% endif %}
