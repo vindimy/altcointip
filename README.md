@@ -12,6 +12,7 @@ For introduction to and use of ALTcointip bot, see __http://www.reddit.com/r/ALT
 
 The following Python libraries are necessary to run ALTcointip bot:
 
+* __jinja2__ (http://jinja.pocoo.org/)
 * __pifkoin__ (https://github.com/dpifke/pifkoin)
 * __pyvircurex__ (https://github.com/christopherpoole/pyvircurex)
 * __praw__ (https://github.com/praw-dev/praw)
