@@ -11,11 +11,11 @@ if not len(sys.argv) in [2, 3] or not os.access(sys.argv[1], os.W_OK):
 cb = cointipbot.CointipBot(self_checks=False, init_reddit=False, init_coins=True, init_db=False, init_logging=False)
 _c = cb._config
 
-for c in cb._coincon:
+for c in cb._coins:
 	_filename = "%s/wallet_%s_%s.dat" % (sys.argv[1], _c['cc'][c]['unit'], datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 
 	print "Backing up %s wallet to %s..." % (_c['cc'][c]['name'], _filename)
-	cb._coincon[c].backupwallet(_filename)
+	cb._coins[c].conn.backupwallet(_filename)
 
 	print "Compressing..."
         os.popen("gzip --best %s" % _filename)

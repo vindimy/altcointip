@@ -292,7 +292,7 @@ class CtbAction(object):
         lg.debug("> CtbAction::accept()")
 
         _mysqlcon = self._CTB._mysqlcon
-        _coincon = self._CTB._coincon
+        _coins = self._CTB._coins
         _config = self._CTB._config
         _cc = self._CTB._config['cc']
         _fiat = self._CTB._config['fiat']
@@ -330,7 +330,7 @@ class CtbAction(object):
         lg.debug("> CtbAction::decline()")
 
         _mysqlcon = self._CTB._mysqlcon
-        _coincon = self._CTB._coincon
+        _coins = self._CTB._coins
         _config = self._CTB._config
         _cc = self._CTB._config['cc']
         _fiat = self._CTB._config['fiat']
@@ -339,17 +339,15 @@ class CtbAction(object):
         actions = _get_actions(atype='givetip', to_user=self._FROM_USER._NAME, state='pending', ctb=self._CTB)
         if bool(actions):
             for a in actions:
+
                 # Move coins back into a._FROM_USER account
-                try:
-                    lg.debug("CtbAction::decline(): moving %s %s from %s to %s", str(a._COIN_VAL), a._COIN.upper(), _config['reddit']['user'].lower(), a._FROM_USER._NAME.lower())
-                    m = _coincon[a._COIN].move(_config['reddit']['user'].lower(), a._FROM_USER._NAME.lower(), a._COIN_VAL)
-                    # Sleep for 0.5 seconds to not overwhelm coin daemon
-                    time.sleep(0.5)
-                except Exception as e:
-                    lg.error("CtbAction::decline(): error: %s", str(e))
-                    raise
+                lg.info("CtbAction::decline(): moving %s %s from %s to %s", str(a._COIN_VAL), a._COIN.upper(), _config['reddit']['user'], a._FROM_USER._NAME)
+                if not _coins[a._COIN].sendtouser(_userto=_config['reddit']['user'], _userfrom=a._FROM_USER._NAME, _amount=a._COIN_VAL):
+                    raise Exception("CtbAction::decline(): failed to sendtouser()")
+
                 # Save transaction as declined
                 a.save('declined')
+
                 # Respond to tip comment
                 msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Declined', a=self, ctb=self._CTB)
                 lg.debug("CtbAction::decline(): " + msg)
@@ -363,7 +361,9 @@ class CtbAction(object):
             msg = self._CTB._jenv.get_template('pending-tips-declined.tpl').render(user_from=self._FROM_USER._NAME, ctb=self._CTB)
             lg.debug("CtbAction::decline(): %s", msg)
             ctb_misc._praw_call(self._MSG.reply, msg)
+
         else:
+
             msg = self._CTB._jenv.get_template('no-pending-tips.tpl').render(user_from=self._FROM_USER._NAME, ctb=self._CTB)
             lg.debug("CtbAction::decline(): %s", msg)
             ctb_misc._praw_call(self._MSG.reply, msg)
@@ -381,21 +381,16 @@ class CtbAction(object):
         lg.debug("> CtbAction::expire()")
 
         _mysqlcon = self._CTB._mysqlcon
-        _coincon = self._CTB._coincon
+        _coins = self._CTB._coins
         _config = self._CTB._config
         _cc = self._CTB._config['cc']
         _fiat = self._CTB._config['fiat']
         _redditcon = self._CTB._redditcon
 
         # Move coins back into self._FROM_USER account
-        try:
-            lg.info("CtbAction::expire(): moving %s %s from %s to %s", str(self._COIN_VAL), self._COIN.upper(), _config['reddit']['user'], self._FROM_USER._NAME.lower())
-            m = _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._FROM_USER._NAME.lower(), self._COIN_VAL)
-            # Sleep for 0.5 seconds to not overwhelm coin daemon
-            time.sleep(0.5)
-        except Exception as e:
-            lg.error("CtbAction::expire(): error: %s", str(e))
-            raise
+        lg.info("CtbAction::expire(): moving %s %s from %s to %s", str(self._COIN_VAL), self._COIN.upper(), _config['reddit']['user'], self._FROM_USER._NAME)
+        if not _coins[self._COIN].sendtouser(_userfrom=_config['reddit']['user'], _userto=self._FROM_USER._NAME, _amount=self._COIN_VAL):
+            raise Exception("CtbAction::expire(): sendtouser() failed")
 
         # Save transaction as declined
         self.save('declined')
@@ -419,7 +414,7 @@ class CtbAction(object):
         lg.debug("> CtbAction::validate()")
 
         _mysqlcon = self._CTB._mysqlcon
-        _coincon = self._CTB._coincon
+        _coins = self._CTB._coins
         _config = self._CTB._config
         _cc = self._CTB._config['cc']
         _fiat = self._CTB._config['fiat']
@@ -498,14 +493,10 @@ class CtbAction(object):
                 # - notify _TO_USER to accept tip
 
                 # Move coins into pending account
-                try:
-                    lg.info("CtbAction::validate(): moving %s %s from %s to %s", str(self._COIN_VAL), self._COIN.upper(), self._FROM_USER._NAME.lower(), _config['reddit']['user'])
-                    m = _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), _config['reddit']['user'].lower(), self._COIN_VAL)
-                    # Sleep for 0.5 seconds to not overwhelm coin daemon
-                    time.sleep(0.5)
-                except Exception as e:
-                    lg.error("CtbAction::validate(): error: %s", str(e))
-                    raise
+                minconf = _coins[self._COIN].conf['minconf']['givetip']
+                lg.info("CtbAction::validate(): moving %s %s from %s to %s (minconf=%s)...", self._COIN_VAL, self._COIN.upper(), self._FROM_USER._NAME, _config['reddit']['user'], minconf)
+                if not _coins[self._COIN].sendtouser(_userfrom=self._FROM_USER._NAME, _userto=_config['reddit']['user'], _amount=self._COIN_VAL, _minconf=minconf):
+                    raise Exception("CtbAction::validate(): sendtouser() failed")
 
                 # Save action as pending
                 self.save('pending')
@@ -529,8 +520,7 @@ class CtbAction(object):
 
             # Validate _TO_ADDR, if applicable
             if bool(self._TO_ADDR):
-                addr_valid = _coincon[self._COIN].validateaddress(self._TO_ADDR)
-                if not addr_valid['isvalid']:
+                if not _coins[self._COIN].validateaddr(_addr=self._TO_ADDR):
                     msg = self._CTB._jenv.get_template('address-invalid.tpl').render(a=self, ctb=self._CTB)
                     lg.debug("CtbAction::validate(): " + msg)
                     self._FROM_USER.tell(subj="+tip failed", msg=msg)
@@ -548,7 +538,7 @@ class CtbAction(object):
         lg.debug("> CtbAction::givetip()")
 
         _mysqlcon = self._CTB._mysqlcon
-        _coincon = self._CTB._coincon
+        _coins = self._CTB._coins
         _config = self._CTB._config
         _cc = self._CTB._config['cc']
         _fiat = self._CTB._config['fiat']
@@ -568,54 +558,44 @@ class CtbAction(object):
         if bool(self._TO_USER):
             # Process tip to user
 
-            try:
-                if is_pending:
-                    lg.info("CtbAction::givetip(): sending %f %s from %s to %s...", self._COIN_VAL, self._COIN.upper(), _config['reddit']['user'].lower(), self._TO_USER._NAME.lower())
-                    _coincon[self._COIN].move(_config['reddit']['user'].lower(), self._TO_USER._NAME.lower(), self._COIN_VAL, _cc[self._COIN]['minconf'][self._TYPE])
-                else:
-                    lg.info("CtbAction::givetip(): sending %f %s from %s to %s...", self._COIN_VAL, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower())
-                    _coincon[self._COIN].move(self._FROM_USER._NAME.lower(), self._TO_USER._NAME.lower(), self._COIN_VAL, _cc[self._COIN]['minconf'][self._TYPE])
-                # Sleep for 0.5 seconds to not overwhelm coin daemon
-                time.sleep(0.5)
-            except Exception as e:
-                # Transaction failed
+            res = False
+            if is_pending:
+                # This is accept() of pending transaction, so move coins from pending account to receiver
+                lg.info("CtbAction::givetip(): moving %f %s from %s to %s...", self._COIN_VAL, self._COIN.upper(), _config['reddit']['user'], self._TO_USER._NAME)
+                res = _coins[self._COIN].sendtouser(_userfrom=_config['reddit']['user'], _userto=self._TO_USER._NAME, _amount=self._COIN_VAL)
+            else:
+                # This is not accept() of pending transaction, so move coins from tipper to receiver
+                minconf = _coins[self._COIN].conf['minconf']['givetip']
+                lg.info("CtbAction::givetip(): moving %f %s from %s to %s (minconf=%s)...", self._COIN_VAL, self._COIN.upper(), self._FROM_USER._NAME, self._TO_USER._NAME, minconf)
+                res = _coins[self._COIN].sendtouser(_userfrom=self._FROM_USER._NAME, _userto=self._TO_USER._NAME, _amount=self._COIN_VAL, _minconf=minconf)
 
-                # Save transaction to database
+            if not res:
+                # Transaction failed
                 self.save('failed')
 
                 # Send notice to _FROM_USER
                 msg = self._CTB._jenv.get_template('tip-went-wrong.tpl').render(a=self, ctb=self._CTB)
                 self._FROM_USER.tell(subj="+tip failed", msg=msg)
 
-                # Log error
-                lg.error("CtbAction::givetip(): move of %s %s from %s to %s failed: %s" % (self._COIN_VAL, self._COIN, (self._FROM_USER._NAME if is_pending else _config['reddit']['user']), self._TO_USER._NAME, str(e)))
-                raise
+                raise Exception("CtbAction::givetip(): sendtouser() failed")
 
             # Transaction succeeded
-
-            # Save transaction to database
             self.save('completed')
 
-            try:
-                # Send confirmation to _TO_USER
-                msg = self._CTB._jenv.get_template('tip-received.tpl').render(a=self, ctb=self._CTB)
+            # Send confirmation to _TO_USER
+            msg = self._CTB._jenv.get_template('tip-received.tpl').render(a=self, ctb=self._CTB)
+            lg.debug("CtbAction::givetip(): " + msg)
+            self._TO_USER.tell(subj="+tip received", msg=msg)
+
+            # This is not accept() of pending transaction, so post verification comment
+            if not is_pending:
+                msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Verified', a=self, ctb=self._CTB)
                 lg.debug("CtbAction::givetip(): " + msg)
-                self._TO_USER.tell(subj="+tip received", msg=msg)
-
-                if not is_pending:
-                    # This is not an +accept, so post verification comment
-                    msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Verified', a=self, ctb=self._CTB)
-                    lg.debug("CtbAction::givetip(): " + msg)
-                    if _config['reddit']['comments']['verify']:
-                        if not ctb_misc._praw_call(self._MSG.reply, msg):
-                            self._FROM_USER.tell(subj="+tip succeeded", msg=msg)
-                    else:
+                if _config['reddit']['comments']['verify']:
+                    if not ctb_misc._praw_call(self._MSG.reply, msg):
                         self._FROM_USER.tell(subj="+tip succeeded", msg=msg)
-
-            except Exception as e:
-                # Couldn't post to Reddit
-                lg.error("CtbAction::givetip(): error communicating with Reddit: %s" % str(e))
-                raise
+                else:
+                    self._FROM_USER.tell(subj="+tip succeeded", msg=msg)
 
             lg.debug("< CtbAction::givetip() DONE")
             return True
@@ -624,53 +604,34 @@ class CtbAction(object):
             # Process tip to address
 
             try:
+                
                 lg.info("CtbAction::givetip(): sending %f %s to %s...", self._COIN_VAL, self._COIN, self._TO_ADDR)
-                # Unlock wallet, if applicable
-                if _cc[self._COIN].has_key('walletpassphrase'):
-                    lg.debug("CtbAction::givetip(): unlocking wallet...")
-                    res = _coincon[self._COIN].walletpassphrase(_cc[self._COIN]['walletpassphrase'], 1)
-                # Perform transaction
-                lg.debug("CtbAction::givetip(): sending %s %s from %s to %s", self._COIN_VAL, self._COIN.upper(), self._FROM_USER._NAME.lower(), self._TO_ADDR)
-                self._TXID = _coincon[self._COIN].sendfrom(self._FROM_USER._NAME.lower(), self._TO_ADDR, self._COIN_VAL, _cc[self._COIN]['minconf'][self._TYPE])
-                lg.debug("CtbAction::givetip(): txid = %s", self._TXID)
-                # Lock wallet, if applicable
-                if _cc[self._COIN].has_key('walletpassphrase'):
-                    lg.debug("CtbAction::givetip(): locking wallet...")
-                    _coincon[self._COIN].walletlock()
-                # Sleep for 2 seconds to not overwhelm coin daemon
-                time.sleep(2)
+                self._TXID = _coins[self._COIN].sendtoaddr(_userfrom=self._FROM_USER._NAME, _addrto=self._TO_ADDR, _amount=self._COIN_VAL)
 
             except Exception as e:
-                # Transaction failed
 
-                # Save transaction to database
+                # Transaction failed
                 self.save('failed')
+
+                lg.error("CtbAction::givetip(): sendtoaddr() failed")
 
                 # Send notice to _FROM_USER
                 msg = self._CTB._jenv.get_template('tip-went-wrong.tpl').render(a=self, ctb=self._CTB)
                 self._FROM_USER.tell(subj="+tip failed", msg=msg)
-                lg.error("CtbAction::givetip(): tx of %f %s from %s to %s failed: %s" % (self._COIN_VAL, self._COIN, self._FROM_USER._NAME, self._TO_ADDR, str(e)))
+
                 raise
 
             # Transaction succeeded
-
-            # Save transaction to database
             self.save('completed')
 
-            try:
-                # Post verification comment
-                msg = self._CTB._jenv.get_template('confirmation.tpl').render(title="Verified", a=self, ctb=self._CTB)
-                lg.debug("CtbAction::givetip(): " + msg)
-                if _config['reddit']['comments']['verify']:
-                    if not ctb_misc._praw_call(self._MSG.reply, msg):
-                        self._FROM_USER.tell(subj="+tip succeeded", msg=msg)
-                else:
+            # Post verification comment
+            msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Verified', a=self, ctb=self._CTB)
+            lg.debug("CtbAction::givetip(): " + msg)
+            if _config['reddit']['comments']['verify']:
+                if not ctb_misc._praw_call(self._MSG.reply, msg):
                     self._FROM_USER.tell(subj="+tip succeeded", msg=msg)
-
-            except Exception as e:
-                # Couldn't post to Reddit
-                lg.error("CtbAction::givetip(): error communicating with Reddit: %s" % str(e))
-                raise
+            else:
+                self._FROM_USER.tell(subj="+tip succeeded", msg=msg)
 
             lg.debug("< CtbAction::givetip() DONE")
             return True
@@ -685,7 +646,7 @@ class CtbAction(object):
         lg.debug("> CtbAction::info()")
 
         _mysqlcon = self._CTB._mysqlcon
-        _coincon = self._CTB._coincon
+        _coins = self._CTB._coins
         _config = self._CTB._config
         _cc = self._CTB._config['cc']
         _fiat = self._CTB._config['fiat']
@@ -701,13 +662,12 @@ class CtbAction(object):
         info = []
 
         # Get coin balances
-        for c in sorted(_coincon):
+        for c in sorted(_coins):
             coininfo = {}
             coininfo['coin'] = c
             try:
                 # Get tip balance
-                coininfo['balance'] = float(_coincon[c].getbalance(self._FROM_USER._NAME.lower(), _cc[c]['minconf']['givetip']))
-                time.sleep(0.5)
+                coininfo['balance'] = _coins[c].getbalance(_user=self._FROM_USER._NAME, _minconf=_cc[c]['minconf']['givetip'])
                 info.append(coininfo)
             except Exception as e:
                 lg.error("CtbAction::info(%s): error retrieving %s coininfo: %s", self._FROM_USER._NAME, c, str(e))

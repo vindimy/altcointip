@@ -94,11 +94,9 @@ class CtbUser(object):
         if not bool(coin) or not bool(kind):
             raise Exception("CtbUser::balance(%s): coin or kind not set" % self._NAME)
 
-        lg.debug("CtbUser::balance(%s): getting %s %s balance", self._NAME, coin, kind)
         # Ask coin daemon for account balance
-        balance = self._CTB._coincon[coin].getbalance(self._NAME.lower(), self._CC[coin]['minconf'][kind])
-        # Sleep for .5 seconds to not overwhelm coin daemon
-        time.sleep(0.5)
+        lg.info("CtbUser::balance(%s): getting %s %s balance", self._NAME, coin, kind)
+        balance = self._CTB._coins[coin].getbalance(_user=self._NAME, _minconf=self._CC[coin]['minconf'][kind])
 
         lg.debug("< CtbUser::balance(%s) DONE", self._NAME)
         return float(balance)
@@ -181,8 +179,8 @@ class CtbUser(object):
                 # Next, check t_addrs table
                 sql_coins = "SELECT COUNT(*) AS count FROM t_addrs WHERE username = %s"
                 mysqlrow_coins = self._CTB._mysqlcon.execute(sql_coins, (self._NAME.lower())).fetchone()
-                if int(mysqlrow_coins['count']) != len(self._CTB._coincon):
-                    raise Exception("CtbUser::is_registered(%s): database returns %s coins but %s active" % (self._NAME, mysqlrow_coins['count'], len(self._CTB._coincon)))
+                if int(mysqlrow_coins['count']) != len(self._CTB._coins):
+                    raise Exception("CtbUser::is_registered(%s): database returns %s coins but %s active" % (self._NAME, mysqlrow_coins['count'], len(self._CTB._coins)))
                 # Set some properties
                 self._GIFTAMNT = mysqlrow['giftamount']
                 # Done
@@ -237,22 +235,9 @@ class CtbUser(object):
 
         # Get new coin addresses
         new_addrs = {}
-        for c in self._CTB._coincon:
-            try:
-                # Generate new address for user
-                # Unlock wallet for keypoolrefill (otherwise coin daemon will run out of keys)
-                if _cc[c].has_key('walletpassphrase'):
-                    self._CTB._coincon[c].walletpassphrase(_cc[c]['walletpassphrase'], 1)
-                    self._CTB._coincon[c].keypoolrefill()
-                    self._CTB._coincon[c].walletlock()
-                new_addrs[c] = self._CTB._coincon[c].getnewaddress(self._NAME.lower())
-                # Sleep for 2 seconds to not overwhelm coin daemon
-                time.sleep(2)
-                lg.debug("CtbUser::register(%s): got %s address %s", self._NAME, c, new_addrs[c])
-            except Exception, e:
-                lg.error("CtbUser::register(%s): error getting %s address: %s", self._NAME, c, str(e))
-                _delete_user(self._NAME, self._CTB._mysqlcon)
-                raise
+        for c in self._CTB._coins:
+            new_addrs[c] = self._CTB._coins[c].getnewaddress(_user=self._NAME)
+            lg.info("CtbUser::register(%s): got %s address %s", self._NAME, c, new_addrs[c])
 
         # Add coin addresses to database
         for c in new_addrs:

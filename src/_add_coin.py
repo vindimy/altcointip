@@ -9,4 +9,4 @@ from ctb import ctb_misc
 
 # Then run these two commands
 cb = cointipbot.CointipBot(self_checks=False)
-#ctb_misc._add_coin('dvc', cb._mysqlcon, cb._coincon)
+#ctb_misc._add_coin('dvc', cb._mysqlcon, cb._coins)

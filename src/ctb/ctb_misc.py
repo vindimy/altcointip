@@ -65,7 +65,7 @@ def _refresh_exchange_rate_btce(ctb=None):
             if ctb._config['fiat'][f]['enabled'] and not ctb._config['fiat'][f]['unit'] == 'usd':
                 ctb._ticker_pairs['btc_'+ctb._config['fiat'][f]['unit']] = 'True'
         # Request each COIN_btc pair
-        for c in ctb._coincon:
+        for c in ctb._coins:
             ctb._ticker_pairs[c+'_btc'] = 'True'
 
     # Create instance of CtbBtce
@@ -110,7 +110,7 @@ def _refresh_exchange_rate_vircurex(ctb=None):
             if ctb._config['fiat'][f]['enabled'] and not ctb._config['fiat'][f]['unit'] == 'usd':
                 ctb._ticker_pairs['btc_'+ctb._config['fiat'][f]['unit']] = 'True'
         # Request each COIN_btc pair
-        for c in ctb._coincon:
+        for c in ctb._coins:
             if not c == 'btc':
                 ctb._ticker_pairs[c+'_btc'] = 'True'
 
@@ -251,7 +251,7 @@ def _set_value(conn, param0=None, value0=None):
     lg.debug("< _set_value() DONE")
     return True
 
-def _add_coin(coin, mysqlcon, coincon):
+def _add_coin(coin, mysqlcon, coinobjs):
     """
     Add new coin address to each user
     """
@@ -262,7 +262,7 @@ def _add_coin(coin, mysqlcon, coincon):
         mysqlsel = mysqlcon.execute(sql_select, (coin))
         for m in mysqlsel:
             # Generate new coin address for user
-            new_addr = coincon[coin].getnewaddress(m['username'].lower())
+            new_addr = coinobjs[coin].getnewaddr(_user=m['username'])
             lg.info("_add_coin(): got new address %s for %s", new_addr, m['username'])
             # Add new coin address to MySQL
             mysqlins = mysqlcon.execute(sql_insert, (m['username'].lower(), coin, new_addr))

@@ -17,11 +17,10 @@
     along with ALTcointip.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from ctb import ctb_action, ctb_db, ctb_log, ctb_misc, ctb_user
+from ctb import ctb_action, ctb_coin, ctb_db, ctb_log, ctb_misc, ctb_user
 
 import gettext, locale, logging, sys, time
 import praw, re, sqlalchemy, yaml
-from pifkoin.bitcoind import Bitcoind, BitcoindException
 
 from jinja2 import Environment, PackageLoader
 
@@ -44,7 +43,7 @@ class CointipBot(object):
     _config = None
     _mysqlcon = None
     _redditcon = None
-    _coincon = {}
+    _coins = {}
     _jenv = None
 
     _ticker = None
@@ -147,26 +146,6 @@ class CointipBot(object):
         lg.info("Connected to database %s as %s", config['mysql']['host'], config['mysql']['user'])
         return conn
 
-    def _connect_coin(self, c):
-        """
-        Returns a coin daemon connection object
-        """
-        lg.debug("Connecting to %s...", c['name'])
-
-        try:
-            conn = Bitcoind(c['conf-file'])
-        except BitcoindException as e:
-            lg.error("Error connecting to %s: %s", c['name'], str(e))
-            sys.exit(1)
-        lg.info("Connected to %s", c['name'])
-
-        # Set tx fee
-        lg.info("Setting tx fee of %f", c['txfee'])
-        conn.settxfee(c['txfee'])
-
-        # Done
-        return conn
-
     def _connect_reddit(self, config):
         """
         Returns a praw connection object
@@ -203,8 +182,8 @@ class CointipBot(object):
             b.register()
 
         # Ensure (total pending tips) < (CointipBot's balance)
-        for c in self._coincon:
-            ctb_balance = float(b.get_balance(coin=c, kind='givetip'))
+        for c in self._coins:
+            ctb_balance = b.get_balance(coin=c, kind='givetip')
             pending_tips = float(0)
             actions = ctb_action._get_actions(atype='givetip', state='pending', coin=c, ctb=self)
             for a in actions:
@@ -213,8 +192,8 @@ class CointipBot(object):
                 raise Exception("CointipBot::_self_checks(): CointipBot's %s balance (%s) < total pending tips (%s)" % (c.upper(), ctb_balance, pending_tips))
 
         # Ensure coin balances are positive
-        for c in self._coincon:
-            b = self._coincon[c].getbalance()
+        for c in self._coins:
+            b = float(self._coins[c].conn.getbalance())
             if b < 0:
                 raise Exception("CointipBot::_self_checks(): negative balance of %s: %s" % (c, b))
 
@@ -224,7 +203,7 @@ class CointipBot(object):
             u = ctb_user.CtbUser(name=mysqlrow['username'], ctb=self)
             if not u.is_registered():
                 raise Exception("CointipBot::_self_checks(): user %s is_registered() failed" % mysqlrow['username'])
-        #    for c in self._coincon:
+        #    for c in self._coins:
         #        if u.get_balance(coin=c, kind='givetip') < 0:
         #            raise Exception("CointipBot::_self_checks(): user %s %s balance is negative" % (mysqlrow['username'], c))
 
@@ -459,7 +438,7 @@ class CointipBot(object):
             num_coins = 0
             for c in self._config['cc']:
                 if self._config['cc'][c]['enabled']:
-                    self._coincon[self._config['cc'][c]['unit']] = self._connect_coin(self._config['cc'][c])
+                    self._coins[c] = ctb_coin.CtbCoin(_conf=self._config['cc'][c])
                     num_coins += 1
             if not num_coins > 0:
                 lg.error("Error: please enable at least one type of coin")
