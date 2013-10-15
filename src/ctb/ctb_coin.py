@@ -34,7 +34,7 @@ class CtbCoin(object):
             _conf is a coin config dictionary defined in sample-config.yml under 'cc'
         """
 
-        # verify _conf is a config dictionaty
+        # verify _conf is a config dictionary
         if not _conf or not _conf.has_key('name') or not _conf.has_key('conf-file'):
             raise Exception("CtbCoin::__init__(): _conf is empty or invalid")
 
@@ -96,7 +96,7 @@ class CtbCoin(object):
 
         return True
 
-    def sendtoaddr(self, _userfrom = None, _addrto = None, _amount = None, _comment = None):
+    def sendtoaddr(self, _userfrom = None, _addrto = None, _amount = None):
         """
         Send coins to address
         Returns (string) txid
@@ -109,10 +109,6 @@ class CtbCoin(object):
         minconf = self._verify_minconf(_minconf=self.conf['minconf']['withdraw'])
         txid = ""
 
-        comment = "Transaction processed by ALTcointip bot: reddit.com/u/ALTcointip"
-        if _comment and type(_comment) in [str, unicode]:
-            comment = str(_comment)
-
         # send request to coin daemon
         try:
             lg.info("CtbCoin::sendtoaddr(): sending %s %s from %s to %s", amount, self.conf['name'], userfrom, addrto)
@@ -124,7 +120,7 @@ class CtbCoin(object):
 
             # Perform transaction
             lg.debug("CtbCoin::sendtoaddr(): calling sendfrom()...")
-            txid = self.conn.sendfrom(userfrom, addrto, amount, minconf, comment)
+            txid = self.conn.sendfrom(userfrom, addrto, amount, minconf)
 
             # Lock wallet, if applicable
             if self.conf.has_key('walletpassphrase'):
