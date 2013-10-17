@@ -187,7 +187,7 @@ class CtbCoin(object):
         if not _user or not type(_user) in [str, unicode]:
             raise Exception("CtbCoin::_verify_user(): _user wrong type (%s) or empty (%s)", type(_user), _user)
 
-        return re.escape(_user.lower())
+        return str(_user.lower())
 
     def _verify_addr(self, _addr = None):
         """
@@ -197,7 +197,7 @@ class CtbCoin(object):
         if not _addr or not type(_addr) in [str, unicode]:
             raise Exception("CtbCoin::_verify_addr(): _addr wrong type (%s) or empty (%s)", type(_addr),_addr)
 
-        return re.escape(_addr)
+        return re.escape(str(_addr))
 
     def _verify_amount(self, _amount = None):
         """
