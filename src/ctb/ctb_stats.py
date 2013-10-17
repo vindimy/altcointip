@@ -81,18 +81,36 @@ def update_stats(ctb=None):
     lg.debug("update_stats(): updating subreddit '%s', page '%s'" % (ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page']))
     return ctb_misc._praw_call(redditcon.edit_wiki_page, ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page'], stats, "Update by ALTcointip bot")
 
-def update_user_stats(ctb=None):
+def update_all_user_stats(ctb=None):
     """
-    Update individual user stats wiki pages
+    Update individual user stats for all uers
+    """
+
+    if not ctb._config['reddit']['stats']['enabled']:
+        lg.error('update_all_user_stats(): stats are not enabled in config.yml')
+        return None
+
+    sql_users = "SELECT username FROM t_users WHERE username IN (SELECT from_user FROM t_action WHERE type = 'givetip') OR username in (SELECT to_user FROM t_action WHERE type = 'givetip') ORDER BY username"
+    users = mysqlcon.execute(sql_users)
+    for u in users:
+        update_user_stats(ctb=ctb, username=u['username'])
+
+def update_user_stats(ctb=None, username=None):
+    """
+    Update individual user stats for given username
     """
 
     mysqlcon = ctb._mysqlcon
     redditcon = ctb._redditcon
 
     if not ctb._config['reddit']['stats']['enabled']:
+        lg.error('update_user_stats(): stats are not enabled in config.yml')
         return None
 
-    sql_users = "SELECT username FROM t_users WHERE username IN (SELECT from_user FROM t_action WHERE type = 'givetip') OR username in (SELECT to_user FROM t_action WHERE type = 'givetip') ORDER BY username"
+    if not username or not type(username) in [str, unicode]:
+        lg.error('update_user_stats(): invalid username')
+        return None
+
     sql_coins = 'SELECT DISTINCT coin FROM t_action WHERE coin IS NOT NULL ORDER BY coin'
     sql_history = "SELECT from_user, to_user, created_utc, to_addr, coin_val, coin, fiat_val, fiat, state, subreddit, msg_link FROM t_action WHERE type='givetip' AND (from_user=%s OR to_user=%s) ORDER BY created_utc ASC"
     sql_total_tipped_fiat = "SELECT SUM(fiat_val) AS total_fiat FROM t_action WHERE type='givetip' AND state='completed' AND (fiat = 'usd' OR fiat = 'eur') AND from_user=%s"
@@ -106,105 +124,101 @@ def update_user_stats(ctb=None):
     for c in coins_q:
         coins.append(c['coin'])
 
-    # Do it for each user
-    users = mysqlcon.execute(sql_users)
-    for u in users:
-        username = u['username']
-        user_stats = "### Tipping Summary For /u/%s\n\n" % username
-        page = ctb._config['reddit']['stats']['page'] + '_' + username
+    user_stats = "### Tipping Summary For /u/%s\n\n" % username
+    page = ctb._config['reddit']['stats']['page'] + '_' + username
 
-        # Total Tipped
-        user_stats += "#### Total Tipped (USD)\n\n"
-        mysqlexec = mysqlcon.execute(sql_total_tipped_fiat, (username))
-        total_tipped_fiat = mysqlexec.fetchone()
-        if total_tipped_fiat['total_fiat'] == None:
-            user_stats += "**total_tipped_fiat = $%.2f**\n\n" % 0.0
+    # Total Tipped
+    user_stats += "#### Total Tipped (USD)\n\n"
+    mysqlexec = mysqlcon.execute(sql_total_tipped_fiat, (username))
+    total_tipped_fiat = mysqlexec.fetchone()
+    if total_tipped_fiat['total_fiat'] == None:
+        user_stats += "**total_tipped_fiat = $%.2f**\n\n" % 0.0
+    else:
+        user_stats += "**total_tipped_fiat = $%.2f**\n\n" % total_tipped_fiat['total_fiat']
+
+    user_stats += "#### Total Tipped (Coins)\n\n"
+    user_stats += "coin|total\n:---|---:\n"
+    for c in coins:
+        mysqlexec = mysqlcon.execute(sql_total_tipped_coin, (username, c))
+        total_tipped_coin = mysqlexec.fetchone()
+        if total_tipped_coin['total_coin'] == None:
+            user_stats += "%s|%.8g\n" % (c, 0.0)
         else:
-            user_stats += "**total_tipped_fiat = $%.2f**\n\n" % total_tipped_fiat['total_fiat']
+            user_stats += "%s|%.8g\n" % (c, total_tipped_coin['total_coin'])
+    user_stats += "\n"
 
-        user_stats += "#### Total Tipped (Coins)\n\n"
-        user_stats += "coin|total\n:---|---:\n"
-        for c in coins:
-            mysqlexec = mysqlcon.execute(sql_total_tipped_coin, (username, c))
-            total_tipped_coin = mysqlexec.fetchone()
-            if total_tipped_coin['total_coin'] == None:
-                user_stats += "%s|%.8g\n" % (c, 0.0)
-            else:
-                user_stats += "%s|%.8g\n" % (c, total_tipped_coin['total_coin'])
-        user_stats += "\n"
+    # Total received
+    user_stats += "#### Total Received (USD)\n\n"
+    mysqlexec = mysqlcon.execute(sql_total_received_fiat, (username))
+    total_received_fiat = mysqlexec.fetchone()
+    if total_received_fiat['total_fiat'] == None:
+        user_stats += "**total_received_fiat = $%.2f**\n\n" % 0.0
+    else:
+        user_stats += "**total_received_fiat = $%.2f**\n\n" % total_received_fiat['total_fiat']
 
-        # Total received
-        user_stats += "#### Total Received (USD)\n\n"
-        mysqlexec = mysqlcon.execute(sql_total_received_fiat, (username))
-        total_received_fiat = mysqlexec.fetchone()
-        if total_received_fiat['total_fiat'] == None:
-            user_stats += "**total_received_fiat = $%.2f**\n\n" % 0.0
+    user_stats += "#### Total Received (Coins)\n\n"
+    user_stats += "coin|total\n:---|---:\n"
+    for c in coins:
+        mysqlexec = mysqlcon.execute(sql_total_received_coin, (username, c))
+        total_received_coin = mysqlexec.fetchone()
+        if total_received_coin['total_coin'] == None:
+            user_stats += "%s|%.8g\n" % (c, 0.0)
         else:
-            user_stats += "**total_received_fiat = $%.2f**\n\n" % total_received_fiat['total_fiat']
+            user_stats += "%s|%.8g\n" % (c, total_received_coin['total_coin'])
+    user_stats += "\n"
 
-        user_stats += "#### Total Received (Coins)\n\n"
-        user_stats += "coin|total\n:---|---:\n"
-        for c in coins:
-            mysqlexec = mysqlcon.execute(sql_total_received_coin, (username, c))
-            total_received_coin = mysqlexec.fetchone()
-            if total_received_coin['total_coin'] == None:
-                user_stats += "%s|%.8g\n" % (c, 0.0)
-            else:
-                user_stats += "%s|%.8g\n" % (c, total_received_coin['total_coin'])
-        user_stats += "\n"
+    # History
+    user_stats += "#### History\n\n"
+    history = mysqlcon.execute(sql_history, (username, username))
+    user_stats += ("|".join(history.keys())) + "\n"
+    user_stats += ("|".join([":---"] * len(history.keys()))) + "\n"
 
-        # History
-        user_stats += "#### History\n\n"
-        history = mysqlcon.execute(sql_history, (username, username))
-        user_stats += ("|".join(history.keys())) + "\n"
-        user_stats += ("|".join([":---"] * len(history.keys()))) + "\n"
-
-        # Build history table
-        for m in history:
-            values = []
-            for k in history.keys():
-                # Format cryptocoin
-                if type(m[k]) == float and k.find("coin") > -1:
-                    values.append("%.8g" % m[k])
-                # Format fiat
-                elif type(m[k]) == float and k.find("fiat") > -1:
-                    values.append("$%.2f" % m[k])
-                # Format username
-                elif k.find("user") > -1:
-                    if m[k] != None:
-                        un = ("**%s**" % username) if m[k] == username else m[k]
-                        toappend = "[%s](/u/%s)" % (un, re.escape(m[k]))
-                        if m[k] != username:
-                            toappend += " ^[[stats]](/r/%s/wiki/%s_%s)" % (ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page'], m[k])
-                        values.append(toappend)
-                    else:
-                        values.append("None")
-                # Format address
-                elif k.find("addr") > -1:
-                    if m[k] != None:
-                        values.append("[%s](%s)" % (m[k], ctb._config['cc'][m['coin']]['explorer']['address'] + m[k]))
-                    else:
-                        values.append("None")
-                # Format state
-                elif k.find("state") > -1:
-                    if m[k] == "completed":
-                        values.append("**%s**" % m[k])
-                    else:
-                        values.append(m[k])
-                # Format subreddit
-                elif k.find("subreddit") > -1:
-                    values.append("/r/" + str(m[k]))
-                # Format link
-                elif k.find("link") > -1:
-                    values.append("[link](%s)" % m[k])
-                # Format time
-                elif k.find("utc") > -1:
-                    values.append("%s" % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(m[k])))
+    # Build history table
+    for m in history:
+        values = []
+        for k in history.keys():
+            # Format cryptocoin
+            if type(m[k]) == float and k.find("coin") > -1:
+                values.append("%.8g" % m[k])
+            # Format fiat
+            elif type(m[k]) == float and k.find("fiat") > -1:
+                values.append("$%.2f" % m[k])
+            # Format username
+            elif k.find("user") > -1:
+                if m[k] != None:
+                    un = ("**%s**" % username) if m[k] == username else m[k]
+                    toappend = "[%s](/u/%s)" % (un, re.escape(m[k]))
+                    if m[k] != username:
+                        toappend += " ^[[stats]](/r/%s/wiki/%s_%s)" % (ctb._config['reddit']['stats']['subreddit'], ctb._config['reddit']['stats']['page'], m[k])
+                    values.append(toappend)
                 else:
-                    values.append(str(m[k]))
-            user_stats += ("|".join(values)) + "\n"
+                    values.append("None")
+            # Format address
+            elif k.find("addr") > -1:
+                if m[k] != None:
+                    values.append("[%s](%s)" % (m[k], ctb._config['cc'][m['coin']]['explorer']['address'] + m[k]))
+                else:
+                    values.append("None")
+            # Format state
+            elif k.find("state") > -1:
+                if m[k] == "completed":
+                    values.append("**%s**" % m[k])
+                else:
+                    values.append(m[k])
+            # Format subreddit
+            elif k.find("subreddit") > -1:
+                values.append("/r/" + str(m[k]))
+            # Format link
+            elif k.find("link") > -1:
+                values.append("[link](%s)" % m[k])
+            # Format time
+            elif k.find("utc") > -1:
+                values.append("%s" % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(m[k])))
+            else:
+                values.append(str(m[k]))
+        user_stats += ("|".join(values)) + "\n"
 
-        lg.debug("update_user_stats(): updating subreddit '%s', page '%s'" % (ctb._config['reddit']['stats']['subreddit'], page))
-        ctb_misc._praw_call(redditcon.edit_wiki_page, ctb._config['reddit']['stats']['subreddit'], page, user_stats, "Update by ALTcointip bot")
+    lg.debug("update_user_stats(): updating subreddit '%s', page '%s'" % (ctb._config['reddit']['stats']['subreddit'], page))
+    ctb_misc._praw_call(redditcon.edit_wiki_page, ctb._config['reddit']['stats']['subreddit'], page, user_stats, "Update by ALTcointip bot")
 
     return True

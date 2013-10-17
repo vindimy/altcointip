@@ -15,7 +15,7 @@
     along with ALTcointip.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import ctb_user, ctb_misc
+import ctb_user, ctb_misc, ctb_stats
 
 import logging, praw, re, time
 from random import randint
@@ -248,6 +248,7 @@ class CtbAction(object):
             return False
 
         if self._TYPE == 'accept':
+            # Execute action and send info to user
             if self.accept():
                 self._TYPE = 'info'
                 return self.info()
@@ -255,18 +256,27 @@ class CtbAction(object):
                 return False
 
         if self._TYPE == 'decline':
+            # Execute action
             return self.decline()
 
         if self._TYPE == 'givetip':
-            return self.givetip()
+            # Execute action and update user stats
+            res = self.givetip()
+            ctb_stats.update_user_stats(ctb=self._CTB, username=self._FROM_USER._NAME)
+            if self._TO_USER:
+                ctb_stats.update_user_stats(ctb=self._CTB, username=self._TO_USER._NAME)
+            return res
 
         if self._TYPE == 'history':
+            # Execute action
             return self.history()
 
         if self._TYPE == 'info':
+            # Execute action
             return self.info()
 
         if self._TYPE == 'register':
+            # Execute action and send info to user
             if self.register():
                 self._TYPE = 'info'
                 return self.info()
@@ -274,6 +284,7 @@ class CtbAction(object):
                 return False
 
         if self._TYPE == 'withdraw':
+            # Execute action (withdraw is givetip to address)
             return self.givetip()
 
         lg.debug("< CtbAction::do() DONE")
@@ -311,6 +322,9 @@ class CtbAction(object):
             # Accept each action
             for a in actions:
                 a.givetip(is_pending=True)
+                # Update user stats
+                ctb_stats.update_user_stats(ctb=a._CTB, username=a._FROM_USER._NAME)
+                ctb_stats.update_user_stats(ctb=a._CTB, username=a._TO_USER._NAME)
         else:
             # No pending actions found, reply with error message
             msg = self._CTB._jenv.get_template('no-pending-tips.tpl').render(user_from=self._FROM_USER._NAME, a=self, ctb=self._CTB)
@@ -347,6 +361,10 @@ class CtbAction(object):
 
                 # Save transaction as declined
                 a.save('declined')
+
+                # Update user stats
+                ctb_stats.update_user_stats(ctb=a._CTB, username=a._FROM_USER._NAME)
+                ctb_stats.update_user_stats(ctb=a._CTB, username=a._TO_USER._NAME)
 
                 # Respond to tip comment
                 msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Declined', a=self, ctb=self._CTB)
@@ -604,7 +622,7 @@ class CtbAction(object):
             # Process tip to address
 
             try:
-                
+
                 lg.info("CtbAction::givetip(): sending %f %s to %s...", self._COIN_VAL, self._COIN, self._TO_ADDR)
                 self._TXID = _coins[self._COIN].sendtoaddr(_userfrom=self._FROM_USER._NAME, _addrto=self._TO_ADDR, _amount=self._COIN_VAL)
 
