@@ -367,7 +367,7 @@ class CtbAction(object):
                 ctb_stats.update_user_stats(ctb=a._CTB, username=a._TO_USER._NAME)
 
                 # Respond to tip comment
-                msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Declined', a=self, ctb=self._CTB)
+                msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Declined', a=a, ctb=a._CTB)
                 lg.debug("CtbAction::decline(): " + msg)
                 if _config['reddit']['comments']['declined']:
                     if not ctb_misc._praw_call(a._MSG.reply, msg):
@@ -411,7 +411,7 @@ class CtbAction(object):
             raise Exception("CtbAction::expire(): sendtouser() failed")
 
         # Save transaction as declined
-        self.save('declined')
+        self.save('expired')
 
         # Respond to tip comment
         msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Expired', a=self, ctb=self._CTB)
