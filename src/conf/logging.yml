@@ -1,0 +1,10 @@
+levels:
+    error:
+        enabled: true
+        filename: logs/error.log
+    info:
+        enabled: true
+        filename: logs/info.log
+    debug:
+        enabled: false
+        filename: logs/debug.log

@@ -1,0 +1,197 @@
+# Bitcoin
+btc:
+    enabled: false
+    unit: btc
+    name: Bitcoin
+    symbol: 'Ƀ'
+    conf-file: '~/.bitcoin/bitcoin.conf'
+    minconf:
+        givetip: 1
+        withdraw: 10
+    txmin:
+        givetip: 0.0001
+        withdraw: 0.0049
+    txfee: 0.0001
+    walletpassphrase: 'mypass1'
+    explorer:
+        address: 'http://blockchain.info/address/'
+        transaction: 'http://blockchain.info/tx/'
+    regex:
+        address: '([1|3][1-9a-z]{20,40})'
+        units: '(btc|bitcoin|bitcoins)'
+
+# Litecoin
+ltc:
+    enabled: false
+    unit: ltc
+    name: Litecoin
+    symbol: 'Ł'
+    conf-file: '~/.litecoin/litecoin.conf'
+    minconf:
+        givetip: 1
+        withdraw: 10
+    txmin:
+        givetip: 0.01
+        withdraw: 0.48
+    txfee: 0.02
+    walletpassphrase: 'mypass1'
+    explorer:
+        address: 'http://explorer.litecoin.net/address/'
+        transaction: 'http://explorer.litecoin.net/tx/'
+    regex:
+        address: '(L[1-9a-z]{20,40})'
+        units: '(ltc|litecoin|litecoins)'
+
+# PPCoin
+ppc:
+    enabled: false
+    unit: ppc
+    name: Peercoin
+    symbol: 'Ƥ'
+    conf-file: '~/.ppcoin/ppcoin.conf'
+    minconf:
+        givetip: 1
+        withdraw: 10
+    txmin:
+        givetip: 0.05
+        withdraw: 0.5
+    txfee: 0.01
+    walletpassphrase: 'mypass1'
+    explorer:
+        address: 'http://www.cryptocoinexplorer.com:2750/address/'
+        transaction: 'http://www.cryptocoinexplorer.com:2750/tx/'
+    regex:
+        address: '(P[1-9a-z]{20,40})'
+        units: '(ppc|ppcoin|ppcoins|peercoin|peercoins|p2pcoin|p2pcoins)'
+
+# Namecoin
+nmc:
+    enabled: false
+    unit: nmc
+    name: Namecoin
+    symbol: 'Ɲ'
+    conf-file: '~/.namecoin/bitcoin.conf'
+    minconf:
+        givetip: 1
+        withdraw: 10
+    txmin:
+        givetip: 0.01
+        withdraw: 0.49
+    txfee: 0.01
+    explorer:
+        address: 'http://explorer.dot-bit.org/a/'
+        transaction: 'http://explorer.dot-bit.org/tx/'
+    regex:
+        address: '([N|M][1-9a-z]{20,40})'
+        units: '(nmc|namecoin|namecoins)'
+
+# Novacoin
+nvc:
+    enabled: false
+    unit: nvc
+    name: Novacoin
+    symbol: 'Ɣ'
+    conf-file: '~/.novacoin/novacoin.conf'
+    minconf:
+        givetip: 1
+        withdraw: 10
+    txmin:
+        givetip: 0.01
+        withdraw: 0.49
+    txfee: 0.01
+    walletpassphrase: 'mypass1'
+    explorer:
+        address: 'http://www.cryptocoinexplorer.com:6750/address/'
+        transaction: 'http://www.cryptocoinexplorer.com:6750/tx/'
+    regex:
+        address: '(4[1-9a-z]{20,40})'
+        units: '(nvc|novacoin|novacoins)'
+
+# Terracoin
+trc:
+    enabled: false
+    unit: trc
+    name: Terracoin
+    symbol: 'Ʈ'
+    conf-file: '~/.terracoin/terracoin.conf'
+    minconf:
+        givetip: 1
+        withdraw: 10
+    txmin:
+        givetip: 0.01
+        withdraw: 0.49
+    txfee: 0.01
+    walletpassphrase: 'mypass1'
+    explorer:
+        address: 'http://www.cryptocoinexplorer.com:3750/address/'
+        transaction: 'http://www.cryptocoinexplorer.com:3750/tx/'
+    regex:
+        address: '(1[1-9a-z]{20,40})'
+        units: '(trc|terracoin|terracoins)'
+
+# Devcoin
+dvc:
+    enabled: false
+    unit: dvc
+    name: Devcoin
+    symbol: 'Ð'
+    conf-file: '~/.devcoin/devcoin.conf'
+    minconf:
+        givetip: 1
+        withdraw: 10
+    txmin:
+        givetip: 1
+        withdraw: 4
+    txfee: 1
+    explorer:
+        address: 'http://darkgamex.ch:2751/address/'
+        transaction: 'http://darkgamex.ch:2751/tx/'
+    regex:
+        address: '(1[1-9a-z]{20,40})'
+        units: '(dvc|devcoin|devcoins)'
+
+# Primecoin
+xpm:
+    enabled: false
+    unit: xpm
+    name: Primecoin
+    symbol: 'X'
+    conf-file: '~/.primecoin/primecoin.conf'
+    minconf:
+        givetip: 3
+        withdraw: 30
+    txmin:
+        givetip: 0.01
+        withdraw: 0.49
+    txfee: 0.01
+    walletpassphrase: 'mypass1'
+    explorer:
+        address: 'http://primecoin.21stcenturymoneytalk.org/?addr='
+        transaction: 'http://primecoin.21stcenturymoneytalk.org/?tx='
+    regex:
+        address: '(A[1-9a-z]{20,40})'
+        units: '(xpm|primecoin|primecoins)'
+
+# Feathercoin
+ftc:
+    enabled: false
+    unit: ftc
+    name: Feathercoin
+    symbol: 'Ƒ'
+    conf-file: '~/.feathercoin/feathercoin.conf'
+    minconf:
+        givetip: 3
+        withdraw: 30
+    txmin:
+        givetip: 0.01
+        withdraw: 0.49
+    txfee: 0.01
+    walletpassphrase: 'mypass1'
+    explorer:
+        address: 'http://explorer.feathercoin.com/address/'
+        transaction: 'http://explorer.feathercoin.com/tx/'
+    regex:
+        address: '([67][1-9a-z]{20,40})'
+        units: '(ftc|feathercoin|feathercoins)'
+
+# -*- coding: utf-8 -*-

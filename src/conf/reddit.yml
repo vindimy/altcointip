@@ -1,0 +1,53 @@
+auth:
+    user: mybotuser
+    pass: mybotpass
+
+praw:
+    batch-limit: 10000
+    useragent: /u/mybotuser
+
+scan:
+    my-subreddits: false
+    these-subreddits: ["all"]
+    ignore-subreddits: ["test"]
+
+help:
+    enabled: true
+    url: http://www.reddit.com/r/mysubreddit/wiki/index
+
+contact:
+    enabled: true
+    url: http://www.reddit.com/message/compose/?to=YOUR_NAME
+
+comments:
+    verify: true
+    pending: false
+    expired: false
+    declined: false
+
+messages:
+    sorry: true
+
+banned_users:
+    method: list
+    list: [mybotuser, bitcointip, altcointip]
+    subreddit: mysubreddit
+
+stats:
+    enabled: false
+    subreddit: mybotuser
+    page: stats
+    url: http://www.reddit.com/r/ALTcointip/wiki/stats
+
+regex:
+    amount:
+        num: '([0-9]{1,9}(?:\.[0-9]{0,8})?)'
+        keyword: '(all|flip|roll|upvote|pi|e|leet|quarter|half|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)'
+    keywords:
+        givetip: '(/u/mybotuser|mybotuser)'
+        info: '(info)'
+        register: '(register)'
+        accept: '(accept)'
+        decline: '(decline)'
+        withdraw: '(withdraw)'
+        history: '(history)'
