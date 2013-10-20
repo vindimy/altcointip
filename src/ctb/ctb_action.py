@@ -356,7 +356,7 @@ class CtbAction(object):
 
                 # Move coins back into a._FROM_USER account
                 lg.info("CtbAction::decline(): moving %s %s from %s to %s", str(a._COIN_VAL), a._COIN.upper(), _config['reddit']['user'], a._FROM_USER._NAME)
-                if not _coins[a._COIN].sendtouser(_userto=_config['reddit']['user'], _userfrom=a._FROM_USER._NAME, _amount=a._COIN_VAL):
+                if not _coins[a._COIN].sendtouser(_userfrom=_config['reddit']['user'], _userto=a._FROM_USER._NAME, _amount=a._COIN_VAL):
                     raise Exception("CtbAction::decline(): failed to sendtouser()")
 
                 # Save transaction as declined
