@@ -19,7 +19,7 @@ The following Python libraries are necessary to run ALTcointip bot:
 * __sqlalchemy__ (http://www.sqlalchemy.org/)
 * __yaml__ (http://pyyaml.org/wiki/PyYAML)
 
-You can install _jinja2_, _praw_, _sqlalchemy_, and _yaml_ using _pip_ (Python Package Index tool) or a package manager in your OS. For _pifkoin_, you'll need to copy or symlink its "python" subdirectory to "src/pifkoin". For _pyvircurex_, you'll need to copy or symlink its "vircurex" subdirectory to "src/ctb/pyvircurex".
+You can install _jinja2_, _praw_, _sqlalchemy_, and _yaml_ using _pip_ (Python Package Index tool) or a package manager in your OS. For _pifkoin_, you'll need to copy or symlink its "python" subdirectory to "src/ctb/pifkoin". For _pyvircurex_, you'll need to copy or symlink its "vircurex" subdirectory to "src/ctb/pyvircurex".
 
 ### Database
 
