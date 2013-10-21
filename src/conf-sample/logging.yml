@@ -1,0 +1,16 @@
+levels:
+    warning:
+        enabled: true
+        append: true
+        format: '%(levelname)s %(asctime)s %(message)s'
+        filename: logs/error.log
+    info:
+        enabled: true
+        append: true
+        format: '%(levelname)s %(asctime)s %(message)s'
+        filename: logs/info.log
+    debug:
+        enabled: false
+        append: false
+        format: '%(levelname)s %(asctime)s %(message)s'
+        filename: logs/debug.log

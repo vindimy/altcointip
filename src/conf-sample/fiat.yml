@@ -42,5 +42,3 @@ rur:
     name: Russian Ruble
     regex:
         units: (r|rur)
-
-﻿# -*- coding: utf-8 -*-

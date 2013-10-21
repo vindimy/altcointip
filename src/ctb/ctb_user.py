@@ -31,17 +31,15 @@ class CtbUser(object):
     """
 
     # Basic properties
-    _NAME=None
-    _GIFTAMNT=None
-    _JOINDATE=None
-    _ADDR={}
-    _TRANS={}
-    _IS_BANNED=False
+    name=None
+    giftamount=None
+    joindate=None
+    addr={}
+    is_banned=False
 
     # Objects
-    _REDDITOBJ=None
-    _CTB=None
-    _CC=None
+    prawobj=None
+    ctb=None
 
     def __init__(self, name=None, redditobj=None, ctb=None):
         """
@@ -51,28 +49,27 @@ class CtbUser(object):
 
         if not bool(name):
             raise Exception("CtbUser::__init__(): name must be set")
-        self._NAME = name
+        self.name = name
 
         if not bool(ctb):
             raise Exception("CtbUser::__init__(): ctb must be set")
-        self._CTB = ctb
-        self._CC = self._CTB._config['cc']
+        self.ctb = ctb
 
         if bool(redditobj):
-            self._REDDITOBJ = redditobj
+            self.prawobj = redditobj
 
         # Determine if user is banned
-        if ctb._config['reddit'].has_key('banned_users'):
-            if ctb._config['reddit']['banned_users']['method'] == 'subreddit':
-                for u in cb._redditcon.get_banned(ctb._config['reddit']['subreddit']):
-                    if self._NAME.lower() == u.name.lower():
-                        self._IS_BANNED = True
-            elif ctb._config['reddit']['banned_users']['method'] == 'list':
-                for u in ctb._config['reddit']['banned_users']['list']:
-                    if self._NAME.lower() == u.lower():
-                        self._IS_BANNED = True
+        if ctb.conf.reddit.banned_users:
+            if ctb.conf.reddit.banned_users.method == 'subreddit':
+                for u in ctb.reddit.get_banned(ctb.conf.reddit.banned_users.subreddit):
+                    if self.name.lower() == u.name.lower():
+                        self.is_banned = True
+            elif ctb.conf.reddit.banned_users.method == 'list':
+                for u in ctb.conf.reddit.banned_users.list:
+                    if self.name.lower() == u.lower():
+                        self.is_banned = True
             else:
-                lg.warning("CtbUser::__init__(): invalid method '%s' in banned_users config" % ctb._config['reddit']['banned_users']['method'])
+                lg.warning("CtbUser::__init__(): invalid method '%s' in banned_users config" % ctb.conf.reddit.banned_users.method)
 
         lg.debug("< CtbUser::__init__(%s) DONE", name)
 
@@ -81,196 +78,187 @@ class CtbUser(object):
         Return string representation of self
         """
         me = "<CtbUser: name=%s, giftamnt=%s, joindate=%s, addr=%s, trans=%s, redditobj=%s, ctb=%s, banned=%s>"
-        me = me % (self._NAME, self._GIFTAMNT, self._JOINDATE, self._ADDR, self._TRANS, self._REDDITOBJ, self._CTB, self._IS_BANNED)
+        me = me % (self.name, self.giftamount, self.joindate, self.addr, self.trans, self.prawobj, self.ctb, self.is_banned)
         return me
 
     def get_balance(self, coin=None, kind=None):
         """
-        If coin is specified, return float with coin balance for user
-        Else, return a dict with balance of each coin for user
+        If coin is specified, return float with coin balance for user. Else, return a dict with balance of each coin for user.
         """
-        lg.debug("> CtbUser::balance(%s)", self._NAME)
+        lg.debug("> CtbUser::balance(%s)", self.name)
 
         if not bool(coin) or not bool(kind):
-            raise Exception("CtbUser::balance(%s): coin or kind not set" % self._NAME)
+            raise Exception("CtbUser::balance(%s): coin or kind not set" % self.name)
 
         # Ask coin daemon for account balance
-        lg.info("CtbUser::balance(%s): getting %s %s balance", self._NAME, coin, kind)
-        balance = self._CTB._coins[coin].getbalance(_user=self._NAME, _minconf=self._CC[coin]['minconf'][kind])
+        lg.info("CtbUser::balance(%s): getting %s %s balance", self.name, coin, kind)
+        balance = self.ctb.coins[coin].getbalance(_user=self.name, _minconf=self.ctb.conf.coins[coin].minconf[kind])
 
-        lg.debug("< CtbUser::balance(%s) DONE", self._NAME)
+        lg.debug("< CtbUser::balance(%s) DONE", self.name)
         return float(balance)
 
     def get_addr(self, coin=None):
         """
         Return coin address of user
         """
-        lg.debug("> CtbUser::get_addr(%s, %s)", self._NAME, coin)
+        lg.debug("> CtbUser::get_addr(%s, %s)", self.name, coin)
 
-        if hasattr(self._ADDR, coin):
-            return self._ADDR[coin]
+        if hasattr(self.addr, coin):
+            return self.addr[coin]
 
         sql = "SELECT address from t_addrs WHERE username = %s AND coin = %s"
-        mysqlrow = self._CTB._mysqlcon.execute(sql, (self._NAME.lower(), coin.lower())).fetchone()
+        mysqlrow = self.ctb.db.execute(sql, (self.name.lower(), coin.lower())).fetchone()
         if mysqlrow == None:
-            lg.debug("< CtbUser::get_addr(%s, %s) DONE (no)", self._NAME, coin)
+            lg.debug("< CtbUser::get_addr(%s, %s) DONE (no)", self.name, coin)
             return None
         else:
-            self._ADDR[coin] = mysqlrow['address']
-            lg.debug("< CtbUser::get_addr(%s, %s) DONE (%s)", self._NAME, coin, self._ADDR[coin])
-            return self._ADDR[coin]
+            self.addr[coin] = mysqlrow['address']
+            lg.debug("< CtbUser::get_addr(%s, %s) DONE (%s)", self.name, coin, self.addr[coin])
+            return self.addr[coin]
 
-        lg.debug("< CtbUser::get_addr(%s, %s) DONE (should never happen)", self._NAME, coin)
-        return None
-
-    def get_tx_history(self, coin=None):
-        """
-        Return a dict with user transactions
-        """
+        lg.debug("< CtbUser::get_addr(%s, %s) DONE (should never happen)", self.name, coin)
         return None
 
     def is_on_reddit(self):
         """
-        Return true if user is on Reddit
-        Also set _REDDITOBJ pointer while at it
+        Return true if username exists Reddit. Also set prawobj pointer while at it.
         """
-        lg.debug("> CtbUser::is_on_reddit(%s)", self._NAME)
+        lg.debug("> CtbUser::is_on_reddit(%s)", self.name)
 
-        # Return true if _REDDITOBJ is already set
-        if bool(self._REDDITOBJ):
-            lg.debug("< CtbUser::is_on_reddit(%s) DONE (yes)", self._NAME)
+        # Return true if prawobj is already set
+        if bool(self.prawobj):
+            lg.debug("< CtbUser::is_on_reddit(%s) DONE (yes)", self.name)
             return True
 
-        while True:
-            # This loop retries if Reddit is down
-            try:
-                self._REDDITOBJ = self._CTB._redditcon.get_redditor(self._NAME)
-                lg.debug("< CtbUser::is_on_reddit(%s) DONE (yes)", self._NAME)
+        try:
+            self.prawobj = ctb_misc.praw_call(self.ctb.reddit.get_redditor, self.name)
+            if self.prawobj:
                 return True
-            except (HTTPError, RateLimitExceeded) as e:
-                lg.warning("CtbUser::is_on_reddit(%s): Reddit is down (%s), sleeping...", self._NAME, str(e))
-                time.sleep(self._CTB._DEFAULT_SLEEP_TIME)
-                pass
-            except timeout:
-                lg.warning("CtbUser::is_on_reddit(%s): Reddit is down (timeout), sleeping...", self._NAME)
-                time.sleep(self._CTB._DEFAULT_SLEEP_TIME)
-                pass
-            except Exception as e:
-                lg.debug("< CtbUser::is_on_reddit(%s) DONE (no)", self._NAME)
-                return False
 
-        lg.warning("< CtbUser::is_on_reddit(%s): returning None (shouldn't happen)", self._NAME)
+        except Exception as e:
+            lg.debug("< CtbUser::is_on_reddit(%s) DONE (no)", self.name)
+            return False
+
+        lg.warning("< CtbUser::is_on_reddit(%s): returning None (shouldn't happen)", self.name)
         return None
 
     def is_registered(self):
         """
         Return true if user is registered with CointipBot
         """
-        lg.debug("> CtbUser::is_registered(%s)", self._NAME)
+        lg.debug("> CtbUser::is_registered(%s)", self.name)
 
         try:
             # First, check t_users table
             sql = "SELECT * FROM t_users WHERE username = %s"
-            mysqlrow = self._CTB._mysqlcon.execute(sql, (self._NAME.lower())).fetchone()
+            mysqlrow = self.ctb.db.execute(sql, (self.name.lower())).fetchone()
+
             if mysqlrow == None:
-                lg.debug("< CtbUser::is_registered(%s) DONE (no)", self._NAME)
+                lg.debug("< CtbUser::is_registered(%s) DONE (no)", self.name)
                 return False
+
             else:
                 # Next, check t_addrs table
                 sql_coins = "SELECT COUNT(*) AS count FROM t_addrs WHERE username = %s"
-                mysqlrow_coins = self._CTB._mysqlcon.execute(sql_coins, (self._NAME.lower())).fetchone()
-                if int(mysqlrow_coins['count']) != len(self._CTB._coins):
-                    raise Exception("CtbUser::is_registered(%s): database returns %s coins but %s active" % (self._NAME, mysqlrow_coins['count'], len(self._CTB._coins)))
+                mysqlrow_coins = self.ctb.db.execute(sql_coins, (self.name.lower())).fetchone()
+
+                if int(mysqlrow_coins['count']) != len(self.ctb.coins):
+                    raise Exception("CtbUser::is_registered(%s): user has %s coins but %s active" % (self.name, mysqlrow_coins['count'], len(self.ctb.coins)))
+
                 # Set some properties
-                self._GIFTAMNT = mysqlrow['giftamount']
+                self.giftamount = mysqlrow['giftamount']
+
                 # Done
-                lg.debug("< CtbUser::is_registered(%s) DONE (yes)", self._NAME)
+                lg.debug("< CtbUser::is_registered(%s) DONE (yes)", self.name)
                 return True
+
         except Exception, e:
-            lg.error("CtbUser::is_registered(%s): error while executing <%s>: %s", self._NAME, sql % self._NAME.lower(), str(e))
+            lg.error("CtbUser::is_registered(%s): error while executing <%s>: %s", self.name, sql % self.name.lower(), e)
             raise
 
-        lg.warning("< CtbUser::is_registered(%s): returning None (shouldn't happen)", self._NAME)
+        lg.warning("< CtbUser::is_registered(%s): returning None (shouldn't happen)", self.name)
         return None
 
     def tell(self, subj=None, msg=None, msgobj=None):
         """
         Send a Reddit message to user
         """
-        lg.debug("> CtbUser::tell(%s)", self._NAME)
+        lg.debug("> CtbUser::tell(%s)", self.name)
 
         if not bool(subj) or not bool(msg):
-            raise Exception("CtbUser::tell(%s): subj or msg not set", self._NAME)
+            raise Exception("CtbUser::tell(%s): subj or msg not set", self.name)
 
         if not self.is_on_reddit():
-            raise Exception("CtbUser::tell(%s): not a Reddit user", self._NAME)
+            raise Exception("CtbUser::tell(%s): not a Reddit user", self.name)
 
         if bool(msgobj):
             lg.debug("CtbUser::tell(%s): replying to message", msgobj.id)
-            ctb_misc._praw_call(msgobj.reply, msg)
+            ctb_misc.praw_call(msgobj.reply, msg)
         else:
-            lg.debug("CtbUser::tell(%s): sending message", self._NAME)
-            ctb_misc._praw_call(self._REDDITOBJ.send_message, subj, msg)
+            lg.debug("CtbUser::tell(%s): sending message", self.name)
+            ctb_misc.praw_call(self.prawobj.send_message, subj, msg)
 
-        lg.debug("< CtbUser::tell(%s) DONE", self._NAME)
+        lg.debug("< CtbUser::tell(%s) DONE", self.name)
         return True
 
     def register(self):
         """
         Add user to database and generate coin addresses
         """
-        lg.debug("> CtbUser::register(%s)", self._NAME)
-
-        _cc = self._CTB._config['cc']
+        lg.debug("> CtbUser::register(%s)", self.name)
 
         # Add user to database
         try:
             sql_adduser = "INSERT INTO t_users (username) VALUES (%s)"
-            mysqlexec = self._CTB._mysqlcon.execute(sql_adduser, (self._NAME.lower()))
+            mysqlexec = self.ctb.db.execute(sql_adduser, (self.name.lower()))
             if mysqlexec.rowcount <= 0:
-                raise Exception("CtbUser::register(%s): rowcount <= 0 while executing <%s>" % ( self._NAME, sql_adduser % (self._NAME.lower())))
+                raise Exception("CtbUser::register(%s): rowcount <= 0 while executing <%s>" % ( self.name, sql_adduser % (self.name.lower()) ))
         except Exception, e:
-            lg.error("CtbUser::register(%s): exception while executing <%s>: %s", self._NAME, sql_adduser % (self._NAME.lower()), str(e))
+            lg.error("CtbUser::register(%s): exception while executing <%s>: %s", self.name, sql_adduser % (self.name.lower()), e)
             raise
 
         # Get new coin addresses
         new_addrs = {}
-        for c in self._CTB._coins:
-            new_addrs[c] = self._CTB._coins[c].getnewaddress(_user=self._NAME)
-            lg.info("CtbUser::register(%s): got %s address %s", self._NAME, c, new_addrs[c])
+        for c in self.ctb.coins:
+            new_addrs[c] = self.ctb.coins[c].getnewaddress(_user=self.name)
+            lg.info("CtbUser::register(%s): got %s address %s", self.name, c, new_addrs[c])
 
         # Add coin addresses to database
         for c in new_addrs:
             try:
                 sql_addr = "REPLACE INTO t_addrs (username, coin, address) VALUES (%s, %s, %s)"
-                mysqlexec = self._CTB._mysqlcon.execute(sql_addr, (self._NAME.lower(), c, new_addrs[c]))
+                mysqlexec = self.ctb.db.execute(sql_addr, (self.name.lower(), c, new_addrs[c]))
                 if mysqlexec.rowcount <= 0:
                     # Undo change to database
-                    _delete_user(self._NAME, self._CTB._mysqlcon)
-                    raise Exception("CtbUser::register(%s): rowcount <= 0 while executing <%s>" % (self._NAME, sql_addr % (self._NAME.lower(), c, new_addrs[c])))
+                    delete_user(self.name, self.ctb.db)
+                    raise Exception("CtbUser::register(%s): rowcount <= 0 while executing <%s>" % (self.name, sql_addr % (self.name.lower(), c, new_addrs[c])))
+
             except Exception, e:
                 # Undo change to database
-                _delete_user(self._NAME, self._CTB._mysqlcon)
+                delete_user(self.name, self.ctb.db)
                 raise
 
-        lg.debug("< CtbUser::register(%s) DONE", self._NAME)
+        lg.debug("< CtbUser::register(%s) DONE", self.name)
         return True
 
 
-def _delete_user(_username, _mysqlcon):
+def delete_user(_username, db):
     """
     Delete _username from t_users and t_addrs tables
     """
-    lg.debug("> _delete_user(%s)", _username)
+    lg.debug("> delete_user(%s)", _username)
+
     try:
         sql_arr = ["DELETE from t_users WHERE username = %s",
                    "DELETE from t_addrs WHERE username = %s"]
         for sql in sql_arr:
-            mysqlexec = _mysqlcon.execute(sql, _username.lower())
+            mysqlexec = db.execute(sql, _username.lower())
             if mysqlexec.rowcount <= 0:
-                lg.warning("_delete_user(%s): rowcount <= 0 while executing <%s>", _username, sql % _username.lower())
+                lg.warning("delete_user(%s): rowcount <= 0 while executing <%s>", _username, sql % _username.lower())
+
     except Exception, e:
-        lg.error("_delete_user(%s): error while executing <%s>: %s", _username, sql % _username.lower(), str(e))
-        raise
-    lg.debug("< _delete_user(%s) DONE", _username)
+        lg.error("delete_user(%s): error while executing <%s>: %s", _username, sql % _username.lower(), e)
+        return False
+
+    lg.debug("< delete_user(%s) DONE", _username)
     return True

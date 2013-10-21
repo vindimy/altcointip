@@ -1,6 +1,6 @@
 auth:
-    user: mysqluser
-    pass: mysqlpass
+    user: 'mysqluser'
+    password: 'mysqlpass'
     host: localhost
     port: 3306
     dbname: mysqldb

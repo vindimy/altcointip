@@ -1,11 +1,11 @@
-time:
-    sleep-seconds: 30
+times:
+    sleep_seconds: 60
     expire_pending_hours: 48
 
 backup:
     encryptionpassphrase: 'ChangeAndRememberMe11'
 
-kw:
+keywords:
     all: "float( self._FROM_USER.get_balance(coin=self._COIN, kind=('withdraw' if bool(self._TO_ADDR) else 'givetip')) - (self._CTB._config['cc'][self._COIN]['txfee'] if bool(self._TO_ADDR) and not self._CTB._config['misc']['subtract-txfee'] else 0.0) ) if self._FROM_USER.is_registered() and bool(self._COIN) else None"
     flip: "float( (self._CTB._config['cc'][self._COIN]['txmin']['givetip'] if bool(self._COIN) else 0.01) * float(randint(1,2)) )"
     roll: "float( (self._CTB._config['cc'][self._COIN]['txmin']['givetip'] if bool(self._COIN) else 0.01) * float(randint(1,6)) )"

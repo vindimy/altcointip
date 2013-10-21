@@ -30,46 +30,44 @@ class CtbCoin(object):
 
     def __init__(self, _conf = None):
         """
-        Initialize CtbCoin with given parameters
-            _conf is a coin config dictionary defined in sample-config.yml under 'cc'
+        Initialize CtbCoin with given parameters. _conf is a coin config dictionary defined in conf/coins.yml
         """
 
         # verify _conf is a config dictionary
-        if not _conf or not _conf.has_key('name') or not _conf.has_key('conf-file'):
+        if not _conf or not _conf.name or not _conf.config_file or not _conf.txfee:
             raise Exception("CtbCoin::__init__(): _conf is empty or invalid")
 
         self.conf = _conf
 
         # connect to coin daemon
         try:
-            lg.debug("CtbCoin::__init__(): connecting to %s...", self.conf['name'])
-            self.conn = Bitcoind(self.conf['conf-file'])
+            lg.debug("CtbCoin::__init__(): connecting to %s...", self.conf.name)
+            self.conn = Bitcoind(self.conf.config_file)
         except BitcoindException as e:
-            lg.error("CtbCoin::__init__(): error connecting to %s: %s", self.conf['name'], str(e))
+            lg.error("CtbCoin::__init__(): error connecting to %s using %s: %s", self.conf.name, self.conf.config_file, e)
             raise
 
-        lg.info("CtbCoin::__init__():: connected to %s", self.conf['name'])
+        lg.info("CtbCoin::__init__():: connected to %s", self.conf.name)
 
         # set transaction fee
-        lg.info("Setting tx fee of %f", self.conf['txfee'])
-        self.conn.settxfee(self.conf['txfee'])
+        lg.info("Setting tx fee of %f", self.conf.txfee)
+        self.conn.settxfee(self.conf.txfee)
 
     def getbalance(self, _user = None, _minconf = None):
         """
-        Get user's tip or withdraw balance
-            _minconf is number of confirmations to consider
+        Get user's tip or withdraw balance. _minconf is number of confirmations to use.
         Returns (float) balance
         """
         lg.debug("CtbCoin::getbalance(%s, %s)", _user, _minconf)
 
-        user = self._verify_user(_user=_user)
-        minconf = self._verify_minconf(_minconf=_minconf)
+        user = self.verify_user(_user=_user)
+        minconf = self.verify_minconf(_minconf=_minconf)
         balance = float(0)
 
         try:
             balance = self.conn.getbalance(user, minconf)
         except BitcoindException as e:
-            lg.error("CtbCoin.getbalance(): error getting %s (minconf=%s) balance for %s: %s", self.conf['name'], minconf, user, str(e))
+            lg.error("CtbCoin.getbalance(): error getting %s (minconf=%s) balance for %s: %s", self.conf.name, minconf, user, e)
             raise
 
         return float(balance)
@@ -81,17 +79,17 @@ class CtbCoin(object):
         """
         lg.debug("CtbCoin::sendtouser(%s, %s, %s)", _userfrom, _userto, _amount)
 
-        userfrom = self._verify_user(_user=_userfrom)
-        userto = self._verify_user(_user=_userto)
-        amount = self._verify_amount(_amount=_amount)
+        userfrom = self.verify_user(_user=_userfrom)
+        userto = self.verify_user(_user=_userto)
+        amount = self.verify_amount(_amount=_amount)
 
         # send request to coin daemon
         try:
-            lg.info("CtbCoin::sendtouser(): moving %s %s from %s to %s", amount, self.conf['name'], userfrom, userto)
+            lg.info("CtbCoin::sendtouser(): moving %s %s from %s to %s", amount, self.conf.name, userfrom, userto)
             result = self.conn.move(userfrom, userto, amount)
             time.sleep(1)
         except Exception as e:
-            lg.error("CtbCoin::sendtouser(): error sending %s %s from %s to %s: %s", amount, self.conf['name'], userfrom, userto, str(e))
+            lg.error("CtbCoin::sendtouser(): error sending %s %s from %s to %s: %s", amount, self.conf.name, userfrom, userto, e)
             return False
 
         return True
@@ -103,20 +101,20 @@ class CtbCoin(object):
         """
         lg.debug("CtbCoin::sendtoaddr(%s, %s, %s)", _userfrom, _addrto, _amount)
 
-        userfrom = self._verify_user(_user=_userfrom)
-        addrto = self._verify_addr(_addr=_addrto)
-        amount = self._verify_amount(_amount=_amount)
-        minconf = self._verify_minconf(_minconf=self.conf['minconf']['withdraw'])
+        userfrom = self.verify_user(_user=_userfrom)
+        addrto = self.verify_addr(_addr=_addrto)
+        amount = self.verify_amount(_amount=_amount)
+        minconf = self.verify_minconf(_minconf=self.conf.minconf.withdraw)
         txid = ""
 
         # send request to coin daemon
         try:
-            lg.info("CtbCoin::sendtoaddr(): sending %s %s from %s to %s", amount, self.conf['name'], userfrom, addrto)
+            lg.info("CtbCoin::sendtoaddr(): sending %s %s from %s to %s", amount, self.conf.name, userfrom, addrto)
 
             # Unlock wallet, if applicable
             if self.conf.has_key('walletpassphrase'):
                 lg.debug("CtbCoin::sendtoaddr(): unlocking wallet...")
-                self.conn.walletpassphrase(self.conf['walletpassphrase'], 1)
+                self.conn.walletpassphrase(self.conf.walletpassphrase, 1)
 
             # Perform transaction
             lg.debug("CtbCoin::sendtoaddr(): calling sendfrom()...")
@@ -130,7 +128,7 @@ class CtbCoin(object):
             time.sleep(1)
 
         except Exception as e:
-            lg.error("CtbCoin::sendtoaddr(): error sending %s %s from %s to %s: %s", amount, self.conf['name'], userfrom, addrto, str(e))
+            lg.error("CtbCoin::sendtoaddr(): error sending %s %s from %s to %s: %s", amount, self.conf.name, userfrom, addrto, e)
             raise
 
         return str(txid)
@@ -142,7 +140,7 @@ class CtbCoin(object):
         """
         lg.debug("CtbCoin::validateaddr(%s)", _addr)
 
-        addr = self._verify_addr(_addr=_addr)
+        addr = self.verify_addr(_addr=_addr)
         addr_valid = self.conn.validateaddress(addr)
 
         if not addr_valid.has_key('isvalid') or not addr_valid['isvalid']:
@@ -158,20 +156,20 @@ class CtbCoin(object):
         Returns (string) address
         """
 
-        user = self._verify_user(_user=_user)
+        user = self.verify_user(_user=_user)
         addr = ""
 
         try:
             # Unlock wallet for keypoolrefill
-            if self.conf.has_key('walletpassphrase'):
-                self.conn.walletpassphrase(self.conf['walletpassphrase'], 1)
+            if self.conf.walletpassphrase:
+                self.conn.walletpassphrase(self.conf.walletpassphrase, 1)
             # Generate address foruser
             addr = self.conn.getnewaddress(user)
             # Lock wallet
-            if self.conf.has_key('walletpassphrase'):
+            if self.conf.walletpassphrase:
                 self.conn.walletlock()
         except BitcoindException as e:
-            lg.error("CtbCoin::getnewaddr(%s): error: %s", user, str(e))
+            lg.error("CtbCoin::getnewaddr(%s): error: %s", user, e)
             raise
 
         if not addr:
@@ -179,42 +177,42 @@ class CtbCoin(object):
 
         return str(addr)
 
-    def _verify_user(self, _user = None):
+    def verify_user(self, _user = None):
         """
         Verify and return a username
         """
 
         if not _user or not type(_user) in [str, unicode]:
-            raise Exception("CtbCoin::_verify_user(): _user wrong type (%s) or empty (%s)", type(_user), _user)
+            raise Exception("CtbCoin::verify_user(): _user wrong type (%s) or empty (%s)", type(_user), _user)
 
         return re.escape(_user.lower())
 
-    def _verify_addr(self, _addr = None):
+    def verify_addr(self, _addr = None):
         """
         Verify and return coin address
         """
 
         if not _addr or not type(_addr) in [str, unicode]:
-            raise Exception("CtbCoin::_verify_addr(): _addr wrong type (%s) or empty (%s)", type(_addr),_addr)
+            raise Exception("CtbCoin::verify_addr(): _addr wrong type (%s) or empty (%s)", type(_addr),_addr)
 
         return re.escape(_addr)
 
-    def _verify_amount(self, _amount = None):
+    def verify_amount(self, _amount = None):
         """
         Verify and return amount
         """
 
         if not _amount or not type(_amount) in [int, float] or not _amount > 0:
-            raise Exception("CtbCoin::_verify_amount(): _amount wrong type (%s), empty, or negative (%s)", type(_amount), _amount)
+            raise Exception("CtbCoin::verify_amount(): _amount wrong type (%s), empty, or negative (%s)", type(_amount), _amount)
 
         return _amount
 
-    def _verify_minconf(self, _minconf = None):
+    def verify_minconf(self, _minconf = None):
         """
         Verify and return minimum number of confirmations
         """
 
         if not _minconf or not type(_minconf) == int or not _minconf >= 0:
-            raise Exception("CtbCoin::_verify_minconf(): _minconf wrong type (%s), empty, or negative (%s)", type(_minconf), _minconf)
+            raise Exception("CtbCoin::verify_minconf(): _minconf wrong type (%s), empty, or negative (%s)", type(_minconf), _minconf)
 
         return _minconf

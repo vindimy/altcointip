@@ -4,7 +4,7 @@ btc:
     unit: btc
     name: Bitcoin
     symbol: 'Ƀ'
-    conf-file: '~/.bitcoin/bitcoin.conf'
+    config_file: '~/.bitcoin/bitcoin.conf'
     minconf:
         givetip: 1
         withdraw: 10
@@ -26,7 +26,7 @@ ltc:
     unit: ltc
     name: Litecoin
     symbol: 'Ł'
-    conf-file: '~/.litecoin/litecoin.conf'
+    config_file: '~/.litecoin/litecoin.conf'
     minconf:
         givetip: 1
         withdraw: 10
@@ -48,7 +48,7 @@ ppc:
     unit: ppc
     name: Peercoin
     symbol: 'Ƥ'
-    conf-file: '~/.ppcoin/ppcoin.conf'
+    config_file: '~/.ppcoin/ppcoin.conf'
     minconf:
         givetip: 1
         withdraw: 10
@@ -70,7 +70,7 @@ nmc:
     unit: nmc
     name: Namecoin
     symbol: 'Ɲ'
-    conf-file: '~/.namecoin/bitcoin.conf'
+    config_file: '~/.namecoin/bitcoin.conf'
     minconf:
         givetip: 1
         withdraw: 10
@@ -91,7 +91,7 @@ nvc:
     unit: nvc
     name: Novacoin
     symbol: 'Ɣ'
-    conf-file: '~/.novacoin/novacoin.conf'
+    config_file: '~/.novacoin/novacoin.conf'
     minconf:
         givetip: 1
         withdraw: 10
@@ -113,7 +113,7 @@ trc:
     unit: trc
     name: Terracoin
     symbol: 'Ʈ'
-    conf-file: '~/.terracoin/terracoin.conf'
+    config_file: '~/.terracoin/terracoin.conf'
     minconf:
         givetip: 1
         withdraw: 10
@@ -135,7 +135,7 @@ dvc:
     unit: dvc
     name: Devcoin
     symbol: 'Ð'
-    conf-file: '~/.devcoin/devcoin.conf'
+    config_file: '~/.devcoin/devcoin.conf'
     minconf:
         givetip: 1
         withdraw: 10
@@ -156,7 +156,7 @@ xpm:
     unit: xpm
     name: Primecoin
     symbol: 'X'
-    conf-file: '~/.primecoin/primecoin.conf'
+    config_file: '~/.primecoin/primecoin.conf'
     minconf:
         givetip: 3
         withdraw: 30
@@ -178,7 +178,7 @@ ftc:
     unit: ftc
     name: Feathercoin
     symbol: 'Ƒ'
-    conf-file: '~/.feathercoin/feathercoin.conf'
+    config_file: '~/.feathercoin/feathercoin.conf'
     minconf:
         givetip: 3
         withdraw: 30
@@ -193,5 +193,3 @@ ftc:
     regex:
         address: '([67][1-9a-z]{20,40})'
         units: '(ftc|feathercoin|feathercoins)'
-
-# -*- coding: utf-8 -*-

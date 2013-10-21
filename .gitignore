@@ -35,11 +35,7 @@ nosetests.xml
 .pydevproject
 
 # cointipbot
-config.yml
-ctb-info.log
-ctb-debug.log
+*.log
 pyvircurex
-
-# cointipbot external libs
-pifkoin*
-urllib3*
+pifkoin
+conf

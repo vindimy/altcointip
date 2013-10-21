@@ -1,15 +1,11 @@
 auth:
     user: mybotuser
-    pass: mybotpass
-
-praw:
-    batch-limit: 10000
-    useragent: /u/mybotuser
+    password: mybotpass
 
 scan:
-    my-subreddits: false
-    these-subreddits: ["all"]
-    ignore-subreddits: ["test"]
+    batch_limit: 1000
+    my_subreddits: false
+#    these_subreddits: ["all"]
 
 help:
     enabled: true
@@ -35,9 +31,9 @@ banned_users:
 
 stats:
     enabled: false
-    subreddit: mybotuser
+    subreddit: mysubreddit
     page: stats
-    url: http://www.reddit.com/r/ALTcointip/wiki/stats
+    url: http://www.reddit.com/r/mysubreddit/wiki/stats
 
 regex:
     amount:
