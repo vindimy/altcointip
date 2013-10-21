@@ -111,7 +111,7 @@ class CtbAction(object):
                     lg.warning("CtbAction::__init__(atype=%s, from_user=%s): could not determine coinval given %s" % (self.type, self.u_from.name, self.coinval))
                     return None
             if self.fiat and not type(self.fiatval) in [float, int] and not self.fiatval == None:
-                # Determine fiat value given keyword from ctb.conf.misc.keywords
+                # Determine fiat value given keyword from self.ctb.conf.misc.keywords
                 lg.debug("CtbAction::__init__(): determining fiat value given '%s'", self.fiatval)
                 val = self.ctb.conf.misc.keywords[self.fiatval.lower()]
                 if type(val) == float:
@@ -138,11 +138,11 @@ class CtbAction(object):
                 for c in sorted(coins):
                     if coins[c].enabled:
                         # First, check if we have a ticker value for this coin and fiat
-                        if not ( hasattr(ctb, 'ticker_val') and ctb.ticker_val.has_key(coins[c].unit+'_btc') and ctb.ticker_val.has_key('btc_'+self.fiat) and ctb.ticker_val[coins[c].unit+'_btc']['avg'] > 0 and ctb.ticker_val['btc_'+self.fiat]['avg'] > 0 ):
+                        if not ( hasattr(self.ctb, 'ticker_val') and self.ctb.ticker_val.has_key(coins[c].unit+'_btc') and self.ctb.ticker_val.has_key('btc_'+self.fiat) and self.ctb.ticker_val[coins[c].unit+'_btc']['avg'] > 0 and self.ctb.ticker_val['btc_'+self.fiat]['avg'] > 0 ):
                             continue
                         # Compare available and needed coin balances
                         coin_balance_avail = self.u_from.get_balance(coin=coins[c].unit, kind='givetip')
-                        coin_balance_need = float( self.fiatval / ( ctb.ticker_val[coins[c].unit+'_btc']['avg'] * ctb.ticker_val['btc_'+self.fiat]['avg'] ) )
+                        coin_balance_need = float( self.fiatval / ( self.ctb.ticker_val[coins[c].unit+'_btc']['avg'] * self.ctb.ticker_val['btc_'+self.fiat]['avg'] ) )
                         if coin_balance_avail > coin_balance_need or abs(coin_balance_avail - coin_balance_need) < 0.000001:
                             # Found coin with enough balance
                             self.coin = coins[c].unit
@@ -159,15 +159,15 @@ class CtbAction(object):
                 self.fiat = 'usd'
             if not self.fiatval:
                 # Determine fiat value
-                if hasattr(ctb, 'ticker_val') and ctb.ticker_val.has_key(self.coin+'_btc') and ctb.ticker_val.has_key('btc_'+self.fiat) and ctb.ticker_val[self.coin+'_btc']['avg'] > 0 and ctb.ticker_val['btc_'+self.fiat]['avg'] > 0:
-                    self.fiatval = float( self.coinval * ctb.ticker_val[self.coin+'_btc']['avg'] * ctb.ticker_val['btc_'+self.fiat]['avg'] )
+                if hasattr(ctb, 'ticker_val') and self.ctb.ticker_val.has_key(self.coin+'_btc') and self.ctb.ticker_val.has_key('btc_'+self.fiat) and self.ctb.ticker_val[self.coin+'_btc']['avg'] > 0 and self.ctb.ticker_val['btc_'+self.fiat]['avg'] > 0:
+                    self.fiatval = float( self.coinval * self.ctb.ticker_val[self.coin+'_btc']['avg'] * self.ctb.ticker_val['btc_'+self.fiat]['avg'] )
                 else:
                     lg.warning("CtbAction::__init__(atype=%s, from_user=%s): can't determine %s value of %s", self.type, self.u_from.name, self.fiat, self.coin)
                     self.fiatval = float(0)
             elif not self.coinval:
                 # Determine coin value
-                if hasattr(ctb, 'ticker_val') and ctb.ticker_val.has_key(self.coin+'_btc') and ctb.ticker_val.has_key('btc_'+self.fiat) and ctb.ticker_val[self.coin+'_btc']['avg'] > 0 and ctb.ticker_val['btc_'+self.fiat]['avg'] > 0:
-                    self.coinval = float( self.fiatval / ( ctb.ticker_val[self.coin+'_btc']['avg'] * ctb.ticker_val['btc_'+self.fiat]['avg'] ) )
+                if hasattr(ctb, 'ticker_val') and self.ctb.ticker_val.has_key(self.coin+'_btc') and self.ctb.ticker_val.has_key('btc_'+self.fiat) and self.ctb.ticker_val[self.coin+'_btc']['avg'] > 0 and self.ctb.ticker_val['btc_'+self.fiat]['avg'] > 0:
+                    self.coinval = float( self.fiatval / ( self.ctb.ticker_val[self.coin+'_btc']['avg'] * self.ctb.ticker_val['btc_'+self.fiat]['avg'] ) )
                 else:
                     lg.warning("CtbAction::__init__(atype=%s, from_user=%s): can't determine %s value of %s", self.type, self.u_from.name, self.coin, self.fiat)
                     self.coinval = float(0)
@@ -616,11 +616,11 @@ class CtbAction(object):
 
         # Get coin balances
         for c in sorted(self.ctb.coins):
-            coininfo = ctb_misc.DotDict()
+            coininfo = ctb_misc.DotDict({})
             coininfo.coin = c
             try:
                 # Get tip balance
-                coininfo.balance = self.ctb.coins[c].getbalance(_user=self.u_from.name, _minconf=ctb.conf.coins[c].minconf.givetip)
+                coininfo.balance = self.ctb.coins[c].getbalance(_user=self.u_from.name, _minconf=self.ctb.conf.coins[c].minconf.givetip)
                 info.append(coininfo)
             except Exception as e:
                 lg.error("CtbAction::info(%s): error retrieving %s coininfo: %s", self.u_from.name, c, e)
@@ -629,7 +629,7 @@ class CtbAction(object):
         # Get fiat balances
         fiat_total = 0.0
         for i in info:
-            i.fiat_symbol = ctb.conf.fiat.usd.symbol
+            i.fiat_symbol = self.ctb.conf.fiat.usd.symbol
             if i.coin+'_btc' in self.ctb.ticker_val:
                 i.fiat_balance = self.ctb.ticker_val[i.coin+'_btc']['avg'] * self.ctb.ticker_val['btc_usd']['avg'] * float(i.balance)
                 fiat_total += i.fiat_balance
@@ -637,13 +637,13 @@ class CtbAction(object):
         # Get coin addresses from MySQL
         for i in info:
             sql = "SELECT address FROM t_addrs WHERE username = '%s' AND coin = '%s'" % (self.u_from.name.lower(), i.coin)
-            mysqlrow = ctb.db.execute(sql).fetchone()
+            mysqlrow = self.ctb.db.execute(sql).fetchone()
             if not mysqlrow:
                 raise Exception("CtbAction::info(%s): no result from <%s>" % (self.u_from.name, sql))
             i.address = mysqlrow['address']
 
         # Format and send message
-        msg = self.ctb.jenv.get_template('info.tpl').render(info=info, fiat_symbol=ctb.conf.fiat.usd.symbol, fiat_total=fiat_total, a=self, ctb=self.ctb)
+        msg = self.ctb.jenv.get_template('info.tpl').render(info=info, fiat_symbol=self.ctb.conf.fiat.usd.symbol, fiat_total=fiat_total, a=self, ctb=self.ctb)
         ctb_misc.praw_call(self.msg.reply, msg)
 
         # Save action to database

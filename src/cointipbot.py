@@ -397,7 +397,7 @@ class CointipBot(object):
         Return string representation of self
         """
         me = "<CointipBot: sleepsec=%s, batchlim=%s, tickerval=%s, lasttime=%s>"
-        me = me % (self.conf.reddit.misc.times.sleep_seconds, self.conf.reddit.scan.batch_limit, self.ticker_val, self.conf.reddit.last_processed_comment_time)
+        me = me % (self.conf.misc.times.sleep_seconds, self.conf.reddit.scan.batch_limit, self.ticker_val, self.conf.reddit.last_processed_comment_time)
         return me
 
     def main(self):

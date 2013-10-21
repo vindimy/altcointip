@@ -1,32 +1,32 @@
 {% set title_fmt = "^__[%s]__:" % title %}
-{% set user_from_fmt = " ^/u/%s" % a._FROM_USER._NAME %}
+{% set user_from_fmt = " ^/u/%s" % a.u_from.name %}
 {% set arrow_fmt = " ^->" %}
-{% if a._TO_USER: %}
-{%   set user_to_fmt = " ^/u/%s" % a._TO_USER._NAME %}
-{%   if ctb._config.reddit.stats.enabled: %}
-{%     set stats_user_to_fmt = " ^^[[stats]](%s_%s)" % (ctb._config.reddit.stats.url, a._TO_USER._NAME) %}
+{% if a.u_to: %}
+{%   set user_to_fmt = " ^/u/%s" % a.u_to.name %}
+{%   if ctb.conf.reddit.stats.enabled: %}
+{%     set stats_user_to_fmt = " ^^[[stats]](%s_%s)" % (ctb.conf.reddit.stats.url, a.u_to.name) %}
 {%   endif %}
 {% endif %}
-{% if a._TO_ADDR: %}
-{%   set ex = ctb._config.cc[a._COIN].explorer %}
-{%   set user_to_fmt = " ^[%s](%s%s)" % (a._TO_ADDR, ex.address, a._TO_ADDR) %}
-{%   set arrow_fmt = " ^[->](%s%s)" % (ex.transaction, a._TXID) %}
+{% if a.addr_to: %}
+{%   set ex = ctb.conf.coins[a.coin].explorer %}
+{%   set user_to_fmt = " ^[%s](%s%s)" % (a.addr_to, ex.address, a.addr_to) %}
+{%   set arrow_fmt = " ^[->](%s%s)" % (ex.transaction, a.txid) %}
 {% endif %}
-{% if a._COIN_VAL: %}
-{%   set coin_amount = a._COIN_VAL %}
-{%   set coin_name = ctb._config.cc[a._COIN].name %}
+{% if a.coinval: %}
+{%   set coin_amount = a.coinval %}
+{%   set coin_name = ctb.conf.coins[a.coin].name %}
 {%   set coin_amount_fmt = " __^%.6g ^%s(s)__" % (coin_amount, coin_name) %}
 {% endif %}
-{% if a._FIAT_VAL: %}
-{%   set fiat_amount = a._FIAT_VAL %}
-{%   set fiat_symbol = ctb._config.fiat[a._FIAT].symbol %}
+{% if a.fiatval: %}
+{%   set fiat_amount = a.fiatval %}
+{%   set fiat_symbol = ctb.conf.fiat[a.fiat].symbol %}
 {%   set fiat_amount_fmt = "&nbsp;^__(%s%.2f)__" % (fiat_symbol, fiat_amount) %}
 {% endif %}
-{% if ctb._config.reddit.stats.enabled: %}
-{%   set stats_user_from_fmt = " ^^[[stats]](%s_%s)" % (ctb._config.reddit.stats.url, a._FROM_USER._NAME) %}
-{%   set stats_link_fmt = " ^[[stats]](%s)" % ctb._config.reddit.stats.url %}
+{% if ctb.conf.reddit.stats.enabled: %}
+{%   set stats_user_from_fmt = " ^^[[stats]](%s_%s)" % (ctb.conf.reddit.stats.url, a.u_from.name) %}
+{%   set stats_link_fmt = " ^[[stats]](%s)" % ctb.conf.reddit.stats.url %}
 {% endif %}
-{% if ctb._config.reddit.help.enabled: %}
-{%   set help_link_fmt = " ^[[help]](%s)" % ctb._config.reddit.help.url %}
+{% if ctb.conf.reddit.help.enabled: %}
+{%   set help_link_fmt = " ^[[help]](%s)" % ctb.conf.reddit.help.url %}
 {% endif %}
 {{ title_fmt }}{{ user_from_fmt }}{{ stats_user_from_fmt }}{{ arrow_fmt }}{{ user_to_fmt }}{{ stats_user_to_fmt }}{{ coin_amount_fmt }}{{ fiat_amount_fmt }}{{ help_link_fmt }}{{ stats_link_fmt }}

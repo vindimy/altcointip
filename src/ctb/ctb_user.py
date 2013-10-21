@@ -35,7 +35,7 @@ class CtbUser(object):
     giftamount=None
     joindate=None
     addr={}
-    is_banned=False
+    banned=False
 
     # Objects
     prawobj=None
@@ -63,11 +63,11 @@ class CtbUser(object):
             if ctb.conf.reddit.banned_users.method == 'subreddit':
                 for u in ctb.reddit.get_banned(ctb.conf.reddit.banned_users.subreddit):
                     if self.name.lower() == u.name.lower():
-                        self.is_banned = True
+                        self.banned = True
             elif ctb.conf.reddit.banned_users.method == 'list':
                 for u in ctb.conf.reddit.banned_users.list:
                     if self.name.lower() == u.lower():
-                        self.is_banned = True
+                        self.banned = True
             else:
                 lg.warning("CtbUser::__init__(): invalid method '%s' in banned_users config" % ctb.conf.reddit.banned_users.method)
 
@@ -78,7 +78,7 @@ class CtbUser(object):
         Return string representation of self
         """
         me = "<CtbUser: name=%s, giftamnt=%s, joindate=%s, addr=%s, trans=%s, redditobj=%s, ctb=%s, banned=%s>"
-        me = me % (self.name, self.giftamount, self.joindate, self.addr, self.trans, self.prawobj, self.ctb, self.is_banned)
+        me = me % (self.name, self.giftamount, self.joindate, self.addr, self.trans, self.prawobj, self.ctb, self.banned)
         return me
 
     def get_balance(self, coin=None, kind=None):

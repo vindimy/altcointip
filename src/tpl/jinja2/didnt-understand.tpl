@@ -1,5 +1,5 @@
-{% if ctb and ctb._config.reddit.help.enabled %}
-{%   set help_link = "[verify syntax](%s)" % ctb._config.reddit.help.url %}
+{% if ctb and ctb.conf.reddit.help.enabled %}
+{%   set help_link = "[verify syntax](%s)" % ctb.conf.reddit.help.url %}
 {% else %}
 {%   set help_link = "verify syntax" %}
 {% endif %}

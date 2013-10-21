@@ -1,4 +1,4 @@
-{% set user_from = a._FROM_USER._NAME %}
+{% set user_from = a.u_from.name %}
 {% set fiat_total_fmt = "%s%.2f" % (fiat_symbol, fiat_total) %}
 
 Hello {{ user_from | replace('_', '\_') }}! Here's your account info.
@@ -6,8 +6,8 @@ Hello {{ user_from | replace('_', '\_') }}! Here's your account info.
 coin|deposit address|balance
 :---|:---|---:
 {% for i in info %}
-{%   set name_fmt = "%s (%s)" % (ctb._config.cc[i.coin].name, i.coin.upper()) %}
-{%   set address_fmt = "%s ^[[ex]](%s%s) ^[[qr]](%s%s)" % (i.address, ctb._config.cc[i.coin].explorer.address, i.address, ctb._config.misc.qr_service_url, i.address) %}
+{%   set name_fmt = "%s (%s)" % (ctb.conf.coins[i.coin].name, i.coin.upper()) %}
+{%   set address_fmt = "%s ^[[ex]](%s%s) ^[[qr]](%s%s)" % (i.address, ctb.conf.coins[i.coin].explorer.address, i.address, ctb.conf.misc.qr_service_url, i.address) %}
 {%   set coin_bal_fmt = "%.6g" % i.balance %}
 {%   if i.fiat_balance %}
 {%     set fiat_bal_fmt = " ^%s%.2f" % ( i.fiat_symbol, i.fiat_balance ) %}
