@@ -15,7 +15,7 @@
     along with ALTcointip.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import ctb_user, ctb_misc
+import ctb_user, ctb_misc, ctb_stats
 
 import logging, praw, re, time
 from random import randint
@@ -241,13 +241,19 @@ class CtbAction(object):
             lg.warning("CtbAction::do(): duplicate action %s (msg.id %s), ignoring", self.type, self.msg.id)
             return False
 
+<<<<<<< HEAD
         if self.type == 'accept':
+=======
+        if self._TYPE == 'accept':
+            # Execute action and send info to user
+>>>>>>> 3018dbc68b6bf0b8e2d4a2ecfe129fc5d0911fde
             if self.accept():
                 self.type = 'info'
                 return self.info()
             else:
                 return False
 
+<<<<<<< HEAD
         if self.type == 'decline':
             return self.decline()
 
@@ -261,13 +267,42 @@ class CtbAction(object):
             return self.info()
 
         if self.type == 'register':
+=======
+        if self._TYPE == 'decline':
+            # Execute action
+            return self.decline()
+
+        if self._TYPE == 'givetip':
+            # Execute action and update user stats
+            res = self.givetip()
+            ctb_stats.update_user_stats(ctb=self._CTB, username=self._FROM_USER._NAME)
+            if self._TO_USER:
+                ctb_stats.update_user_stats(ctb=self._CTB, username=self._TO_USER._NAME)
+            return res
+
+        if self._TYPE == 'history':
+            # Execute action
+            return self.history()
+
+        if self._TYPE == 'info':
+            # Execute action
+            return self.info()
+
+        if self._TYPE == 'register':
+            # Execute action and send info to user
+>>>>>>> 3018dbc68b6bf0b8e2d4a2ecfe129fc5d0911fde
             if self.register():
                 self.type = 'info'
                 return self.info()
             else:
                 return False
 
+<<<<<<< HEAD
         if self.type == 'withdraw':
+=======
+        if self._TYPE == 'withdraw':
+            # Execute action (withdraw is givetip to address)
+>>>>>>> 3018dbc68b6bf0b8e2d4a2ecfe129fc5d0911fde
             return self.givetip()
 
         lg.debug("< CtbAction::do() DONE")
@@ -298,6 +333,9 @@ class CtbAction(object):
             # Accept each action
             for a in actions:
                 a.givetip(is_pending=True)
+                # Update user stats
+                ctb_stats.update_user_stats(ctb=a._CTB, username=a._FROM_USER._NAME)
+                ctb_stats.update_user_stats(ctb=a._CTB, username=a._TO_USER._NAME)
         else:
             # No pending actions found, reply with error message
             msg = self.ctb.jenv.get_template('no-pending-tips.tpl').render(user_from=self.u_from.name, a=self, ctb=self.ctb)
@@ -319,16 +357,31 @@ class CtbAction(object):
         actions = get_actions(atype='givetip', to_user=self.u_from.name, state='pending', ctb=self.ctb)
         if actions:
             for a in actions:
+<<<<<<< HEAD
                 # Move coins back into a.u_from account
                 lg.info("CtbAction::decline(): moving %s %s from %s to %s", a.coinval, a.coin.upper(), self.ctb.conf.reddit.user, a.u_from.name)
                 if not coins[a.coin].sendtouser(_userfrom=self.ctb.conf.reddit.user, _userto=a.u_from.name, _amount=a.coinval):
+=======
+
+                # Move coins back into a._FROM_USER account
+                lg.info("CtbAction::decline(): moving %s %s from %s to %s", str(a._COIN_VAL), a._COIN.upper(), _config['reddit']['user'], a._FROM_USER._NAME)
+                if not _coins[a._COIN].sendtouser(_userfrom=_config['reddit']['user'], _userto=a._FROM_USER._NAME, _amount=a._COIN_VAL):
+>>>>>>> 3018dbc68b6bf0b8e2d4a2ecfe129fc5d0911fde
                     raise Exception("CtbAction::decline(): failed to sendtouser()")
 
                 # Save transaction as declined
                 a.save('declined')
 
+                # Update user stats
+                ctb_stats.update_user_stats(ctb=a._CTB, username=a._FROM_USER._NAME)
+                ctb_stats.update_user_stats(ctb=a._CTB, username=a._TO_USER._NAME)
+
                 # Respond to tip comment
+<<<<<<< HEAD
                 msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Declined', a=self, ctb=self.ctb)
+=======
+                msg = self._CTB._jenv.get_template('confirmation.tpl').render(title='Declined', a=a, ctb=a._CTB)
+>>>>>>> 3018dbc68b6bf0b8e2d4a2ecfe129fc5d0911fde
                 lg.debug("CtbAction::decline(): " + msg)
                 if self.ctb.conf.reddit.comments.declined:
                     if not ctb_misc.praw_call(a.msg.reply, msg):
@@ -364,7 +417,7 @@ class CtbAction(object):
             raise Exception("CtbAction::expire(): sendtouser() failed")
 
         # Save transaction as declined
-        self.save('declined')
+        self.save('expired')
 
         # Respond to tip comment
         msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Expired', a=self, ctb=self.ctb)
@@ -559,9 +612,15 @@ class CtbAction(object):
         elif self.addr_to:
             # Process tip to address
             try:
+<<<<<<< HEAD
                 
                 lg.info("CtbAction::givetip(): sending %f %s to %s...", self.coinval, self.coin, self.addr_to)
                 self.txid = self.ctb.coins[self.coin].sendtoaddr(_userfrom=self.u_from.name, _addrto=self.addr_to, _amount=self.coinval)
+=======
+
+                lg.info("CtbAction::givetip(): sending %f %s to %s...", self._COIN_VAL, self._COIN, self._TO_ADDR)
+                self._TXID = _coins[self._COIN].sendtoaddr(_userfrom=self._FROM_USER._NAME, _addrto=self._TO_ADDR, _amount=self._COIN_VAL)
+>>>>>>> 3018dbc68b6bf0b8e2d4a2ecfe129fc5d0911fde
 
             except Exception as e:
 
