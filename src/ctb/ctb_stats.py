@@ -209,8 +209,9 @@ def update_user_stats(ctb=None, username=None):
                 elif k.find("utc") > -1:
                     values.append("%s" % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(m[k])))
                 else:
-                    values.append("None")
-        user_stats += ("|".join(values)) + "\n"
+                    values.append(str(m[k]))
+
+            user_stats += ("|".join(values)) + "\n"
 
         lg.debug("update_user_stats(): updating subreddit '%s', page '%s'" % (ctb.conf.reddit.stats.subreddit, page))
         ctb_misc.praw_call(ctb.reddit.edit_wiki_page, ctb.conf.reddit.stats.subreddit, page, user_stats, "Update by ALTcointip bot")
