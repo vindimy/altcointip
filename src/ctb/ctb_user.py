@@ -219,15 +219,9 @@ class CtbUser(object):
 
         # Get new coin addresses
         new_addrs = {}
-<<<<<<< HEAD
         for c in self.ctb.coins:
             new_addrs[c] = self.ctb.coins[c].getnewaddress(_user=self.name)
             lg.info("CtbUser::register(%s): got %s address %s", self.name, c, new_addrs[c])
-=======
-        for c in self._CTB._coins:
-            new_addrs[c] = self._CTB._coins[c].getnewaddr(_user=self._NAME)
-            lg.info("CtbUser::register(%s): got %s address %s", self._NAME, c, new_addrs[c])
->>>>>>> 3018dbc68b6bf0b8e2d4a2ecfe129fc5d0911fde
 
         # Add coin addresses to database
         for c in new_addrs:
