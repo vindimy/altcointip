@@ -84,7 +84,7 @@ def update_all_user_stats(ctb=None):
     Update individual user stats for all uers
     """
 
-    if not ctb._config['reddit']['stats']['enabled']:
+    if not ctb.conf.reddit.stats.enabled:
         lg.error('update_all_user_stats(): stats are not enabled in config.yml')
         return None
 
@@ -111,13 +111,10 @@ def update_user_stats(ctb=None, username=None):
     # Build a list of coins
     coins_q = ctb.db.execute(sql_coins)
     coins = []
+
     for c in coins_q:
         coins.append(c['coin'])
 
-    # Do it for each user
-    users = ctb.db.execute(sql_users)
-    for u in users:
-        username = u['username']
         user_stats = "### Tipping Summary For /u/%s\n\n" % username
         page = ctb.conf.reddit.stats.page + '_' + username
 
@@ -213,7 +210,7 @@ def update_user_stats(ctb=None, username=None):
 
             user_stats += ("|".join(values)) + "\n"
 
-        lg.debug("update_user_stats(): updating subreddit '%s', page '%s'" % (ctb.conf.reddit.stats.subreddit, page))
-        ctb_misc.praw_call(ctb.reddit.edit_wiki_page, ctb.conf.reddit.stats.subreddit, page, user_stats, "Update by ALTcointip bot")
+    lg.debug("update_user_stats(): updating subreddit '%s', page '%s'" % (ctb.conf.reddit.stats.subreddit, page))
+    ctb_misc.praw_call(ctb.reddit.edit_wiki_page, ctb.conf.reddit.stats.subreddit, page, user_stats, "Update by ALTcointip bot")
 
     return True

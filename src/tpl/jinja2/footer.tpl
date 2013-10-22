@@ -2,7 +2,7 @@
 {%   set user_from = a.u_from.name %}
 {% endif %}
 {% if not user_bot and ctb %}
-{%   set user_bot = ctb.conf.reddit.user %}
+{%   set user_bot = ctb.conf.reddit.auth.user %}
 {% endif %}
 {% set compose_url = "http://www.reddit.com/message/compose?to=%s&subject=%s&message=%%2B%s" %}
 {% set a_url = compose_url % (user_bot, "accept", "accept") %}
@@ -25,8 +25,8 @@
 
 ^Helpful ^Links|&nbsp;
 :---|:---
-{% if a and a._MSG and a._MSG.permalink %}
-^Source ^comment|^[[link]]({{ a._MSG.permalink }})
+{% if a and a.msg and a.msg.permalink %}
+^Source ^comment|^[[link]]({{ a.msg.permalink }})
 {% elif source_link %}
 ^Source ^comment|^[[link]]({{ source_link }})
 {% endif %}

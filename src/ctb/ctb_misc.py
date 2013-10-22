@@ -298,8 +298,3 @@ class DotDict(object):
                setattr(self, a, DotDict(b) if isinstance(b, dict) else b)
     def __getitem__(self, val):
         return getattr(self, val)
-    def __getattribute__(self, val):
-        try:
-            return object.__getattribute__(self, val)
-        except AttributeError:
-            return None

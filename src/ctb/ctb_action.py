@@ -78,12 +78,12 @@ class CtbAction(object):
         if not self.msg:
             raise Exception("CtbAction::__init__(type=%s): no reference to Reddit message/comment", self.type)
         if self.type in ['givetip', 'withdraw']:
-            if not (self.u_to ^ self.addr_to):
+            if not (bool(self.u_to) ^ bool(self.addr_to)):
                 raise Exception("CtbAction::__init__(atype=%s, from_user=%s): u_to xor addr_to must be set" % (self.type, self.u_from.name))
-            if not (self.coin or self.fiat):
+            if not (bool(self.coin) or bool(self.fiat)):
                 raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coin or fiat must be set" % (self.type, self.u_from.name))
-            if not (self.coinval or self.fiatval):
-                raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coinval or fiat must be set" % (self.type, self.u_from.name))
+            if not (bool(self.coinval) or bool(self.fiatval)):
+                raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coinval or fiatval must be set" % (self.type, self.u_from.name))
 
         # Convert coinval and fiat to float, if necesary
         if self.coinval and type(self.coinval) == unicode and self.coinval.replace('.', '').isnumeric():
@@ -134,9 +134,9 @@ class CtbAction(object):
                     lg.warning("CtbAction::__init__(): can't determine coin for un-registered user %s", self.u_from.name)
                     return None
                 # Set the coin based on from_user's available balance
-                coins = self.ctb.conf.coins
-                for c in sorted(coins):
-                    if coins[c].enabled:
+                cc = self.ctb.conf.coins
+                for c in sorted(vars(coins)):
+                    if cc[c].enabled:
                         # First, check if we have a ticker value for this coin and fiat
                         if not ( hasattr(self.ctb, 'ticker_val') and self.ctb.ticker_val.has_key(coins[c].unit+'_btc') and self.ctb.ticker_val.has_key('btc_'+self.fiat) and self.ctb.ticker_val[coins[c].unit+'_btc']['avg'] > 0 and self.ctb.ticker_val['btc_'+self.fiat]['avg'] > 0 ):
                             continue
@@ -145,7 +145,7 @@ class CtbAction(object):
                         coin_balance_need = float( self.fiatval / ( self.ctb.ticker_val[coins[c].unit+'_btc']['avg'] * self.ctb.ticker_val['btc_'+self.fiat]['avg'] ) )
                         if coin_balance_avail > coin_balance_need or abs(coin_balance_avail - coin_balance_need) < 0.000001:
                             # Found coin with enough balance
-                            self.coin = coins[c].unit
+                            self.coin = cc[c].unit
                             break
             if not self.coin:
                 # Couldn't deteremine coin, abort
@@ -252,7 +252,11 @@ class CtbAction(object):
             return self.decline()
 
         if self.type == 'givetip':
-            return self.givetip()
+            result = self.givetip()
+            ctb_stats.update_user_stats(ctb=self.ctb, username=self.u_from.name)
+            if self.u_to:
+                ctb_stats.update_user_stats(ctb=self.ctb, username=self.u_to.name)
+            return result
 
         if self.type == 'history':
             return self.history()
@@ -299,8 +303,8 @@ class CtbAction(object):
             for a in actions:
                 a.givetip(is_pending=True)
                 # Update user stats
-                ctb_stats.update_user_stats(ctb=a._CTB, username=a._FROM_USER._NAME)
-                ctb_stats.update_user_stats(ctb=a._CTB, username=a._TO_USER._NAME)
+                ctb_stats.update_user_stats(ctb=a.ctb, username=a.u_from.name)
+                ctb_stats.update_user_stats(ctb=a.ctb, username=a.u_to.name)
         else:
             # No pending actions found, reply with error message
             msg = self.ctb.jenv.get_template('no-pending-tips.tpl').render(user_from=self.u_from.name, a=self, ctb=self.ctb)
@@ -323,19 +327,19 @@ class CtbAction(object):
         if actions:
             for a in actions:
                 # Move coins back into a.u_from account
-                lg.info("CtbAction::decline(): moving %s %s from %s to %s", a.coinval, a.coin.upper(), self.ctb.conf.reddit.user, a.u_from.name)
-                if not coins[a.coin].sendtouser(_userfrom=self.ctb.conf.reddit.user, _userto=a.u_from.name, _amount=a.coinval):
+                lg.info("CtbAction::decline(): moving %s %s from %s to %s", a.coinval, a.coin.upper(), self.ctb.conf.reddit.auth.user, a.u_from.name)
+                if not self.ctb.coins[a.coin].sendtouser(_userfrom=self.ctb.conf.reddit.auth.user, _userto=a.u_from.name, _amount=a.coinval):
                     raise Exception("CtbAction::decline(): failed to sendtouser()")
 
                 # Save transaction as declined
                 a.save('declined')
 
                 # Update user stats
-                ctb_stats.update_user_stats(ctb=a._CTB, username=a._FROM_USER._NAME)
-                ctb_stats.update_user_stats(ctb=a._CTB, username=a._TO_USER._NAME)
+                ctb_stats.update_user_stats(ctb=a.ctb, username=a.u_from.name)
+                ctb_stats.update_user_stats(ctb=a.ctb, username=a.u_to.name)
 
                 # Respond to tip comment
-                msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Declined', a=self, ctb=self.ctb)
+                msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Declined', a=a, ctb=a.ctb, source_link=a.msg.permalink if a.msg else None)
                 lg.debug("CtbAction::decline(): " + msg)
                 if self.ctb.conf.reddit.comments.declined:
                     if not ctb_misc.praw_call(a.msg.reply, msg):
@@ -366,15 +370,15 @@ class CtbAction(object):
         lg.debug("> CtbAction::expire()")
 
         # Move coins back into self.u_from account
-        lg.info("CtbAction::expire(): moving %s %s from %s to %s", self.coinval, self.coin.upper(), self.ctb.conf.reddit.user, self.u_from.name)
-        if not self.ctb.coins[self.coin].sendtouser(_userfrom=self.ctb.conf.reddit.user, _userto=self.u_from.name, _amount=self.coinval):
+        lg.info("CtbAction::expire(): moving %s %s from %s to %s", self.coinval, self.coin.upper(), self.ctb.conf.reddit.auth.user, self.u_from.name)
+        if not self.ctb.coins[self.coin].sendtouser(_userfrom=self.ctb.conf.reddit.auth.user, _userto=self.u_from.name, _amount=self.coinval):
             raise Exception("CtbAction::expire(): sendtouser() failed")
 
-        # Save transaction as declined
+        # Save transaction as expired
         self.save('expired')
 
         # Respond to tip comment
-        msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Expired', a=self, ctb=self.ctb)
+        msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Expired', a=self, ctb=self.ctb, source_link=a.msg.permalink if a.msg else None)
         lg.debug("CtbAction::expire(): " + msg)
         if self.ctb.conf.reddit.comments.expired:
             if not ctb_misc.praw_call(self.msg.reply, msg):
@@ -416,8 +420,8 @@ class CtbAction(object):
 
             # Verify minimum transaction size
             txkind = 'givetip' if self.u_to else 'withdraw'
-            if self.coinval < cc[self.coin]['txmin'][txkind]:
-                msg = self.ctb.jenv.get_template('tip-below-minimum.tpl').render(min_value=cc[self.coin]['txmin'][txkind], a=self, ctb=self.ctb)
+            if self.coinval < self.ctb.conf.coins[self.coin].txmin[txkind]:
+                msg = self.ctb.jenv.get_template('tip-below-minimum.tpl').render(min_value=self.ctb.conf.coins[self.coin].txmin[txkind], a=self, ctb=self.ctb)
                 lg.debug("CtbAction::validate(): " + msg)
                 self.u_from.tell(subj="+tip failed", msg=msg)
                 self.save('failed')
@@ -464,9 +468,9 @@ class CtbAction(object):
                 # - notify u_to to accept tip
 
                 # Move coins into pending account
-                minconf = coins[self.coin].conf['minconf'].givetip
-                lg.info("CtbAction::validate(): moving %s %s from %s to %s (minconf=%s)...", self.coinval, self.coin.upper(), self.u_from.name, self.ctb.conf.reddit.user, minconf)
-                if not self.ctb.coins[self.coin].sendtouser(_userfrom=self.u_from.name, _userto=conf.reddit.user, _amount=self.coinval, _minconf=minconf):
+                minconf = self.ctb.coins[self.coin].conf.minconf.givetip
+                lg.info("CtbAction::validate(): moving %s %s from %s to %s (minconf=%s)...", self.coinval, self.coin.upper(), self.u_from.name, self.ctb.conf.reddit.auth.user, minconf)
+                if not self.ctb.coins[self.coin].sendtouser(_userfrom=self.u_from.name, _userto=self.ctb.conf.reddit.auth.user, _amount=self.coinval, _minconf=minconf):
                     raise Exception("CtbAction::validate(): sendtouser() failed")
 
                 # Save action as pending
@@ -486,12 +490,12 @@ class CtbAction(object):
                 lg.debug("CtbAction::validate(): %s", msg)
                 self.u_to.tell(subj="+tip pending", msg=msg)
 
-                # Action saved as 'pending', return false to avoid processing it
+                # Action saved as 'pending', return false to avoid processing it further
                 return False
 
             # Validate addr_to, if applicable
             if self.addr_to:
-                if not coins[self.coin].validateaddr(_addr=self.addr_to):
+                if not self.ctb.coins[self.coin].validateaddr(_addr=self.addr_to):
                     msg = self.ctb.jenv.get_template('address-invalid.tpl').render(a=self, ctb=self.ctb)
                     lg.debug("CtbAction::validate(): " + msg)
                     self.u_from.tell(subj="+tip failed", msg=msg)
@@ -525,8 +529,8 @@ class CtbAction(object):
             res = False
             if is_pending:
                 # This is accept() of pending transaction, so move coins from pending account to receiver
-                lg.info("CtbAction::givetip(): moving %f %s from %s to %s...", self.coinval, self.coin.upper(), self.ctb.conf.reddit.user, self.u_to.name)
-                res = self.ctb.coins[self.coin].sendtouser(_userfrom=conf.reddit.user, _userto=self.u_to.name, _amount=self.coinval)
+                lg.info("CtbAction::givetip(): moving %f %s from %s to %s...", self.coinval, self.coin.upper(), self.ctb.conf.reddit.auth.user, self.u_to.name)
+                res = self.ctb.coins[self.coin].sendtouser(_userfrom=self.ctb.conf.reddit.auth.user, _userto=self.u_to.name, _amount=self.coinval)
             else:
                 # This is not accept() of pending transaction, so move coins from tipper to receiver
                 lg.info("CtbAction::givetip(): moving %f %s from %s to %s...", self.coinval, self.coin.upper(), self.u_from.name, self.u_to.name)
@@ -751,7 +755,7 @@ def init_regex(ctb):
                     'rg_amount':  6,
                     'rg_address': 4}))
             for f in vars(fiat):
-                if fiat[f]['enabled']:
+                if fiat[f].enabled:
                     ctb._rlist_message.append(
                        # +withdraw ADDR $0.25 UNIT
                        ctb_misc.DotDict(

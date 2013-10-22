@@ -77,8 +77,8 @@ class CtbUser(object):
         """
         Return string representation of self
         """
-        me = "<CtbUser: name=%s, giftamnt=%s, joindate=%s, addr=%s, trans=%s, redditobj=%s, ctb=%s, banned=%s>"
-        me = me % (self.name, self.giftamount, self.joindate, self.addr, self.trans, self.prawobj, self.ctb, self.banned)
+        me = "<CtbUser: name=%s, giftamnt=%s, joindate=%s, addr=%s, redditobj=%s, ctb=%s, banned=%s>"
+        me = me % (self.name, self.giftamount, self.joindate, self.addr, self.prawobj, self.ctb, self.banned)
         return me
 
     def get_balance(self, coin=None, kind=None):
@@ -220,7 +220,7 @@ class CtbUser(object):
         # Get new coin addresses
         new_addrs = {}
         for c in self.ctb.coins:
-            new_addrs[c] = self.ctb.coins[c].getnewaddress(_user=self.name)
+            new_addrs[c] = self.ctb.coins[c].getnewaddr(_user=self.name)
             lg.info("CtbUser::register(%s): got %s address %s", self.name, c, new_addrs[c])
 
         # Add coin addresses to database

@@ -252,7 +252,7 @@ class CointipBot(object):
 
         try:
 
-            if not self.conf.reddit.subreddits:
+            if not hasattr(self.conf.reddit, 'subreddits'):
                 my_reddits_list = None
                 my_reddits_string = None
 
@@ -297,7 +297,7 @@ class CointipBot(object):
             # Process comments until old comment reached
 
             # Get last_processed_comment_time if necessary
-            if not self.conf.reddit.last_processed_comment_time or self.conf.reddit.last_processed_comment_time <= 0:
+            if not hasattr(self.conf.reddit, 'last_processed_comment_time') or self.conf.reddit.last_processed_comment_time <= 0:
                 self.conf.reddit.last_processed_comment_time = ctb_misc.get_value(conn=self.db, param0='last_processed_comment_time')
             updated_last_processed_time = 0
 
@@ -396,8 +396,8 @@ class CointipBot(object):
         """
         Return string representation of self
         """
-        me = "<CointipBot: sleepsec=%s, batchlim=%s, tickerval=%s, lasttime=%s>"
-        me = me % (self.conf.misc.times.sleep_seconds, self.conf.reddit.scan.batch_limit, self.ticker_val, self.conf.reddit.last_processed_comment_time)
+        me = "<CointipBot: sleepsec=%s, batchlim=%s, tickerval=%s"
+        me = me % (self.conf.misc.times.sleep_seconds, self.conf.reddit.scan.batch_limit, self.ticker_val)
         return me
 
     def main(self):
