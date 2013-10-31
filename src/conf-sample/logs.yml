@@ -3,7 +3,7 @@ levels:
         enabled: true
         append: true
         format: '%(levelname)s %(asctime)s %(message)s'
-        filename: logs/error.log
+        filename: logs/warning.log
     info:
         enabled: true
         append: true
