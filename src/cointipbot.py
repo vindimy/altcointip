@@ -256,7 +256,7 @@ class CointipBot(object):
                 my_reddits_list = None
                 my_reddits_string = None
 
-                if self.conf.reddit.scan.these_subreddits:
+                if hasattr(self.conf.reddit.scan, 'these_subreddits'):
                     # Subreddits are specified in conf.yml
                     my_reddits_list = list(self.conf.reddit.scan.these_subreddits)
 
@@ -419,7 +419,7 @@ class CointipBot(object):
                 self.expire_pending_tips()
 
                 # Check subreddit comments for tips
-                if self.conf.reddit.scan.my_subreddits or self.conf.reddit.scan.these_subreddits:
+                if self.conf.reddit.scan.my_subreddits or hasattr(self.conf.reddit.scan, 'these_subreddits'):
                     self.check_subreddits()
 
                 # Sleep
