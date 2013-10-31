@@ -135,18 +135,17 @@ class CtbAction(object):
                     return None
                 # Set the coin based on from_user's available balance
                 cc = self.ctb.conf.coins
-                for c in sorted(vars(coins)):
-                    if cc[c].enabled:
-                        # First, check if we have a ticker value for this coin and fiat
-                        if not ( hasattr(self.ctb, 'ticker_val') and self.ctb.ticker_val.has_key(coins[c].unit+'_btc') and self.ctb.ticker_val.has_key('btc_'+self.fiat) and self.ctb.ticker_val[coins[c].unit+'_btc']['avg'] > 0 and self.ctb.ticker_val['btc_'+self.fiat]['avg'] > 0 ):
-                            continue
-                        # Compare available and needed coin balances
-                        coin_balance_avail = self.u_from.get_balance(coin=coins[c].unit, kind='givetip')
-                        coin_balance_need = float( self.fiatval / ( self.ctb.ticker_val[coins[c].unit+'_btc']['avg'] * self.ctb.ticker_val['btc_'+self.fiat]['avg'] ) )
-                        if coin_balance_avail > coin_balance_need or abs(coin_balance_avail - coin_balance_need) < 0.000001:
-                            # Found coin with enough balance
-                            self.coin = cc[c].unit
-                            break
+                for c in sorted(self.ctb.coins):
+                    # First, check if we have a ticker value for this coin and fiat
+                    if not ( self.ctb.ticker_val.has_key(cc[c].unit+'_btc') and self.ctb.ticker_val.has_key('btc_'+self.fiat) and self.ctb.ticker_val[cc[c].unit+'_btc']['avg'] > 0 and self.ctb.ticker_val['btc_'+self.fiat]['avg'] > 0 ):
+                        continue
+                    # Compare available and needed coin balances
+                    coin_balance_avail = self.u_from.get_balance(coin=cc[c].unit, kind='givetip')
+                    coin_balance_need = float( self.fiatval / ( self.ctb.ticker_val[cc[c].unit+'_btc']['avg'] * self.ctb.ticker_val['btc_'+self.fiat]['avg'] ) )
+                    if coin_balance_avail > coin_balance_need or abs(coin_balance_avail - coin_balance_need) < 0.000001:
+                        # Found coin with enough balance
+                        self.coin = cc[c].unit
+                        break
             if not self.coin:
                 # Couldn't deteremine coin, abort
                 lg.warning("CtbAction::__init__(): can't determine coin for user %s", self.u_from.name)
