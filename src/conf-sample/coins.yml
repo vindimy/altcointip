@@ -32,7 +32,7 @@ ltc:
         withdraw: 10
     txmin:
         givetip: 0.01
-        withdraw: 0.48
+        withdraw: 0.18
     txfee: 0.02
     walletpassphrase: 'mypass1'
     explorer:
@@ -54,7 +54,7 @@ ppc:
         withdraw: 10
     txmin:
         givetip: 0.05
-        withdraw: 0.5
+        withdraw: 0.49
     txfee: 0.01
     walletpassphrase: 'mypass1'
     explorer:
@@ -162,7 +162,7 @@ xpm:
         withdraw: 30
     txmin:
         givetip: 0.01
-        withdraw: 0.49
+        withdraw: 0.19
     txfee: 0.01
     walletpassphrase: 'mypass1'
     explorer:
