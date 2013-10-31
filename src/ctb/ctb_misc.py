@@ -15,7 +15,7 @@
     along with ALTcointip.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import ctb_user, ctb_btce, pyvircurex
+import ctb_user
 
 import logging, time
 
@@ -24,116 +24,6 @@ from praw.errors import ExceptionList, APIException, InvalidCaptcha, InvalidUser
 from socket import timeout
 
 lg = logging.getLogger('cointipbot')
-
-def refresh_exchange_rate(ctb=None, exchange='vircurex'):
-    """
-    Refresh coin/fiat exchange rate values
-    """
-    lg.debug("> refresh_exchange_rate()")
-
-    if not bool(ctb):
-        raise Exception("refresh_exchange_rate(): ctb is not set")
-
-    if exchange == 'btce':
-        refresh_exchange_rate_btce(ctb=ctb)
-    elif exchange == 'vircurex':
-        refresh_exchange_rate_vircurex(ctb=ctb)
-    else:
-        raise Exception("refresh_exchange_rate(): invalid value '%s'" % exchange)
-
-    lg.debug("< refresh_exchange_rate() DONE")
-    return True
-
-def refresh_exchange_rate_btce(ctb=None):
-    """
-    Refresh coin/fiat exchange rate values using BTC-e
-    """
-    lg.debug("> refresh_exchange_rate_btce()")
-
-    # Return if rate has been checked in the past hour
-    seconds = int(1 * 3600)
-    if ctb.ticker_last_refresh + seconds > int(time.mktime(time.gmtime())):
-        lg.debug("< refresh_exchange_rate_btce() DONE (skipping)")
-        return True
-
-    # Determine pairs to request from BTC-e
-    if not bool(ctb.ticker_pairs):
-        # Always request btc_usd pair
-        ctb.ticker_pairs = {'btc_usd': 'True'}
-        # Request other btc_FIAT pairs
-        for f in vars(ctb.conf.fiat):
-            if ctb.conf.fiat[f].enabled and not ctb.conf.fiat[f].unit == 'usd':
-                ctb.ticker_pairs['btc_'+ctb.conf.fiat[f].unit] = 'True'
-        # Request each COIN_btc pair
-        for c in ctb.coins:
-            ctb.ticker_pairs[c+'_btc'] = 'True'
-
-    # Create instance of CtbBtce
-    if not bool(ctb._ticker):
-        ctb._ticker = ctb_btce.CtbBtce()
-
-    # Send request and update values
-    ticker_val = ctb._ticker.update(ctb.ticker_pairs)
-    if bool(ticker_val) and ('btc_usd' in ticker_val):
-        ctb.ticker_val = ticker_val
-    else:
-        lg.warning("refresh_exchange_rate_btce(): pair btc_usc not found in ticker_val (bad response?), stopping")
-        return False
-
-    # Set btc_btc ticker value to 1.0
-    ctb.ticker_val['btc_btc']['avg'] = 1.0
-
-    # Update last refresh time
-    ctb.ticker_last_refresh = int(time.mktime(time.gmtime()))
-
-    lg.debug("< refresh_exchange_rate_btce() DONE")
-    return True
-
-def refresh_exchange_rate_vircurex(ctb=None):
-    """
-    Refresh coin/fiat exchange rate values using Vircurex
-    """
-    lg.debug("> refresh_exchange_rate_vircurex()")
-
-    # Return if rate has been checked in the past hour
-    seconds = int(1 * 3600)
-    if ctb.ticker_last_refresh + seconds > int(time.mktime(time.gmtime())):
-        lg.debug("< refresh_exchange_rate_vircurex() DONE (skipping)")
-        return True
-
-    # Determine pairs to request from Vircurex
-    if not bool(ctb.ticker_pairs):
-        # Always request btc_usd pair
-        ctb.ticker_pairs = {'btc_usd': 'True'}
-        # Request other btc_FIAT pairs
-        for f in vars(ctb.conf.fiat):
-            if ctb.conf.fiat[f].enabled and not ctb.conf.fiat[f].unit == 'usd':
-                ctb.ticker_pairs['btc_'+ctb.conf.fiat[f].unit] = 'True'
-        # Request each COIN_btc pair
-        for c in ctb.coins:
-            if not c == 'btc':
-                ctb.ticker_pairs[c+'_btc'] = 'True'
-
-    try:
-        # Update values
-        for p in ctb.ticker_pairs:
-            lg.debug("refresh_exchange_rate_vircurex(): getting pair %s", p)
-            pair = pyvircurex.Pair(p)
-            ctb.ticker_val[p] = {}
-            ctb.ticker_val[p]['avg'] = (float(pair.lowest_ask) + float(pair.highest_bid)) / 2.0
-    except Exception, e:
-        lg.warning("refresh_exchange_rate_vircurex(): caught Exception: %s", e)
-        return False
-
-    # Set btc_btc ticker value to 1.0
-    ctb.ticker_val['btc_btc'] = {}
-    ctb.ticker_val['btc_btc']['avg'] = 1.0
-
-    # Update last refresh time
-    ctb.ticker_last_refresh = int(time.mktime(time.gmtime()))
-
-    lg.debug("< refresh_exchange_rate_vircurex() DONE")
-    return True
 
 def praw_call(prawFunc, *extraArgs, **extraKwArgs):
     """

@@ -16,7 +16,7 @@
     along with ALTcointip.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from ctb import ctb_action, ctb_coin, ctb_db, ctb_log, ctb_misc, ctb_user
+from ctb import ctb_action, ctb_coin, ctb_db, ctb_exchange, ctb_log, ctb_misc, ctb_user
 
 import gettext, locale, logging, praw, sys, time, traceback, yaml
 from jinja2 import Environment, PackageLoader
@@ -34,13 +34,10 @@ class CointipBot(object):
     db = None
     reddit = None
     coins = {}
+    exchanges = {}
     jenv = None
 
-    ticker = None
-    ticker_pairs = None
-    ticker_val = {}
-    ticker_last_refresh = 0
-
+    _ev = {}
     _rlist_message = []
     _rlist_comment = []
 
@@ -85,7 +82,7 @@ class CointipBot(object):
         conf = {}
         try:
             prefix='./conf/'
-            for i in ['coins', 'db', 'fiat', 'logs', 'misc', 'reddit']:
+            for i in ['coins', 'db', 'exchanges', 'fiat', 'logs', 'misc', 'reddit']:
                 lg.debug("CointipBot::parse_config(): reading %s%s.yml", prefix, i)
                 conf[i] = yaml.load(open(prefix+i+'.yml'))
         except yaml.YAMLError as e:
@@ -350,7 +347,85 @@ class CointipBot(object):
         lg.debug("< CointipBot::check_subreddits() DONE")
         return True
 
-    def __init__(self, self_checks=True, init_reddit=True, init_coins=True, init_db=True, init_logging=True):
+    def refresh_ev(self):
+        """
+        Refresh coin/fiat exchange values using self.exchanges
+        """
+
+        # Return if rate has been checked in the past hour
+        seconds = int(1 * 3600)
+        if hasattr(self.conf.exchanges, 'last_refresh') and self.conf.exchanges.last_refresh + seconds > int(time.mktime(time.gmtime())):
+            lg.debug("< CointipBot::refresh_ev(): DONE (skipping)")
+            return
+
+        # For each enabled coin...
+        for c in vars(self.conf.coins):
+            if self.conf.coins[c].enabled:
+
+                # Get BTC/coin exchange rate
+                values = []
+                result = 0.0
+
+                if not self.conf.coins[c].unit == 'btc':
+                    # For each exchange that supports this coin...
+                    for e in self.exchanges:
+                        if self.exchanges[e].supports_pair(_name1=self.conf.coins[c].unit, _name2='btc'):
+                            # Get ticker value from exchange
+                            value = self.exchanges[e].get_ticker_value(_name1=self.conf.coins[c].unit, _name2='btc')
+                            if value and float(value) > 0.0:
+                                values.append(float(value))
+
+                    # Result is average of all responses
+                    if len(values) > 0:
+                        result = sum(values) / float(len(values))
+
+                else:
+                    # BTC/BTC rate is always 1
+                    result = 1.0
+
+                # Assign result to self._ev
+                if not self._ev.has_key(c):
+                    self._ev[c] = {}
+                self._ev[c]['btc'] = result
+
+        # For each enabled fiat...
+        for f in vars(self.conf.fiat):
+            if self.conf.fiat[f].enabled:
+
+                # Get fiat/BTC exchange rate
+                values = []
+                result = 0.0
+
+                # For each exchange that supports this fiat...
+                for e in self.exchanges:
+                    if self.exchanges[e].supports_pair(_name1='btc', _name2=self.conf.fiat[f].unit):
+                        # Get ticker value from exchange
+                        value = self.exchanges[e].get_ticker_value(_name1='btc', _name2=self.conf.fiat[f].unit)
+                        if value and float(value) > 0.0:
+                            values.append(float(value))
+
+                # Result is average of all responses
+                if len(values) > 0:
+                    result = sum(values) / float(len(values))
+
+                # Assign result to self._ev
+                if not self._ev.has_key('btc'):
+                    self._ev['btc'] = {}
+                self._ev['btc'][f] = result
+
+        lg.debug("CointipBot::refresh_ev(): %s", self._ev)
+
+        # Update last_refresh
+        self.conf.exchanges.last_refresh = int(time.mktime(time.gmtime()))
+        return
+
+    def coin_value(self, _coin, _fiat):
+        """
+        Quick method to return _fiat value of _coin
+        """
+        return self._ev[_coin]['btc'] * self._ev['btc'][_fiat]
+
+    def __init__(self, self_checks=True, init_reddit=True, init_coins=True, init_exchanges=True, init_db=True, init_logging=True):
         """
         Constructor. Parses configuration file and initializes bot.
         """
@@ -379,6 +454,14 @@ class CointipBot(object):
                 lg.error("CointipBot::__init__(): Error: please enable at least one type of coin")
                 sys.exit(1)
 
+        # Exchanges
+        if init_exchanges:
+            for e in vars(self.conf.exchanges):
+                if self.conf.exchanges[e].enabled:
+                    self.exchanges[e] = ctb_exchange.CtbExchange(_conf=self.conf.exchanges[e])
+            if not len(self.exchanges) > 0:
+                lg.warning("Cointipbot::__init__(): Warning: no exchanges are enabled")
+
         # Reddit
         if init_reddit:
             self.reddit = self.connect_reddit()
@@ -396,8 +479,8 @@ class CointipBot(object):
         """
         Return string representation of self
         """
-        me = "<CointipBot: sleepsec=%s, batchlim=%s, tickerval=%s"
-        me = me % (self.conf.misc.times.sleep_seconds, self.conf.reddit.scan.batch_limit, self.ticker_val)
+        me = "<CointipBot: sleepsec=%s, batchlim=%s, _ev=%s"
+        me = me % (self.conf.misc.times.sleep_seconds, self.conf.reddit.scan.batch_limit, self._ev)
         return me
 
     def main(self):
@@ -409,8 +492,8 @@ class CointipBot(object):
             try:
                 lg.debug("CointipBot::main(): beginning main() iteration")
 
-                # Refresh exchange rates
-                ctb_misc.refresh_exchange_rate(self, exchange='vircurex')
+                # Refresh exchange rate values
+                self.refresh_ev()
 
                 # Check personal messages
                 self.check_inbox()

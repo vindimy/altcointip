@@ -34,7 +34,7 @@ class CtbCoin(object):
         """
 
         # verify _conf is a config dictionary
-        if not _conf or not _conf.name or not _conf.config_file or not _conf.txfee:
+        if not _conf or not hasattr(_conf, 'name') or not hasattr(_conf, 'config_file') or not hasattr(_conf, 'txfee'):
             raise Exception("CtbCoin::__init__(): _conf is empty or invalid")
 
         self.conf = _conf
