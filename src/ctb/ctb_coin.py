@@ -112,7 +112,7 @@ class CtbCoin(object):
             lg.info("CtbCoin::sendtoaddr(): sending %s %s from %s to %s", amount, self.conf.name, userfrom, addrto)
 
             # Unlock wallet, if applicable
-            if self.conf.has_key('walletpassphrase'):
+            if hasattr(self.conf, 'walletpassphrase'):
                 lg.debug("CtbCoin::sendtoaddr(): unlocking wallet...")
                 self.conn.walletpassphrase(self.conf.walletpassphrase, 1)
 
@@ -121,7 +121,7 @@ class CtbCoin(object):
             txid = self.conn.sendfrom(userfrom, addrto, amount, minconf)
 
             # Lock wallet, if applicable
-            if self.conf.has_key('walletpassphrase'):
+            if hasattr(self.conf, 'walletpassphrase'):
                 lg.debug("CtbCoin::sendtoaddr(): locking wallet...")
                 self.conn.walletlock()
 
@@ -161,12 +161,12 @@ class CtbCoin(object):
 
         try:
             # Unlock wallet for keypoolrefill
-            if self.conf.walletpassphrase:
+            if hasattr(self.conf, 'walletpassphrase'):
                 self.conn.walletpassphrase(self.conf.walletpassphrase, 1)
             # Generate address foruser
             addr = self.conn.getnewaddress(user)
             # Lock wallet
-            if self.conf.walletpassphrase:
+            if hasattr(self.conf, 'walletpassphrase'):
                 self.conn.walletlock()
         except BitcoindException as e:
             lg.error("CtbCoin::getnewaddr(%s): error: %s", user, e)
