@@ -375,9 +375,9 @@ class CointipBot(object):
             for c in vars(self.conf.coins):
                 if self.conf.coins[c].enabled:
                     self.coins[c] = ctb_coin.CtbCoin(_conf=self.conf.coins[c])
-        if not len(self.coins) > 0:
-            lg.error("CointipBot::__init__(): Error: please enable at least one type of coin")
-            sys.exit(1)
+            if not len(self.coins) > 0:
+                lg.error("CointipBot::__init__(): Error: please enable at least one type of coin")
+                sys.exit(1)
 
         # Reddit
         if init_reddit:

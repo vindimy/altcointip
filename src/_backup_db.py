@@ -1,4 +1,4 @@
-# Simple script to backup ALTcointip database
+# Simple script to back up ALTcointip database
 
 import sys, os, datetime
 import cointipbot
@@ -8,23 +8,29 @@ if not len(sys.argv) in [2, 3] or not os.access(sys.argv[1], os.W_OK):
 	print "(DIRECTORY must be writeable, RSYNC-TO is optional location to RSYNC the file to)"
 	sys.exit(1)
 
-cb = cointipbot.CointipBot(self_checks=False, init_reddit=False, init_coins=False, init_db=True, init_logging=False)
+ctb = cointipbot.CointipBot(self_checks=False, init_reddit=False, init_coins=False, init_db=True, init_logging=False)
 
-_c = cb._config
-_filename = "%s/%s_%s.sql.gz" % (sys.argv[1], _c['mysql']['db'], datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+if not find_executable('gzip'):
+        print "gzip executable not found, please install gzip"
+        sys.exit(1)
 
-print "Backing up to %s..." % _filename
-os.popen("mysqldump -u %s -p%s -h %s -e --opt -c %s | gzip --best -c >%s" % (_c['mysql']['user'], _c['mysql']['pass'], _c['mysql']['host'], _c['mysql']['db'], _filename))
+if hasattr(ctb.conf.misc.backup, 'encryptionpassphrase') and not find_executable('gpg'):
+        print "encryptionpassphrase is specified but gpg executable not found, please install gpg"
+        sys.exit(1)
+
+filename = "%s/%s_%s.sql.gz" % (sys.argv[1], ctb.conf.db.auth.dbname, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+
+print "Backing up to %s..." % filename
+os.popen("mysqldump -u %s -p%s -h %s -e --opt -c %s | gzip --best -c >%s" % (ctb.conf.db.auth.user, ctb.conf.db.auth.password, ctb.conf.db.auth.host, ctb.conf.db.auth.dbname, filename))
 
 try:
 	print "Encrypting..."
-	#os.popen("echo %s | gpg --batch --passphrase-fd 0 -c %s" % (_c['misc']['encryptionpassphrase'], _filename))
-	os.popen("gpg --batch --passphrase '%s' -c %s" % (_c['misc']['encryptionpassphrase'], _filename))
-	os.popen("rm -f %s" % _filename)
-	_filename += '.gpg'
+	os.popen("gpg --batch --passphrase '%s' -c %s" % (ctb.conf.misc.backup.encryptionpassphrase, filename))
+	os.popen("rm -f %s" % filename)
+	filename += '.gpg'
 except AttributeError:
 	print "Not encrypting"
 
 if len(sys.argv) == 3:
 	print "Calling rsync..."
-	os.popen("rsync -urltv %s %s" % (_filename, sys.argv[2]))
+	os.popen("rsync -urltv %s %s" % (filename, sys.argv[2]))

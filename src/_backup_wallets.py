@@ -1,6 +1,7 @@
-# Simple script to backup wallets
+# Simple script to back up active coin wallets
 
 import sys, os, datetime
+from distutils.spawn import find_executable
 import cointipbot
 
 if not len(sys.argv) in [2, 3] or not os.access(sys.argv[1], os.W_OK):
@@ -8,28 +9,34 @@ if not len(sys.argv) in [2, 3] or not os.access(sys.argv[1], os.W_OK):
 	print "(DIRECTORY must be writeable, RSYNC-TO is optional location to RSYNC the file to)"
 	sys.exit(1)
 
-cb = cointipbot.CointipBot(self_checks=False, init_reddit=False, init_coins=True, init_db=False, init_logging=False)
-_c = cb._config
+ctb = cointipbot.CointipBot(self_checks=False, init_reddit=False, init_coins=True, init_db=False, init_logging=False)
 
-for c in cb._coins:
-	_filename = "%s/wallet_%s_%s.dat" % (sys.argv[1], _c['cc'][c]['unit'], datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+if not find_executable('gzip'):
+	print "gzip executable not found, please install gzip"
+	sys.exit(1)
 
-	print "Backing up %s wallet to %s..." % (_c['cc'][c]['name'], _filename)
-	cb._coins[c].conn.backupwallet(_filename)
+if hasattr(ctb.conf.misc.backup, 'encryptionpassphrase') and not find_executable('gpg'):
+	print "encryptionpassphrase is specified but gpg executable not found, please install gpg"
+	sys.exit(1)
+
+for c in ctb.coins:
+	filename = "%s/wallet_%s_%s.dat" % (sys.argv[1], ctb.conf.coins[c].unit, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+
+	print "Backing up %s wallet to %s..." % (ctb.conf.coins[c].name, filename)
+	ctb.coins[c].conn.backupwallet(filename)
 
 	print "Compressing..."
-        os.popen("gzip --best %s" % _filename)
-	_filename += '.gz'
+        os.popen("gzip --best %s" % filename)
+	filename += '.gz'
 
 	try:
 		print "Encrypting..."
-		#os.popen("echo %s | gpg --batch --passphrase-fd 0 -c %s" % (_c['misc']['encryptionpassphrase'], _filename))
-		os.popen("gpg --batch --passphrase '%s' -c %s" % (_c['misc']['encryptionpassphrase'], _filename))
-		os.popen("rm -f %s" % _filename)
-		_filename += '.gpg'
+		os.popen("gpg --batch --passphrase '%s' -c %s" % (ctb.conf.misc.backup.encryptionpassphrase, filename))
+		os.popen("rm -f %s" % filename)
+		filename += '.gpg'
 	except AttributeError:
 		print "Not encrypting"
 
 	if len(sys.argv) == 3:
 		print "Calling rsync..."
-		os.popen("rsync -urltv %s %s" % (_filename, sys.argv[2]))
+		os.popen("rsync -urltv %s %s" % (filename, sys.argv[2]))
