@@ -15,7 +15,8 @@
 {% if a.coinval: %}
 {%   set coin_amount = a.coinval %}
 {%   set coin_name = ctb.conf.coins[a.coin].name %}
-{%   set coin_amount_fmt = " __^%.6g ^%s(s)__" % (coin_amount, coin_name) %}
+{%   set coin_symbol = ctb.conf.coins[a.coin].symbol %}
+{%   set coin_amount_fmt = " __^%s%.6g ^%s(s)__" % (coin_symbol, coin_amount, coin_name) %}
 {% endif %}
 {% if a.fiatval: %}
 {%   set fiat_amount = a.fiatval %}
