@@ -241,6 +241,42 @@ class CtbUser(object):
         lg.debug("< CtbUser::register(%s) DONE", self.name)
         return True
 
+    def get_redeem_amount(self, coin=None):
+        """
+        Return karma redeem amount for a given coin
+        """
+        lg.debug("> CtbUser::get_redeem_amount(%s)", coin)
+
+        if not coin or not self.ctb.coins.has_key(coin):
+            raise Exception("CtbUser::get_redeem_amount(%s): invalid coin" % coin)
+
+        # First, determine coin value due to link karma
+        link_mul = self.ctb.conf.reddit.redeem.multiplier.link
+        if type(link_mul) in [str, unicode]:
+            link_mul = eval(link_mul)
+        if not type(link_mul) == float:
+            raise Exception("CtbUser::get_redeem_amount(): type of link_mul is not float")
+        link_val = float(self.prawobj.link_karma) * link_mul
+
+        # Second, determine coin value due to comment karma
+        comm_mul = self.ctb.conf.reddit.redeem.multiplier.comment
+        if type(comm_mul) in [str, unicode]:
+            comm_mul = eval(comm_mul)
+        if not type(comm_mul) == float:
+            raise Exception("CtbUser::get_redeem_amount(): type of comm_mul is not float")
+        comm_val = float(self.prawobj.comment_karma) * comm_mul
+
+        # Third, determine base coin value from config
+        base_val = self.ctb.conf.reddit.redeem.base
+        if type(base_val) in [str, unicode]:
+            base_val = eval(base_val)
+        if not type(base_val) == float:
+            raise Exception("CtbUser::get_redeem_amount(): type of base_val is not float")
+
+        # Sum link_val, comm_val, and base_val to get total
+        lg.debug("< CtbUser::get_redeem_amount(%s) DONE", coin)
+        return ( link_val + comm_val + base_val )
+
 
 def delete_user(_username, db):
     """

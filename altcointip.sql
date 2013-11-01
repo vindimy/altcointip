@@ -2,7 +2,7 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
 CREATE TABLE IF NOT EXISTS `t_action` (
-  `type` enum('givetip','withdraw','info','register','accept','decline','history') NOT NULL,
+  `type` enum('givetip','withdraw','info','register','accept','decline','history','redeem') NOT NULL,
   `state` enum('completed','pending','failed','declined','expired') NOT NULL,
   `created_utc` int(11) unsigned NOT NULL,
   `from_user` varchar(30) NOT NULL,

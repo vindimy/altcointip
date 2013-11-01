@@ -31,7 +31,7 @@ class CtbAction(object):
     Action class for cointip bot
     """
 
-    type=None           # 'accept', 'decline', 'history', 'info', 'register', 'givetip', 'withdraw'
+    type=None           # 'accept', 'decline', 'history', 'info', 'register', 'givetip', 'withdraw', 'redeem'
     state=None          # 'completed', 'pending', 'failed', 'declined'
     txid=None           # cryptocoin transaction id, a 64-char string, if applicable
 
@@ -71,7 +71,7 @@ class CtbAction(object):
         self.subreddit = subr
 
         # Do some checks
-        if not self.type or self.type not in ['accept', 'decline', 'history', 'info', 'register', 'givetip', 'withdraw']:
+        if not self.type or self.type not in ['accept', 'decline', 'history', 'info', 'register', 'givetip', 'withdraw', 'redeem']:
             raise Exception("CtbAction::__init__(type=?): proper type is required")
         if not self.ctb:
             raise Exception("CtbAction::__init__(type=%s): no reference to CointipBot", self.type)
@@ -264,6 +264,9 @@ class CtbAction(object):
 
         if self.type == 'withdraw':
             return self.givetip()
+
+        if self.type == 'redeem':
+            return self.redeem()
 
         lg.debug("< CtbAction::do() DONE")
         return None
@@ -667,6 +670,53 @@ class CtbAction(object):
         lg.debug("< CtbAction::register() DONE")
         return result
 
+    def redeem(self):
+        """
+        Redeem karma for coins
+        """
+        lg.debug("> CtbAction::redeem()")
+
+        # Check if user is registered
+        if not self.u_from.is_registered():
+            msg = self.ctb.jenv.get_template('not-registered.tpl').render(a=self, ctb=self.ctb)
+            lg.debug("CtbAction::redeem(): %s", msg)
+            ctb_misc.praw_call(self.msg.reply, msg)
+            self.save('failed')
+            return False
+
+        # Check if this user has redeemed karma in the past
+        if check_action(atype='redeem', from_user=self.u_from.name, state='completed', ctb=self.ctb):
+            msg = self.ctb.jenv.get_template('redeem-already-done.tpl').render(a=self, ctb=self.ctb)
+            lg.debug("CtbAction::redeem(): %s", msg)
+            ctb_misc.praw_call(self.msg.reply, msg)
+            self.save('failed')
+            return False
+
+        # Determine amount
+        self.coinval = self.u_from.get_redeem_amount(coin=self.coin)
+
+        # Check if redeem account has enough balance
+        funds = self.ctb.coins[self.coin].getbalance(_user=self.ctb.conf.reddit.redeem.account, _minconf=1)
+        if self.coinval > funds or abs(self.coinval - funds) < 0.000001:
+            # Reply with 'not enough funds' message
+            msg = self.ctb.jenv.get_template('redeem-low-funds.tpl').render(a=self, ctb=self.ctb)
+            lg.debug("CtbAction::redeem(): %s", msg)
+            ctb_misc.praw_call(self.msg.reply, msg)
+            self.save('failed')
+            return False
+
+        # Transfer coins
+        if self.ctb.coins[self.coin].sendtouser(_userfrom=self.ctb.conf.reddit.redeem.account, _userto=self.u_from.name, _amount=self.coinval, _minconf=1):
+            # Success, send confirmation
+            msg = self.ctb.jenv.get_template('redeem-confirmation.tpl').render(usd_val=(self.ctb.coin_value(self.coin, 'usd')*self.coinval), a=self, ctb=self.ctb)
+            lg.debug("CtbAction::redeem(): %s", msg)
+            ctb_misc.praw_call(self.msg.reply, msg)
+            self.save('completed')
+            return True
+        else:
+            raise Exception("CtbAction::redeem(): sendtouser failed")
+
+
 def init_regex(ctb):
     """
     Initialize regular expressions used to match messages and comments
@@ -765,6 +815,19 @@ def init_regex(ctb):
                         'fiat':       fiat[f].unit,
                         'rg_amount':  7,
                         'rg_address': 4}))
+
+        # Add 'redeem' regex for each enabled cryptocoin
+        for c in vars(cc):
+            if cc[c].enabled:
+                ctb._rlist_message.append(
+                   # +redeem UNIT
+                   ctb_misc.DotDict(
+                   {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.redeem + '(\\s+)' + cc[c].regex.units,
+                    'action':     'redeem',
+                    'coin':       cc[c].unit,
+                    'fiat':       None,
+                    'rg_amount':  None,
+                    'rg_address': None}))
 
     if not ctb._rlist_comment:
         # rlist_comment is a list of regular expressions to test _comment against

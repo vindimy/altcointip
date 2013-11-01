@@ -24,6 +24,14 @@ comments:
 messages:
     sorry: true
 
+redeem:
+    enabled: false
+    base: 'float( self.ctb.conf.coins[self.coin].txmin.givetip )'
+    multiplier:
+        link: 'float( self.ctb.conf.coins[self.coin].txmin.givetip ) / 1000.0'
+        comment: 'float( self.ctb.conf.coins[self.coin].txmin.givetip ) / 1000.0'
+    account: 'YOUR_ACCOUNT_NAME'
+
 banned_users:
     method: list
     list: [mybotuser, bitcointip, altcointip]
@@ -47,3 +55,4 @@ regex:
         decline: '(decline)'
         withdraw: '(withdraw)'
         history: '(history)'
+        redeem: '(redeem)'

@@ -10,7 +10,8 @@
 {% set i_url = compose_url % (user_bot, "info", "info") %}
 {% set h_url = compose_url % (user_bot, "history", "history") %}
 {% set r_url = compose_url % (user_bot, "register", "register") %}
-{% set w_url = compose_url % (user_bot, "withdraw", "withdraw%20ADDRESS%20AMOUNT%20COINname") %}
+{% set w_url = compose_url % (user_bot, "withdraw", "withdraw%20ADDRESS%20AMOUNT%20COIN_NAME") %}
+{% set k_url = compose_url % (user_bot, "redeem", "redeem%20COIN_NAME") %}
 {% if ctb and ctb.conf.reddit.help.enabled %}
 {%   set help_link = " ^[[help]](%s)" % ctb.conf.reddit.help.url %}
 {% endif %}
@@ -30,5 +31,5 @@
 {% elif source_link %}
 ^Source ^comment|^[[link]]({{ source_link }})
 {% endif %}
-^Quick ^commands|^[+accept]({{ a_url }}) ^[+decline]({{ d_url }}) **^[+info]({{ i_url }})** ^[+history]({{ h_url }}) ^[+register]({{ r_url }}) ^[+withdraw]({{ w_url }})
+^Quick ^commands|^[+accept]({{ a_url }}) ^[+decline]({{ d_url }}) **^[+info]({{ i_url }})** ^[+history]({{ h_url }}) ^[+register]({{ r_url }}) ^[+withdraw]({{ w_url }}) ^[+redeem]({{ k_url }})
 ^Resources|{{ help_link }}{{ contact_link }}{{ stats_user_link }}{{ stats_global_link }}
