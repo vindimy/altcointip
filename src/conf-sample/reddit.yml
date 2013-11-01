@@ -26,6 +26,7 @@ messages:
 
 redeem:
     enabled: false
+    multicoin: true
     base: 'float( self.ctb.conf.coins[self.coin].txmin.givetip )'
     multiplier:
         link: 'float( self.ctb.conf.coins[self.coin].txmin.givetip ) / 1000.0'

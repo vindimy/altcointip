@@ -685,8 +685,15 @@ class CtbAction(object):
             return False
 
         # Check if this user has redeemed karma in the past
-        if check_action(atype='redeem', from_user=self.u_from.name, state='completed', ctb=self.ctb):
-            msg = self.ctb.jenv.get_template('redeem-already-done.tpl').render(a=self, ctb=self.ctb)
+        check = False
+        if self.ctb.conf.reddit.redeem.multicoin:
+            # Check if self.coin has been redeemed
+            check = check_action(atype='redeem', from_user=self.u_from.name, state='completed', coin=self.coin, ctb=self.ctb)
+        else:
+            # Check if any coin has been redeemed
+            check = check_action(atype='redeem', from_user=self.u_from.name, state='completed', ctb=self.ctb)
+        if check:
+            msg = self.ctb.jenv.get_template('redeem-already-done.tpl').render(coin=self.ctb.conf.coins[self.coin].name if self.ctb.conf.reddit.redeem.multicoin else None, a=self, ctb=self.ctb)
             lg.debug("CtbAction::redeem(): %s", msg)
             ctb_misc.praw_call(self.msg.reply, msg)
             self.save('failed')
