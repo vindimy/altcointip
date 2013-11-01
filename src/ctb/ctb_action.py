@@ -625,7 +625,7 @@ class CtbAction(object):
         fiat_total = 0.0
         for i in info:
             i.fiat_symbol = self.ctb.conf.fiat.usd.symbol
-            if self.ctb.coin_value(self.ctb.conf.coins[i.coin].unit, 'usd'):
+            if self.ctb.coin_value(self.ctb.conf.coins[i.coin].unit, 'usd') > 0.0:
                 i.fiat_balance = i.balance * self.ctb.coin_value(self.ctb.conf.coins[i.coin].unit, 'usd')
                 fiat_total += i.fiat_balance
 
