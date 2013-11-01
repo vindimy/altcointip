@@ -47,3 +47,11 @@ sql:
       desc: "Top 10 all-time tip receivers as determined by total USD/EUR (fiat) value of their received tips."
       type: table
       query: "SELECT to_user, SUM(fiat_val) AS total_fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') AND to_user IS NOT NULL GROUP BY to_user ORDER BY total_fiat DESC LIMIT 10"
+  userstats:
+    users: "SELECT username FROM t_users WHERE username IN (SELECT from_user FROM t_action WHERE type = 'givetip') OR username in (SELECT to_user FROM t_action WHERE type = 'givetip') ORDER BY username"
+    coins: 'SELECT DISTINCT coin FROM t_action WHERE coin IS NOT NULL ORDER BY coin'
+    history: "SELECT from_user, to_user, created_utc, to_addr, coin_val, coin, fiat_val, fiat, state, subreddit, msg_link FROM t_action WHERE type='givetip' AND (from_user=%s OR to_user=%s) ORDER BY created_utc DESC"
+    total_tipped_fiat: "SELECT SUM(fiat_val) AS total_fiat FROM t_action WHERE type='givetip' AND state='completed' AND (fiat='usd' OR fiat='eur') AND from_user=%s"
+    total_tipped_coin: "SELECT SUM(coin_val) AS total_coin FROM t_action WHERE type='givetip' AND state='completed' AND from_user=%s AND coin=%s"
+    total_received_fiat: "SELECT SUM(fiat_val) AS total_fiat FROM t_action WHERE type='givetip' AND state='completed' AND (fiat='usd' OR fiat='eur') AND to_user=%s"
+    total_received_coin: "SELECT SUM(coin_val) AS total_coin FROM t_action WHERE type='givetip' AND state='completed' AND to_user=%s AND coin=%s"

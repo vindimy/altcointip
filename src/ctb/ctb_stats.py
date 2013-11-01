@@ -30,7 +30,7 @@ def update_stats(ctb=None):
     if not ctb.conf.reddit.stats.enabled:
         return None
 
-    for s in sorted(ctb.conf.db.sql.globalstats):
+    for s in sorted(vars(ctb.conf.db.sql.globalstats)):
         lg.debug("update_stats(): getting stats for '%s'" % s)
         sql = ctb.conf.db.sql.globalstats[s].query
         stats += "\n\n### %s\n\n" % ctb.conf.db.sql.globalstats[s].name
@@ -88,8 +88,7 @@ def update_all_user_stats(ctb=None):
         lg.error('update_all_user_stats(): stats are not enabled in config.yml')
         return None
 
-    sql_users = "SELECT username FROM t_users WHERE username IN (SELECT from_user FROM t_action WHERE type = 'givetip') OR username in (SELECT to_user FROM t_action WHERE type = 'givetip') ORDER BY username"
-    users = mysqlcon.execute(sql_users)
+    users = ctb.db.execute(ctb.conf.db.sql.userstats.users)
     for u in users:
         update_user_stats(ctb=ctb, username=u['username'])
 
@@ -101,15 +100,8 @@ def update_user_stats(ctb=None, username=None):
     if not ctb.conf.reddit.stats.enabled:
         return None
 
-    sql_coins = 'SELECT DISTINCT coin FROM t_action WHERE coin IS NOT NULL ORDER BY coin'
-    sql_history = "SELECT from_user, to_user, created_utc, to_addr, coin_val, coin, fiat_val, fiat, state, subreddit, msg_link FROM t_action WHERE type='givetip' AND (from_user=%s OR to_user=%s) ORDER BY created_utc ASC"
-    sql_total_tipped_fiat = "SELECT SUM(fiat_val) AS total_fiat FROM t_action WHERE type='givetip' AND state='completed' AND (fiat = 'usd' OR fiat = 'eur') AND from_user=%s"
-    sql_total_tipped_coin = "SELECT SUM(coin_val) AS total_coin FROM t_action WHERE type='givetip' AND state='completed' AND from_user=%s AND coin=%s"
-    sql_total_received_fiat = "SELECT SUM(fiat_val) AS total_fiat FROM t_action WHERE type='givetip' AND state='completed' AND (fiat = 'usd' OR fiat = 'eur') AND to_user=%s"
-    sql_total_received_coin = "SELECT SUM(coin_val) AS total_coin FROM t_action WHERE type='givetip' AND state='completed' AND to_user=%s AND coin=%s"
-
     # Build a list of coins
-    coins_q = ctb.db.execute(sql_coins)
+    coins_q = ctb.db.execute(ctb.conf.db.sql.userstats.coins)
     coins = []
 
     for c in coins_q:
@@ -120,7 +112,7 @@ def update_user_stats(ctb=None, username=None):
 
         # Total Tipped
         user_stats += "#### Total Tipped (USD)\n\n"
-        mysqlexec = ctb.db.execute(sql_total_tipped_fiat, (username))
+        mysqlexec = ctb.db.execute(ctb.conf.db.sql.userstats.total_tipped_fiat, (username))
         total_tipped_fiat = mysqlexec.fetchone()
         if total_tipped_fiat['total_fiat'] == None:
             user_stats += "**total_tipped_fiat = $%.2f**\n\n" % 0.0
@@ -130,7 +122,7 @@ def update_user_stats(ctb=None, username=None):
         user_stats += "#### Total Tipped (Coins)\n\n"
         user_stats += "coin|total\n:---|---:\n"
         for c in coins:
-            mysqlexec = ctb.db.execute(sql_total_tipped_coin, (username, c))
+            mysqlexec = ctb.db.execute(ctb.conf.db.sql.userstats.total_tipped_coin, (username, c))
             total_tipped_coin = mysqlexec.fetchone()
             if total_tipped_coin['total_coin'] == None:
                 user_stats += "%s|%.8g\n" % (c, 0.0)
@@ -140,7 +132,7 @@ def update_user_stats(ctb=None, username=None):
 
         # Total received
         user_stats += "#### Total Received (USD)\n\n"
-        mysqlexec = ctb.db.execute(sql_total_received_fiat, (username))
+        mysqlexec = ctb.db.execute(ctb.conf.db.sql.userstats.total_received_fiat, (username))
         total_received_fiat = mysqlexec.fetchone()
         if total_received_fiat['total_fiat'] == None:
             user_stats += "**total_received_fiat = $%.2f**\n\n" % 0.0
@@ -150,7 +142,7 @@ def update_user_stats(ctb=None, username=None):
         user_stats += "#### Total Received (Coins)\n\n"
         user_stats += "coin|total\n:---|---:\n"
         for c in coins:
-            mysqlexec = ctb.db.execute(sql_total_received_coin, (username, c))
+            mysqlexec = ctb.db.execute(ctb.conf.db.sql.userstats.total_received_coin, (username, c))
             total_received_coin = mysqlexec.fetchone()
             if total_received_coin['total_coin'] == None:
                 user_stats += "%s|%.8g\n" % (c, 0.0)
@@ -160,7 +152,7 @@ def update_user_stats(ctb=None, username=None):
 
         # History
         user_stats += "#### History\n\n"
-        history = ctb.db.execute(sql_history, (username, username))
+        history = ctb.db.execute(ctb.conf.db.sql.userstats.history, (username, username))
         user_stats += ("|".join(history.keys())) + "\n"
         user_stats += ("|".join([":---"] * len(history.keys()))) + "\n"
 
@@ -177,9 +169,9 @@ def update_user_stats(ctb=None, username=None):
                 # Format username
                 elif k.find("user") > -1:
                     if m[k] != None:
-                        un = ("**%s**" % username) if m[k] == username else m[k]
+                        un = ("**%s**" % username) if m[k].lower() == username.lower() else m[k]
                         toappend = "[%s](/u/%s)" % (un, re.escape(m[k]))
-                        if m[k] != username:
+                        if m[k].lower() != username.lower():
                             toappend += " ^[[stats]](/r/%s/wiki/%s_%s)" % (ctb.conf.reddit.stats.subreddit, ctb.conf.reddit.stats.page, m[k])
                         values.append(toappend)
                     else:
@@ -187,7 +179,8 @@ def update_user_stats(ctb=None, username=None):
                 # Format address
                 elif k.find("addr") > -1:
                     if m[k] != None:
-                        values.append("[%s](%s)" % (m[k], ctb.conf.coins[m['coin']].explorer.address + m[k]))
+                        displayaddr = m[k][:6] + "..." + m[k][-5:]
+                        values.append("[%s](%s)" % (displayaddr, ctb.conf.coins[m['coin']].explorer.address + m[k]))
                     else:
                         values.append("None")
                 # Format state
@@ -204,7 +197,7 @@ def update_user_stats(ctb=None, username=None):
                     values.append("[link](%s)" % m[k])
                 # Format time
                 elif k.find("utc") > -1:
-                    values.append("%s" % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(m[k])))
+                    values.append("%s" % time.strftime('%Y-%m-%d', time.localtime(m[k])))
                 else:
                     values.append(str(m[k]))
 
