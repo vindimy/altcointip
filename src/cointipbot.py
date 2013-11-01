@@ -21,9 +21,14 @@ from ctb import ctb_action, ctb_coin, ctb_db, ctb_exchange, ctb_log, ctb_misc, c
 import gettext, locale, logging, praw, sys, time, traceback, yaml
 from jinja2 import Environment, PackageLoader
 
+from requests.exceptions import HTTPError
+from praw.errors import ExceptionList, APIException, InvalidCaptcha, InvalidUser, RateLimitExceeded
+from socket import timeout
+
 # Configure CointipBot logger
 logging.basicConfig()
 lg = logging.getLogger('cointipbot')
+
 
 class CointipBot(object):
     """
@@ -234,6 +239,10 @@ class CointipBot(object):
                 # Mark message as read
                 ctb_misc.praw_call(m.mark_as_read)
 
+        except (HTTPError, RateLimitExceeded, timeout) as e:
+            lg.warning("CointipBot::check_inbox(): Reddit is down (%s), sleeping", e)
+            time.sleep(self.conf.misc.times.sleep_seconds)
+            pass
         except Exception as e:
             lg.error("CointipBot::check_inbox(): %s", e)
             raise
@@ -335,6 +344,10 @@ class CointipBot(object):
             if counter >= self.conf.reddit.scan.batch_limit - 1:
                 lg.warning("CointipBot::check_subreddits(): conf.reddit.scan.batch_limit (%s) was not large enough to process all comments", self.conf.reddit.scan.batch_limit)
 
+        except (HTTPError, RateLimitExceeded, timeout) as e:
+            lg.warning("CointipBot::check_subreddits(): Reddit is down (%s), sleeping", e)
+            time.sleep(self.conf.misc.times.sleep_seconds)
+            pass
         except Exception as e:
             lg.error("CointipBot::check_subreddits(): coudln't fetch comments: %s", e)
             raise
@@ -417,7 +430,6 @@ class CointipBot(object):
 
         # Update last_refresh
         self.conf.exchanges.last_refresh = int(time.mktime(time.gmtime()))
-        return
 
     def coin_value(self, _coin, _fiat):
         """

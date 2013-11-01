@@ -25,35 +25,29 @@ from socket import timeout
 
 lg = logging.getLogger('cointipbot')
 
+
 def praw_call(prawFunc, *extraArgs, **extraKwArgs):
     """
     Call prawFunc() with extraArgs and extraKwArgs
     Retry if Reddit is down
     """
+
     while True:
+
         try:
             res = prawFunc(*extraArgs, **extraKwArgs)
             return res
-        except APIException as e:
-            lg.warning("praw_call(): failed (%s)", e)
-            raise
-        except ExceptionList as el:
-            for e in el:
-                lg.warning("praw_call(): failed (%s)", e)
-            raise
-        except (HTTPError, RateLimitExceeded) as e:
+
+        except (HTTPError, RateLimitExceeded, timeout) as e:
             if str(e) == "403 Client Error: Forbidden":
-                lg.warning("praw_call(): 403 forbidden %s", msg.permalink)
+                lg.warning("praw_call(): 403 forbidden")
                 return False
             lg.warning("praw_call(): Reddit is down (%s), sleeping...", e)
-            time.sleep(10)
-            pass
-        except timeout:
-            lg.warning("praw_call(): Reddit is down (timeout), sleeping...")
-            time.sleep(10)
+            time.sleep(30)
             pass
         except Exception as e:
             raise
+
     return True
 
 def reddit_get_parent_author(comment, reddit, ctb):
@@ -63,7 +57,9 @@ def reddit_get_parent_author(comment, reddit, ctb):
     lg.debug("> reddit_get_parent_author()")
 
     while True:
+
         try:
+
             parentpermalink = comment.permalink.replace(comment.id, comment.parent_id[3:])
             commentlinkid = None
             if hasattr(comment, 'link_id'):
@@ -81,19 +77,8 @@ def reddit_get_parent_author(comment, reddit, ctb):
             lg.debug("< reddit_get_parent_author(%s) -> %s", comment.id, parentcomment.author.name)
             return parentcomment.author.name
 
-        except APIException as e:
-            lg.error("reddit_get_parent_author(%s): failed (%s)", comment.id, e)
-            raise
-        except ExceptionList as el:
-            for e in el:
-                lg.error("reddit_get_parent_author(%s): failed (%s)", comment.id, e)
-            raise
-        except (HTTPError, RateLimitExceeded) as e:
-            lg.warning("reddit_get_parent_author(%s): Reddit is down (%s), sleeping...", comment.id, e)
-            time.sleep(ctb.conf.misc.times.sleep_seconds)
-            pass
-        except timeout:
-            lg.warning("reddit_get_parent_author(%s): Reddit is down (timeout), sleeping...", comment.id)
+        except (HTTPError, RateLimitExceeded, timeout) as e:
+            lg.warning("reddit_get_parent_author(): Reddit is down (%s), sleeping...", e)
             time.sleep(ctb.conf.misc.times.sleep_seconds)
             pass
         except Exception as e:
@@ -115,6 +100,7 @@ def get_value(conn, param0=None):
     sql = "SELECT value0 FROM t_values WHERE param0 = %s"
 
     try:
+
         mysqlrow = conn.execute(sql, (param0)).fetchone()
         if mysqlrow == None:
             lg.error("get_value(): query <%s> didn't return any rows", sql % (param0))
@@ -139,6 +125,7 @@ def set_value(conn, param0=None, value0=None):
     sql = "REPLACE INTO t_values (param0, value0) VALUES (%s, %s)"
 
     try:
+
         mysqlexec = conn.execute(sql, (param0, value0))
         if mysqlexec.rowcount <= 0:
             lg.error("set_value(): query <%s> didn't affect any rows", sql % (param0, value0))
@@ -161,6 +148,7 @@ def add_coin(coin, db, coins):
     sql_insert = "REPLACE INTO t_addrs (username, coin, address) VALUES (%s, %s, %s)"
 
     try:
+
         mysqlsel = db.execute(sql_select, (coin))
         for m in mysqlsel:
             # Generate new coin address for user
