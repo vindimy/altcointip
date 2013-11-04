@@ -18,7 +18,8 @@
 
 from ctb import ctb_action, ctb_coin, ctb_db, ctb_exchange, ctb_log, ctb_misc, ctb_user
 
-import gettext, locale, logging, praw, sys, time, traceback, yaml
+import gettext, locale, logging, praw, smtplib, sys, time, traceback, yaml
+from email.mime.text import MIMEText
 from jinja2 import Environment, PackageLoader
 
 from requests.exceptions import HTTPError
@@ -437,6 +438,25 @@ class CointipBot(object):
         """
         return self._ev[_coin]['btc'] * self._ev['btc'][_fiat]
 
+    def notify(self, _msg=None):
+        """
+        Send _msg to configured destination
+        """
+
+        # Construct MIME message
+        msg = MIMEText(_msg)
+        msg['Subject'] = self.conf.misc.notify.subject
+        msg['From'] = self.conf.misc.notify.addr_from
+        msg['To'] = self.conf.misc.notify.addr_to
+
+        # Send MIME message
+        server = smtplib.SMTP(self.conf.misc.notify.smtp_host)
+        if self.conf.misc.notify.smtp_tls:
+            server.starttls()
+        server.login(self.conf.misc.notify.smtp_username, self.conf.misc.notify.smtp_password)
+        server.sendmail(self.conf.misc.notify.addr_from, self.conf.misc.notify.addr_to, msg.as_string())
+        server.quit()
+
     def __init__(self, self_checks=True, init_reddit=True, init_coins=True, init_exchanges=True, init_db=True, init_logging=True):
         """
         Constructor. Parses configuration file and initializes bot.
@@ -523,5 +543,9 @@ class CointipBot(object):
 
             except Exception as e:
                 lg.error("CointipBot::main(): exception: %s", e)
-                lg.error(traceback.format_exc())
+                tb = traceback.format_exc()
+                lg.error("CointipBot::main(): traceback: %s", tb)
+                # Send a notification, if enabled
+                if self.conf.misc.notify.enabled:
+                    self.notify(_msg=tb)
                 sys.exit(1)
