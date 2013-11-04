@@ -176,3 +176,5 @@ class DotDict(object):
                setattr(self, a, DotDict(b) if isinstance(b, dict) else b)
     def __getitem__(self, val):
         return getattr(self, val)
+    def has_key(self, key):
+        return hasattr(self, key)

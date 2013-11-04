@@ -685,22 +685,32 @@ class CtbAction(object):
             return False
 
         # Check if this user has redeemed karma in the past
-        check = False
+        has_redeemed = False
         if self.ctb.conf.reddit.redeem.multicoin:
             # Check if self.coin has been redeemed
-            check = check_action(atype='redeem', from_user=self.u_from.name, state='completed', coin=self.coin, ctb=self.ctb)
+            has_redeemed = check_action(atype='redeem', from_user=self.u_from.name, state='completed', coin=self.coin, ctb=self.ctb)
         else:
             # Check if any coin has been redeemed
-            check = check_action(atype='redeem', from_user=self.u_from.name, state='completed', ctb=self.ctb)
-        if check:
+            has_redeemed = check_action(atype='redeem', from_user=self.u_from.name, state='completed', ctb=self.ctb)
+        if has_redeemed:
             msg = self.ctb.jenv.get_template('redeem-already-done.tpl').render(coin=self.ctb.conf.coins[self.coin].name if self.ctb.conf.reddit.redeem.multicoin else None, a=self, ctb=self.ctb)
             lg.debug("CtbAction::redeem(): %s", msg)
             ctb_misc.praw_call(self.msg.reply, msg)
             self.save('failed')
             return False
 
+        # Check if this user has > minimum karma
+        user_karma = int(self.u_from.prawobj.link_karma) + int(self.u_from.prawobj.comment_karma)
+        if user_karma < self.ctb.conf.reddit.redeem.min_karma:
+            msg = self.ctb.jenv.get_template('redeem-low-karma.tpl').render(user_karma=user_karma, a=self, ctb=self.ctb)
+            lg.debug("CtbAction::redeem(): %s", msg)
+            ctb_misc.praw_call(self.msg.reply, msg)
+            self.save('failed')
+            return False
+
         # Determine amount
-        self.coinval = self.u_from.get_redeem_amount(coin=self.coin)
+        self.fiat = self.ctb.conf.reddit.redeem.unit
+        self.coinval, self.fiatval = self.u_from.get_redeem_amount(coin=self.coin, fiat=self.fiat)
 
         # Check if redeem account has enough balance
         funds = self.ctb.coins[self.coin].getbalance(_user=self.ctb.conf.reddit.redeem.account, _minconf=1)
@@ -715,7 +725,7 @@ class CtbAction(object):
         # Transfer coins
         if self.ctb.coins[self.coin].sendtouser(_userfrom=self.ctb.conf.reddit.redeem.account, _userto=self.u_from.name, _amount=self.coinval, _minconf=1):
             # Success, send confirmation
-            msg = self.ctb.jenv.get_template('redeem-confirmation.tpl').render(usd_val=(self.ctb.coin_value(self.coin, 'usd')*self.coinval), a=self, ctb=self.ctb)
+            msg = self.ctb.jenv.get_template('redeem-confirmation.tpl').render(a=self, ctb=self.ctb)
             lg.debug("CtbAction::redeem(): %s", msg)
             ctb_misc.praw_call(self.msg.reply, msg)
             self.save('completed')

@@ -26,11 +26,14 @@ messages:
 
 redeem:
     enabled: false
+    unit: 'usd'
     multicoin: true
-    base: 'float( self.ctb.conf.coins[self.coin].txmin.givetip )'
+    min_karma: 150
+    base: 0.1
     multiplier:
-        link: 'float( self.ctb.conf.coins[self.coin].txmin.givetip ) / 1000.0'
-        comment: 'float( self.ctb.conf.coins[self.coin].txmin.givetip ) / 1000.0'
+        link: 0.00005
+        comment: 0.000005
+    maximum: 0.5
     account: 'YOUR_ACCOUNT_NAME'
 
 banned_users:

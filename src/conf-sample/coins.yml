@@ -183,7 +183,7 @@ ftc:
         givetip: 3
         withdraw: 30
     txmin:
-        givetip: 0.01
+        givetip: 0.05
         withdraw: 0.49
     txfee: 0.01
     walletpassphrase: 'mypass1'
