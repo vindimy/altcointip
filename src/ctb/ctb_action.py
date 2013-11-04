@@ -372,7 +372,7 @@ class CtbAction(object):
         self.save('expired')
 
         # Respond to tip comment
-        msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Expired', a=self, ctb=self.ctb, source_link=a.msg.permalink if a.msg else None)
+        msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Expired', a=self, ctb=self.ctb, source_link=self.msg.permalink if self.msg else None)
         lg.debug("CtbAction::expire(): " + msg)
         if self.ctb.conf.reddit.comments.expired:
             if not ctb_misc.praw_call(self.msg.reply, msg):
