@@ -42,3 +42,12 @@ mtgox:
     coinlist: ['btc']
     fiatlist: ['usd','eur','jpy','gbp','rub']
     uppercase: true
+
+campbx:
+    enabled: true
+    domain: 'campbx.com'
+    urlpaths: ['/api/xticker.php']
+    jsonpaths: ['Last Trade']
+    coinlist: ['btc']
+    fiatlist: ['usd']
+    uppercase: false
