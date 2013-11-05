@@ -2,8 +2,7 @@ blockchaininfo:
     enabled: true
     domain: 'blockchain.info'
     urlpaths: ['/ticker']
-    json:
-        path: '{THING_TO}.15m'
+    jsonpath: '{THING_TO}.15m'
     coinlist: ['btc']
     fiatlist: ['usd','cny','jpy','sgd','hkd','cad','aud','nzd','gbp','dkk','sek','brl','chf','eur','rub','sll','pln','thb']
     uppercase: true
@@ -12,8 +11,7 @@ vircurex:
     enabled: true
     domain: 'vircurex.com'
     urlpaths: ['/api/get_highest_bid.json?base={THING_FROM}&alt={THING_TO}', '/api/get_lowest_ask.json?base={THING_FROM}&alt={THING_TO}']
-    json:
-        path: 'value'
+    jsonpath: 'value'
     coinlist: ['anc','btc','dgc','dvc','frc','ftc','i0c','ixc','ltc','nmc','nvc','ppc','trc','xpm']
     fiatlist: ['usd','eur']
     uppercase: true
@@ -22,8 +20,25 @@ btce:
     enabled: true
     domain: 'btc-e.com'
     urlpaths: ['/api/2/{THING_FROM}_{THING_TO}/ticker']
-    json:
-        path: 'ticker.avg'
+    jsonpath: 'ticker.avg'
     coinlist: ['btc','ltc','nmc','nvc','trc','ppc','ftc','xpm']
     fiatlist: ['usd','eur','rur']
     uppercase: false
+
+bitstamp:
+    enabled: true
+    domain: 'www.bitstamp.net'
+    urlpaths: ['/api/ticker/']
+    jsonpath: 'ask'
+    coinlist: ['btc']
+    fiatlist: ['usd']
+    uppercase: false
+
+mtgox:
+    enabled: true
+    domain: 'data.mtgox.com'
+    urlpaths: ['/api/2/{THING_FROM}{THING_TO}/money/ticker_fast']
+    jsonpath: 'data.buy.value'
+    coinlist: ['btc']
+    fiatlist: ['usd','eur','jpy','gbp','rub']
+    uppercase: true

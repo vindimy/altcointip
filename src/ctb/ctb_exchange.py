@@ -32,7 +32,7 @@ class CtbExchange(object):
             _conf is an exchange config dictionary defind in conf/exchanges.yml
         """
 
-        if not _conf or not hasattr(_conf, 'urlpaths') or not hasattr(_conf, 'json') or not hasattr(_conf, 'coinlist') or not hasattr(_conf, 'fiatlist'):
+        if not _conf or not hasattr(_conf, 'urlpaths') or not hasattr(_conf, 'jsonpaths') or not hasattr(_conf, 'coinlist') or not hasattr(_conf, 'fiatlist'):
             raise Exception("CtbExchange::__init__(): _conf is empty or invalid")
 
         self.conf = _conf
@@ -54,10 +54,10 @@ class CtbExchange(object):
         name = str(_name).lower()
 
         if name in self.conf.coinlist or name in self.conf.fiatlist:
-            lg.debug("CtbExchange::supports(%s): YES" % name)
+            #lg.debug("CtbExchange::supports(%s): YES" % name)
             return True
         else:
-            lg.debug("CtbExchange::supports(%s): NO" % name)
+            #lg.debug("CtbExchange::supports(%s): NO" % name)
             return False
 
     def supports_pair(self, _name1 = None, _name2 = None):
@@ -77,29 +77,31 @@ class CtbExchange(object):
 
         results = []
         for myurlpath in self.conf.urlpaths:
-            myjsonpath = self.conf.json.path
-            toreplace = {'{THING_FROM}': _name1.upper() if self.conf.uppercase else _name1.lower(), '{THING_TO}': _name2.upper() if self.conf.uppercase else _name2.lower()}
-            for t in toreplace:
-                myurlpath = myurlpath.replace(t, toreplace[t])
-                myjsonpath = myjsonpath.replace(t, toreplace[t])
+            for myjsonpath in self.conf.jsonpaths:
 
-            try:
-                lg.debug("CtbExchange::get_ticker_value(%s, %s): calling %s to get path %s...", _name1, _name2, myurlpath, myjsonpath)
-                connection = httplib.HTTPSConnection(self.conf.domain)
-                connection.request("GET", myurlpath, {}, {})
-                response = json.loads(connection.getresponse().read())
-                result = xpath_get(response, myjsonpath)
-                results.append( float(result) )
+                toreplace = {'{THING_FROM}': _name1.upper() if self.conf.uppercase else _name1.lower(), '{THING_TO}': _name2.upper() if self.conf.uppercase else _name2.lower()}
+                for t in toreplace:
+                    myurlpath = myurlpath.replace(t, toreplace[t])
+                    myjsonpath = myjsonpath.replace(t, toreplace[t])
 
-            except urllib2.URLError as e:
-                lg.error("CtbExchange::get_ticker_value(%s, %s): %s", _name1, _name2, e)
-                return None
-            except urllib2.HTTPError as e:
-                lg.error("CtbExchange::get_ticker_value(%s, %s): %s", _name1, _name2, e)
-                return None
-            except Exception as e:
-                lg.error("CtbExchange::get_ticker_value(%s, %s): %s", _name1, _name2, e)
-                return None
+                try:
+                    lg.debug("CtbExchange::get_ticker_value(%s, %s): calling %s%s to get path %s...", _name1, _name2, self.conf.domain, myurlpath, myjsonpath)
+                    connection = httplib.HTTPSConnection(self.conf.domain)
+                    connection.request("GET", myurlpath, {}, {})
+                    response = json.loads(connection.getresponse().read())
+                    result = xpath_get(response, myjsonpath)
+                    lg.debug("CtbExchange::get_ticker_value(%s, %s): got %.6f", _name1, _name2, float(result))
+                    results.append( float(result) )
+
+                except urllib2.URLError as e:
+                    lg.error("CtbExchange::get_ticker_value(%s, %s): %s", _name1, _name2, e)
+                    return None
+                except urllib2.HTTPError as e:
+                    lg.error("CtbExchange::get_ticker_value(%s, %s): %s", _name1, _name2, e)
+                    return None
+                except Exception as e:
+                    lg.error("CtbExchange::get_ticker_value(%s, %s): %s", _name1, _name2, e)
+                    return None
 
         # Return average of all responses
         return ( sum(results) / float(len(results)) )
