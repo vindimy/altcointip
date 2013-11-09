@@ -199,6 +199,12 @@ class CointipBot(object):
 
             # Process messages
             for m in messages:
+                # Sometimes messages don't have an author (such as 'you are banned from' message)
+                if not m.author:
+                    lg.info("CointipBot::check_inbox(): ignoring msg with no author")
+                    ctb_misc.praw_call(m.mark_as_read)
+                    continue
+
                 lg.info("CointipBot::check_inbox(): %s from %s", "comment" if m.was_comment else "message", m.author.name)
 
                 # Ignore self messages
