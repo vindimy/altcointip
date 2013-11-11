@@ -39,3 +39,13 @@ notify:
     smtp_tls: true
     smtp_username: 'user@example.com'
     smtp_password: 'examplePass'
+
+actions:
+    accept: true
+    decline: true
+    givetip: true
+    history: false
+    info: true
+    redeem: true
+    register: true
+    withdraw: true

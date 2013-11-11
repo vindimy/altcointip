@@ -232,6 +232,12 @@ class CtbAction(object):
             lg.warning("CtbAction::do(): duplicate action %s (msg.id %s), ignoring", self.type, self.msg.id)
             return False
 
+	if not self.ctb.conf.misc.actions[self.type]:
+	    msg = self.ctb.jenv.get_template('command-disabled.tpl').render(a=self, ctb=self.ctb)
+	    lg.info("CtbAction::do(): %s command disabled", self.type)
+	    ctb_misc.praw_call(self.msg.reply, msg)
+	    return False
+
         if self.type == 'accept':
             if self.accept():
                 self.type = 'info'
