@@ -26,3 +26,5 @@ ctb = cointipbot.CointipBot(self_checks=False, init_reddit=True, init_coins=Fals
 result = ctb_stats.update_stats(ctb=ctb)
 lg.debug(result)
 
+result = ctb_stats.update_user_stats(ctb=ctb, username='im14')
+lg.debug(result)

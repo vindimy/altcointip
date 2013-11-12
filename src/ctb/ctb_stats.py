@@ -162,10 +162,12 @@ def update_user_stats(ctb=None, username=None):
             for k in history.keys():
                 # Format cryptocoin
                 if type(m[k]) == float and k.find("coin") > -1:
-                    values.append("%.8g" % m[k])
+                    coin_symbol = ctb.conf.coins[m['coin']].symbol
+                    values.append("%s%.8g" % (coin_symbol, m[k]))
                 # Format fiat
                 elif type(m[k]) == float and k.find("fiat") > -1:
-                    values.append("$%.2f" % m[k])
+                    fiat_symbol = ctb.conf.fiat[m['fiat']].symbol
+                    values.append("%s%.2f" % (fiat_symbol, m[k]))
                 # Format username
                 elif k.find("user") > -1:
                     if m[k] != None:
