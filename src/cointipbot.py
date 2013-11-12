@@ -22,7 +22,7 @@ import gettext, locale, logging, praw, smtplib, sys, time, traceback, yaml
 from email.mime.text import MIMEText
 from jinja2 import Environment, PackageLoader
 
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, ConnectionError, Timeout
 from praw.errors import ExceptionList, APIException, InvalidCaptcha, InvalidUser, RateLimitExceeded
 from socket import timeout
 
@@ -246,7 +246,7 @@ class CointipBot(object):
                 # Mark message as read
                 ctb_misc.praw_call(m.mark_as_read)
 
-        except (HTTPError, RateLimitExceeded, timeout) as e:
+        except (HTTPError, ConnectionError, Timeout, RateLimitExceeded, timeout) as e:
             lg.warning("CointipBot::check_inbox(): Reddit is down (%s), sleeping", e)
             time.sleep(self.conf.misc.times.sleep_seconds)
             pass

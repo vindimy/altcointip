@@ -19,10 +19,6 @@ import ctb_misc
 
 import logging, time, praw, re
 
-from requests.exceptions import HTTPError
-from praw.errors import ExceptionList, APIException, InvalidCaptcha, InvalidUser, RateLimitExceeded
-from socket import timeout
-
 lg = logging.getLogger('cointipbot')
 
 class CtbUser(object):

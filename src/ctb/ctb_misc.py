@@ -19,7 +19,7 @@ import ctb_user
 
 import logging, time
 
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, ConnectionError, Timeout
 from praw.errors import ExceptionList, APIException, InvalidCaptcha, InvalidUser, RateLimitExceeded
 from socket import timeout
 
@@ -38,7 +38,7 @@ def praw_call(prawFunc, *extraArgs, **extraKwArgs):
             res = prawFunc(*extraArgs, **extraKwArgs)
             return res
 
-        except (HTTPError, RateLimitExceeded, timeout) as e:
+        except (HTTPError, ConnectionError, Timeout, RateLimitExceeded, timeout) as e:
             if str(e) == "403 Client Error: Forbidden":
                 lg.warning("praw_call(): 403 forbidden")
                 return False
