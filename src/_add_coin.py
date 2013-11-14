@@ -5,6 +5,7 @@ from ctb import ctb_misc
 
 logging.basicConfig()
 lg = logging.getLogger('cointipbot')
+lg.setLevel(logging.DEBUG)
 
 # Make sure CointipBot instance is NOT running
 
