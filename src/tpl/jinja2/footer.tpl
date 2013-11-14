@@ -1,5 +1,5 @@
-{% if not user_from and a %}
-{%   set user_from = a.u_from.name %}
+{% if not user and a %}
+{%   set user = a.u_from.name %}
 {% endif %}
 {% if not user_bot and ctb %}
 {%   set user_bot = ctb.conf.reddit.auth.user %}
@@ -19,7 +19,7 @@
 {%   set contact_link = " ^[[contact]](%s)" % ctb.conf.reddit.contact.url %}
 {% endif %}
 {% if ctb and ctb.conf.reddit.stats.enabled %}
-{%   set stats_user_link = " **^[[your_stats]](%s_%s)**" % (ctb.conf.reddit.stats.url, user_from) %}
+{%   set stats_user_link = " **^[[your_stats]](%s_%s)**" % (ctb.conf.reddit.stats.url, user) %}
 {%   set stats_global_link = " ^[[global_stats]](%s)" % ctb.conf.reddit.stats.url %}
 {% endif %}
 *****
