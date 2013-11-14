@@ -49,7 +49,7 @@ stats:
 
 regex:
     amount:
-        num: '([0-9]{1,9}(?:\.[0-9]{0,8})?)'
+        num: '([0-9]{1,9}(?:\.[0-9]{0,16})?)'
         keyword: '(all|flip|roll|upvote|pi|e|leet|quarter|half|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)'
     keywords:
         givetip: '(/u/mybotuser|mybotuser)'
