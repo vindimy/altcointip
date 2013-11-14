@@ -20,11 +20,13 @@ from ctb import ctb_stats
 
 logging.basicConfig()
 lg = logging.getLogger('cointipbot')
+lg.setLevel(logging.DEBUG)
 
 ctb = cointipbot.CointipBot(self_checks=False, init_reddit=True, init_coins=False, init_exchanges=False, init_db=True, init_logging=False)
 
 result = ctb_stats.update_stats(ctb=ctb)
 lg.debug(result)
 
-result = ctb_stats.update_user_stats(ctb=ctb, username='im14')
-lg.debug(result)
+# This isn't needed because it happens during the tip processing
+#result = ctb_stats.update_all_user_stats(ctb=ctb)
+#lg.debug(result)
