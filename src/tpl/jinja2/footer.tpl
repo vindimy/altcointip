@@ -5,11 +5,8 @@
 {%   set user_bot = ctb.conf.reddit.auth.user %}
 {% endif %}
 {% set compose_url = "http://www.reddit.com/message/compose?to=%s&subject=%s&message=%%2B%s" %}
-{% set a_url = compose_url % (user_bot, "accept", "accept") %}
-{% set d_url = compose_url % (user_bot, "decline", "decline") %}
 {% set i_url = compose_url % (user_bot, "info", "info") %}
 {% set h_url = compose_url % (user_bot, "history", "history") %}
-{% set r_url = compose_url % (user_bot, "register", "register") %}
 {% set w_url = compose_url % (user_bot, "withdraw", "withdraw%20ADDRESS%20AMOUNT%20COIN_NAME") %}
 {% set k_url = compose_url % (user_bot, "redeem", "redeem%20COIN_NAME") %}
 {% if ctb and ctb.conf.reddit.help.enabled %}
@@ -31,5 +28,5 @@
 {% elif source_link %}
 ^Source ^comment|^[[link]]({{ source_link }})
 {% endif %}
-^Quick ^commands|^[+accept]({{ a_url }}) ^[+decline]({{ d_url }}) **^[+info]({{ i_url }})** ^[+history]({{ h_url }}) ^[+register]({{ r_url }}) ^[+withdraw]({{ w_url }}) ^[+redeem]({{ k_url }})
+^Quick ^commands|**^[+info]({{ i_url }})** ^[+history]({{ h_url }}) ^[+redeem]({{ k_url }}) ^[+withdraw]({{ w_url }})
 ^Resources|{{ help_link }}{{ contact_link }}{{ stats_user_link }}{{ stats_global_link }}
