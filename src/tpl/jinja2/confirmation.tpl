@@ -21,7 +21,7 @@
 {% if a.fiatval: %}
 {%   set fiat_amount = a.fiatval %}
 {%   set fiat_symbol = ctb.conf.fiat[a.fiat].symbol %}
-{%   set fiat_amount_fmt = "&nbsp;^__(%s%.2f)__" % (fiat_symbol, fiat_amount) %}
+{%   set fiat_amount_fmt = "&nbsp;^__(%s%.6g)__" % (fiat_symbol, fiat_amount) %}
 {% endif %}
 {% if ctb.conf.reddit.stats.enabled: %}
 {%   set stats_user_from_fmt = " ^^[[stats]](%s_%s)" % (ctb.conf.reddit.stats.url, a.u_from.name) %}
