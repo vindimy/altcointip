@@ -60,3 +60,4 @@ regex:
         withdraw: '(withdraw)'
         history: '(history)'
         redeem: '(redeem)'
+        rates: '(rates)'

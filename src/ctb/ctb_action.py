@@ -27,7 +27,7 @@ class CtbAction(object):
     Action class for cointip bot
     """
 
-    type=None           # 'accept', 'decline', 'history', 'info', 'register', 'givetip', 'withdraw', 'redeem'
+    type=None           # 'accept', 'decline', 'history', 'info', 'register', 'givetip', 'withdraw', 'redeem', 'rates'
     state=None          # 'completed', 'pending', 'failed', 'declined'
     txid=None           # cryptocoin transaction id, a 64-char string, if applicable
 
@@ -67,8 +67,6 @@ class CtbAction(object):
         self.subreddit = subr
 
         # Do some checks
-        if not self.type or self.type not in ['accept', 'decline', 'history', 'info', 'register', 'givetip', 'withdraw', 'redeem']:
-            raise Exception("CtbAction::__init__(type=?): proper type is required")
         if not self.ctb:
             raise Exception("CtbAction::__init__(type=%s): no reference to CointipBot", self.type)
         if not self.msg:
@@ -228,11 +226,11 @@ class CtbAction(object):
             lg.warning("CtbAction::do(): duplicate action %s (msg.id %s), ignoring", self.type, self.msg.id)
             return False
 
-	if not self.ctb.conf.misc.actions[self.type]:
-	    msg = self.ctb.jenv.get_template('command-disabled.tpl').render(a=self, ctb=self.ctb)
-	    lg.info("CtbAction::do(): %s command disabled", self.type)
-	    ctb_misc.praw_call(self.msg.reply, msg)
-	    return False
+        if not self.ctb.conf.misc.actions[self.type]:
+	        msg = self.ctb.jenv.get_template('command-disabled.tpl').render(a=self, ctb=self.ctb)
+	        lg.info("CtbAction::do(): %s command disabled", self.type)
+	        ctb_misc.praw_call(self.msg.reply, msg)
+	        return False
 
         if self.type == 'accept':
             if self.accept():
@@ -269,6 +267,9 @@ class CtbAction(object):
 
         if self.type == 'redeem':
             return self.redeem()
+
+        if self.type == 'rates':
+            return self.rates()
 
         lg.debug("< CtbAction::do() DONE")
         return None
@@ -739,6 +740,38 @@ class CtbAction(object):
         else:
             raise Exception("CtbAction::redeem(): sendtouser failed")
 
+    def rates(self, fiat='usd'):
+        """
+        Send info on coin exchange rates
+        """
+        lg.debug("> CtbAction::rates()")
+
+        coins = []
+        exchanges = []
+        rates = {}
+
+        # Get exchange rates
+        for coin in self.ctb.coins:
+            coins.append(coin)
+            rates[coin] = {'average': {}}
+            rates[coin]['average']['btc'] = self.ctb._ev[coin]['btc']
+            rates[coin]['average'][fiat] = self.ctb._ev[coin]['btc'] * self.ctb._ev['btc'][fiat]
+            for exchange in self.ctb.exchanges:
+                exchanges.append(exchange)
+                rates[coin][exchange] = {}
+                if self.ctb.exchanges[exchange].supports_pair(_name1=coin, _name2='btc') and self.ctb.exchanges[exchange].supports_pair(_name1='btc', _name2=fiat):
+                    rates[coin][exchange]['btc'] = self.ctb.exchanges[exchange].get_ticker_value(_name1='btc', _name2=coin)
+                    rates[coin][exchange][fiat] = rates[coin][exchange]['btc'] * self.ctb.exchanges[exchange].get_ticker_value(_name1=fiat, _name2='btc')
+                else:
+                    rates[coin][exchange]['btc'] = None
+                    rates[coin][exchange][fiat] = None
+
+        # Send message
+        msg = self.ctb.jenv.get_template('rates.tpl').render(coins=coins, exchanges=exchanges, rates=rates, fiat=fiat, a=self, ctb=self.ctb)
+        lg.debug("CtbAction::rates(): %s", msg)
+        ctb_misc.praw_call(self.msg.reply, msg)
+        self.save('completed')
+        return True
 
 def init_regex(ctb):
     """
@@ -791,6 +824,13 @@ def init_regex(ctb):
                 ctb_misc.DotDict(
                 {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.info,
                  'action':     'info',
+                 'rg_amount':  None,
+                 'rg_address': None,
+                 'coin':       None,
+                 'fiat':       None}),
+                ctb_misc.DotDict(
+                {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.rates,
+                 'action':     'rates',
                  'rg_amount':  None,
                  'rg_address': None,
                  'coin':       None,

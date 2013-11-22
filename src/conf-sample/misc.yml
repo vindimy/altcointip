@@ -46,6 +46,7 @@ actions:
     givetip: true
     history: false
     info: true
+    rates: true
     redeem: true
     register: true
     withdraw: true
