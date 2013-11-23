@@ -2,24 +2,14 @@
 
 Hello {{ user | replace('_', '\_') }}, here are the latest exchange rates.
 
-{% set header1 = "coin|average" %}
-{% set header2 = ":---|---:"
-{% for e in exchanges %}
-{%   set header1 = header1 + "|" + e %}
-{%   set header2 = header2 + "|---:" %}
-{% endfor %}
+coin|average{% for e in exchanges %}{{ "|" + e }}{% endfor %}
 
-{% set body = "" %}
+:---|---:{% for e in exchanges %}{{ "|---:" }}{% endfor %}
 {% for c in coins %}
-{%   set body = body + "**%s (%s)**|%s%.6g ^%s%.4g" % (ctb.conf.coins[c].name, c.upper(), ctb.conf.coins.btc.symbol, rates[c]['average'].btc, ctb.conf.fiat[fiat].symbol, rates[c]['average'][fiat] %}
-{%   for e in exchanges %}
-{%     set body = body + "|%s%.6g ^%s%.4g" % (ctb.conf.coins.btc.symbol, rates[c][e].btc, ctb.conf.fiat[fiat].symbol, rates[c][e][fiat] %}
+{{   "\n**%s (%s)**|%s%.4g ^%s%.2f" % (ctb.conf.coins[c].name, c.upper(), ctb.conf.coins.btc.symbol, rates[c]['average'].btc, ctb.conf.fiat[fiat].symbol, rates[c]['average'][fiat]) }}{%   for e in exchanges %}
+{%     if rates[c][e].btc and rates[c][e][fiat] %}{{       "|%s%.4g ^%s%.2f" % (ctb.conf.coins.btc.symbol, rates[c][e].btc, ctb.conf.fiat[fiat].symbol, rates[c][e][fiat]) }}{%     else %}{{       "|-" }}{%     endif %}
 {%   endfor %}
-{%   set body = body + "\n" %}
 {% endfor %}
 
-{{ header1 }}
-{{ header2 }}
-{{ body }}
 
 {% include 'footer.tpl' %}

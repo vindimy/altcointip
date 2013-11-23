@@ -757,14 +757,18 @@ class CtbAction(object):
             rates[coin]['average']['btc'] = self.ctb._ev[coin]['btc']
             rates[coin]['average'][fiat] = self.ctb._ev[coin]['btc'] * self.ctb._ev['btc'][fiat]
             for exchange in self.ctb.exchanges:
-                exchanges.append(exchange)
                 rates[coin][exchange] = {}
                 if self.ctb.exchanges[exchange].supports_pair(_name1=coin, _name2='btc') and self.ctb.exchanges[exchange].supports_pair(_name1='btc', _name2=fiat):
-                    rates[coin][exchange]['btc'] = self.ctb.exchanges[exchange].get_ticker_value(_name1='btc', _name2=coin)
-                    rates[coin][exchange][fiat] = rates[coin][exchange]['btc'] * self.ctb.exchanges[exchange].get_ticker_value(_name1=fiat, _name2='btc')
+                    rates[coin][exchange]['btc'] = self.ctb.exchanges[exchange].get_ticker_value(_name1=coin, _name2='btc')
+                    rates[coin][exchange][fiat] = rates[coin][exchange]['btc'] * self.ctb.exchanges[exchange].get_ticker_value(_name1='btc', _name2=fiat)
                 else:
                     rates[coin][exchange]['btc'] = None
                     rates[coin][exchange][fiat] = None
+
+        for exchange in self.ctb.exchanges:
+            exchanges.append(exchange)
+
+        lg.debug("CtbAction::rates(): %s", rates)
 
         # Send message
         msg = self.ctb.jenv.get_template('rates.tpl').render(coins=coins, exchanges=exchanges, rates=rates, fiat=fiat, a=self, ctb=self.ctb)
