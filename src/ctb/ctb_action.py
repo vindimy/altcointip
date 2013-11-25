@@ -771,7 +771,7 @@ class CtbAction(object):
         lg.debug("CtbAction::rates(): %s", rates)
 
         # Send message
-        msg = self.ctb.jenv.get_template('rates.tpl').render(coins=coins, exchanges=exchanges, rates=rates, fiat=fiat, a=self, ctb=self.ctb)
+        msg = self.ctb.jenv.get_template('rates.tpl').render(coins=sorted(coins), exchanges=sorted(exchanges), rates=rates, fiat=fiat, a=self, ctb=self.ctb)
         lg.debug("CtbAction::rates(): %s", msg)
         ctb_misc.praw_call(self.msg.reply, msg)
         self.save('completed')

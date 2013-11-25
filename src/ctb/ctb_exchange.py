@@ -72,6 +72,9 @@ class CtbExchange(object):
         Return (float) ticker value for given pair
         """
 
+        if _name1 == _name2:
+            return float(1)
+
         if not self.supports_pair(_name1=_name1, _name2=_name2):
             raise Exception("CtbExchange::get_ticker_value(%s, %s): pair not supported" % (_name1, _name2))
 
