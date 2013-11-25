@@ -760,7 +760,12 @@ class CtbAction(object):
                 rates[coin][exchange] = {}
                 if self.ctb.exchanges[exchange].supports_pair(_name1=coin, _name2='btc') and self.ctb.exchanges[exchange].supports_pair(_name1='btc', _name2=fiat):
                     rates[coin][exchange]['btc'] = self.ctb.exchanges[exchange].get_ticker_value(_name1=coin, _name2='btc')
-                    rates[coin][exchange][fiat] = rates[coin][exchange]['btc'] * self.ctb.exchanges[exchange].get_ticker_value(_name1='btc', _name2=fiat)
+                    if coin == 'btc':
+                        # Use exchange value to calculate btc's fiat value
+                        rates[coin][exchange][fiat] = rates[coin][exchange]['btc'] * self.ctb.exchanges[exchange].get_ticker_value(_name1='btc', _name2=fiat)
+                    else:
+                        # Use average value to calculate coin's fiat value
+                        rates[coin][exchange][fiat] = rates[coin][exchange]['btc'] * self.ctb._ev['btc'][fiat]
                 else:
                     rates[coin][exchange]['btc'] = None
                     rates[coin][exchange][fiat] = None
