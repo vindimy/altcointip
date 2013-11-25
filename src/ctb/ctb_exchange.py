@@ -89,11 +89,15 @@ class CtbExchange(object):
 
                 try:
                     lg.debug("CtbExchange::get_ticker_value(%s, %s): calling %s%s to get path %s...", _name1, _name2, self.conf.domain, myurlpath, myjsonpath)
-                    connection = httplib.HTTPSConnection(self.conf.domain)
-                    connection.request("GET", myurlpath, {}, {})
+                    if self.conf.https:
+                        connection = httplib.HTTPSConnection(self.conf.domain)
+                        connection.request("GET", myurlpath, {}, {})
+                    else:
+                        connection = httplib.HTTPConnection(self.conf.domain)
+                        connection.request("GET", myurlpath)
                     response = json.loads(connection.getresponse().read())
                     result = xpath_get(response, myjsonpath)
-                    lg.debug("CtbExchange::get_ticker_value(%s, %s): got %.6f", _name1, _name2, float(result))
+                    lg.debug("CtbExchange::get_ticker_value(%s, %s): result: %.6f", _name1, _name2, float(result))
                     results.append( float(result) )
 
                 except urllib2.URLError as e:

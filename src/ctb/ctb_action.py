@@ -759,9 +759,9 @@ class CtbAction(object):
             for exchange in self.ctb.exchanges:
                 try:
                     rates[coin][exchange] = {}
-                    if self.ctb.exchanges[exchange].supports_pair(_name1=coin, _name2='btc') and self.ctb.exchanges[exchange].supports_pair(_name1='btc', _name2=fiat):
+                    if self.ctb.exchanges[exchange].supports_pair(_name1=coin, _name2='btc'):
                         rates[coin][exchange]['btc'] = self.ctb.exchanges[exchange].get_ticker_value(_name1=coin, _name2='btc')
-                        if coin == 'btc':
+                        if coin == 'btc' and self.ctb.exchanges[exchange].supports_pair(_name1='btc', _name2=fiat):
                             # Use exchange value to calculate btc's fiat value
                             rates[coin][exchange][fiat] = rates[coin][exchange]['btc'] * self.ctb.exchanges[exchange].get_ticker_value(_name1='btc', _name2=fiat)
                         else:
