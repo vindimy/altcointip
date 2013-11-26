@@ -17,6 +17,7 @@
 
 import logging, re, time
 from pifkoin.bitcoind import Bitcoind, BitcoindException
+from httplib import CannotSendRequest
 
 lg = logging.getLogger('cointipbot')
 
@@ -161,25 +162,48 @@ class CtbCoin(object):
 
         user = self.verify_user(_user=_user)
         addr = ""
+        counter = 0
 
-        try:
-            # Unlock wallet for keypoolrefill
-            if hasattr(self.conf, 'walletpassphrase'):
-                self.conn.walletpassphrase(self.conf.walletpassphrase, 1)
-            # Generate address foruser
-            addr = self.conn.getnewaddress(user)
-            # Lock wallet
-            if hasattr(self.conf, 'walletpassphrase'):
-                self.conn.walletlock()
-        except BitcoindException as e:
-            lg.error("CtbCoin::getnewaddr(%s): error: %s", user, e)
-            raise
+        while True:
+            try:
+                # Unlock wallet for keypoolrefill
+                if hasattr(self.conf, 'walletpassphrase'):
+                    self.conn.walletpassphrase(self.conf.walletpassphrase, 1)
 
-        if not addr:
-            raise Exception("CtbCoin::getnewaddr(%s): empty addr", user)
+                # Generate new address
+                addr = self.conn.getnewaddress(user)
 
-        time.sleep(2)
-        return str(addr)
+                # Lock wallet
+                if hasattr(self.conf, 'walletpassphrase'):
+                    self.conn.walletlock()
+
+                if not addr:
+                    raise Exception("CtbCoin::getnewaddr(%s): empty addr", user)
+
+                time.sleep(2)
+                return str(addr)
+
+            except BitcoindException as e:
+                lg.error("CtbCoin::getnewaddr(%s): BitcoindException: %s", user, e)
+                raise
+            except CannotSendRequest as e:
+                if counter < 3:
+                    lg.warning("CtbCoin::getnewaddr(%s): CannotSendRequest, retrying")
+                    counter += 1
+                    time.sleep(10)
+                    continue
+                else:
+                    raise
+            except Exception as e:
+                if str(e) == "timed out" and counter < 3:
+                    lg.warning("CtbCoin::getnewaddr(%s): timed out, retrying")
+                    counter += 1
+                    time.sleep(10)
+                    continue
+                else:
+                    lg.error("CtbCoin::getnewaddr(%s): Exception: %s", user, e)
+                    raise
+
 
     def verify_user(self, _user = None):
         """
