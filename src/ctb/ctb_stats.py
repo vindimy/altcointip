@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
     This file is part of ALTcointip.
 
@@ -203,10 +206,23 @@ def format_value(m, k, username, ctb, compact=False):
 
     # Format state
     elif k.find("state") > -1:
-        if m[k] == "completed":
-            return "**%s**" % m[k]
+        if m[k] == 'completed':
+            if compact:
+                return unicode('✓', 'utf8')
+            else:
+                return "**%s**" % m[k]
         else:
             return m[k]
+
+    # Format type
+    elif k.find("type") > -1:
+        if m[k] == 'givetip':
+            return 'tip'
+        if compact:
+            if m[k] == 'withdraw':
+                return 'w'
+            if m[k] == 'redeem':
+                return 'r'
 
     # Format subreddit
     elif k.find("subreddit") > -1:
