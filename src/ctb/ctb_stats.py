@@ -47,7 +47,7 @@ def update_stats(ctb=None):
         if ctb.conf.db.sql.globalstats[s].type == "line":
             m = mysqlexec.fetchone()
             k = mysqlexec.keys()[0]
-            value = format_value(m, k, username, ctb)
+            value = format_value(m, k, '', ctb)
             stats += "%s = **%s**\n" % (k, value)
 
         elif ctb.conf.db.sql.globalstats[s].type == "table":
@@ -56,7 +56,7 @@ def update_stats(ctb=None):
             for m in mysqlexec:
                 values = []
                 for k in mysqlexec.keys():
-                    values.append(format_value(m, k, username, ctb))
+                    values.append(format_value(m, k, '', ctb))
                 stats += ("|".join(values)) + "\n"
 
         else:
@@ -189,7 +189,7 @@ def format_value(m, k, username, ctb, compact=False):
         return "%s&nbsp;%.2f" % (fiat_symbol, m[k])
 
     # Format username
-    elif k.find("user") > -1:
+    elif k.find("user") > -1 and type( m[k] ) in [str, unicode]:
         if compact:
             return ("**/u/%s**" % m[k]) if m[k].lower() == username.lower() else ("/u/%s" % m[k])
         else:
