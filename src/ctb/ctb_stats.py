@@ -44,34 +44,18 @@ def update_stats(ctb=None):
         if ctb.conf.db.sql.globalstats[s].type == "line":
             m = mysqlexec.fetchone()
             k = mysqlexec.keys()[0]
-            if k.find("usd") > -1:
-                stats += "%s = **$%.2f**\n" % (k, m[k])
-            else:
-                stats += "%s = **%s**\n" % (k, m[k])
+            value = format_value(m, k, username, ctb)
+            stats += "%s = **%s**\n" % (k, value)
+
         elif ctb.conf.db.sql.globalstats[s].type == "table":
             stats += ("|".join(mysqlexec.keys())) + "\n"
             stats += ("|".join([":---"] * len(mysqlexec.keys()))) + "\n"
             for m in mysqlexec:
                 values = []
                 for k in mysqlexec.keys():
-                    if type(m[k]) == float and k.find("coin") > -1:
-                        coin_symbol = ctb.conf.coins[m['coin']].symbol
-                        values.append("%s %.8g" % (coin_symbol, m[k]))
-                    elif type(m[k]) == float and k.find("fiat") > -1:
-                        fiat_symbol = ctb.conf.fiat[m['fiat']].symbol
-                        values.append("%s %.2f" % (fiat_symbol, m[k]))
-                    elif k.find("user") > -1:
-                        if m[k] != None:
-                            values.append("/u/%s ^[[stats]](/r/%s/wiki/%s_%s)" % (m[k], ctb.conf.reddit.stats.subreddit, ctb.conf.reddit.stats.page, m[k]))
-                        else:
-                            values.append("None")
-                    elif k.find("subreddit") > -1:
-                        values.append("/r/" + str(m[k]))
-                    elif k.find("link") > -1:
-                        values.append("[link](%s)" % m[k])
-                    else:
-                        values.append(str(m[k]))
+                    values.append(format_value(m, k, username, ctb))
                 stats += ("|".join(values)) + "\n"
+
         else:
             lg.error("update_stats(): don't know what to do with type '%s'" % ctb.conf.db.sql.globalstats[s].type)
             return False
@@ -174,52 +158,68 @@ def update_user_stats(ctb=None, username=None):
     for m in history:
         values = []
         for k in history.keys():
-            # Format cryptocoin
-            if type(m[k]) == float and k.find("coin") > -1:
-                coin_symbol = ctb.conf.coins[m['coin']].symbol
-                values.append("%s %.6f" % (coin_symbol, m[k]))
-            # Format fiat
-            elif type(m[k]) == float and k.find("fiat") > -1:
-                fiat_symbol = ctb.conf.fiat[m['fiat']].symbol
-                values.append("%s %.2f" % (fiat_symbol, m[k]))
-            # Format username
-            elif k.find("user") > -1:
-                if m[k] != None:
-                    un = ("**%s**" % username) if m[k].lower() == username.lower() else m[k]
-                    toappend = "[%s](/u/%s)" % (un, re.escape(m[k]))
-                    if m[k].lower() != username.lower():
-                        toappend += " ^[[stats]](/r/%s/wiki/%s_%s)" % (ctb.conf.reddit.stats.subreddit, ctb.conf.reddit.stats.page, m[k])
-                    values.append(toappend)
-                else:
-                    values.append("None")
-            # Format address
-            elif k.find("addr") > -1:
-                if m[k] != None:
-                    displayaddr = m[k][:6] + "..." + m[k][-5:]
-                    values.append("[%s](%s)" % (displayaddr, ctb.conf.coins[m['coin']].explorer.address + m[k]))
-                else:
-                    values.append("None")
-            # Format state
-            elif k.find("state") > -1:
-                if m[k] == "completed":
-                    values.append("**%s**" % m[k])
-                else:
-                    values.append(m[k])
-            # Format subreddit
-            elif k.find("subreddit") > -1:
-                values.append("/r/" + str(m[k]))
-            # Format link
-            elif k.find("link") > -1:
-                values.append("[link](%s)" % m[k])
-            # Format time
-            elif k.find("utc") > -1:
-                values.append("%s" % time.strftime('%Y-%m-%d', time.localtime(m[k])))
-            else:
-                values.append(str(m[k]))
-
+            values.append(format_value(m, k, username, ctb))
         user_stats += ("|".join(values)) + "\n"
 
     lg.debug("update_user_stats(): updating subreddit '%s', page '%s'" % (ctb.conf.reddit.stats.subreddit, page))
     ctb_misc.praw_call(ctb.reddit.edit_wiki_page, ctb.conf.reddit.stats.subreddit, page, user_stats, "Update by ALTcointip bot")
 
     return True
+
+def format_value(m, k, username, ctb, compact=False):
+    """
+    Format value for display based on its type
+    m[k] is the value, k is the database row name
+    """
+
+    if not m[k]:
+        return '-'
+
+    # Format cryptocoin
+    if type(m[k]) == float and k.find("coin") > -1:
+        coin_symbol = ctb.conf.coins[m['coin']].symbol
+        return "%s&nbsp;%.6f" % (coin_symbol, m[k])
+
+    # Format fiat
+    elif type(m[k]) == float and k.find("fiat") > -1:
+        fiat_symbol = ctb.conf.fiat[m['fiat']].symbol
+        return "%s&nbsp;%.2f" % (fiat_symbol, m[k])
+
+    # Format username
+    elif k.find("user") > -1:
+        if compact:
+            return ("**/u/%s**" % m[k]) if m[k].lower() == username.lower() else ("/u/%s" % m[k])
+        else:
+            un = ("**%s**" % m[k]) if m[k].lower() == username.lower() else m[k]
+            toreturn = "[%s](/u/%s)" % (un, re.escape(m[k]))
+            if m[k].lower() != username.lower():
+                toreturn += " ^[[stats]](/r/%s/wiki/%s_%s)" % (ctb.conf.reddit.stats.subreddit, ctb.conf.reddit.stats.page, m[k])
+            return toreturn
+
+    # Format address
+    elif k.find("addr") > -1:
+        displayaddr = m[k][:6] + "..." + m[k][-5:]
+        return "[%s](%s%s)" % (displayaddr, ctb.conf.coins[m['coin']].explorer.address, m[k])
+
+    # Format state
+    elif k.find("state") > -1:
+        if m[k] == "completed":
+            return "**%s**" % m[k]
+        else:
+            return m[k]
+
+    # Format subreddit
+    elif k.find("subreddit") > -1:
+        return "/r/%s" % m[k]
+
+    # Format link
+    elif k.find("link") > -1:
+        return "[link](%s)" % m[k]
+
+    # Format time
+    elif k.find("utc") > -1:
+        return "%s" % time.strftime('%Y-%m-%d', time.localtime(m[k]))
+
+    # It's something else
+    else:
+        return str(m[k])

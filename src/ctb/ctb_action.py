@@ -278,7 +278,24 @@ class CtbAction(object):
         """
         Provide user with transaction history
         """
-        return None
+
+        # Generate history array
+        history = []
+        sql_history = self.ctb.conf.db.sql.userhistory.sql
+        limit = int(self.ctb.conf.db.sql.userhistory.limit)
+
+        mysqlexec = self.ctb.db.execute(sql_history, (self.u_from.name.lower(), self.u_from.name.lower(), limit))
+        for m in mysqlexec:
+            history_entry = []
+            for k in mysqlexec.keys():
+                history_entry.append(ctb_stats.format_value(m, k, self.u_from.name.lower(), self.ctb, compact=True))
+            history.append(history_entry)
+
+        # Send message to user
+        msg = self.ctb.jenv.get_template('history.tpl').render(history=history, keys=mysqlexec.keys(), limit=limit, a=self, ctb=self.ctb)
+        lg.debug("CtbAction::history(): %s", msg)
+        ctb_misc.praw_call(self.msg.reply, msg)
+        return True
 
     def accept(self):
         """
