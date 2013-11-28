@@ -44,7 +44,7 @@ actions:
     accept: true
     decline: true
     givetip: true
-    history: false
+    history: true
     info: true
     rates: true
     redeem: true
