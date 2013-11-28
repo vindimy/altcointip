@@ -58,4 +58,4 @@ sql:
     total_received_coin: "SELECT SUM(coin_val) AS total_coin FROM t_action WHERE type='givetip' AND state='completed' AND to_user=%s AND coin=%s"
   userhistory:
     sql: "SELECT type, state, from_user, to_user, created_utc, to_addr, coin_val, coin, fiat_val, fiat, subreddit FROM t_action WHERE type IN ('givetip', 'redeem', 'withdraw') AND (from_user=%s OR to_user=%s) ORDER BY created_utc DESC LIMIT %s"
-    limit: 50
+    limit: 75
