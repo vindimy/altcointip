@@ -210,8 +210,8 @@ mec:
     txfee: 0.01
     walletpassphrase: 'mypass1'
     explorer:
-        address: '#'
-        transaction: '#'
+        address: 'http://mega.rapta.net:2750/address/'
+        transaction: 'http://mega.rapta.net:2750/tx/'
     regex:
         address: '(M[1-9a-z]{20,40})'
         units: '(mec|megacoin|megacoins)'
