@@ -36,8 +36,8 @@ ltc:
     txfee: 0.02
     walletpassphrase: 'mypass1'
     explorer:
-        address: 'http://explorer.litecoin.net/address/'
-        transaction: 'http://explorer.litecoin.net/tx/'
+        address: 'http://block-explorer.com/address/'
+        transaction: 'http://block-explorer.com/tx/'
     regex:
         address: '(L[1-9a-z]{20,40})'
         units: '(ltc|litecoin|litecoins)'
