@@ -111,9 +111,7 @@ def update_user_stats(ctb=None, username=None):
     for f in fiat:
         mysqlexec = ctb.db.execute(ctb.conf.db.sql.userstats.total_tipped_fiat, (username, f))
         total_tipped_fiat = mysqlexec.fetchone()
-        if total_tipped_fiat['total_fiat'] == None:
-            user_stats += "**%s**|%s %.2f\n" % (f, ctb.conf.fiat[f].symbol, 0.0)
-        else:
+        if total_tipped_fiat['total_fiat'] != None:
             user_stats += "**%s**|%s %.2f\n" % (f, ctb.conf.fiat[f].symbol, total_tipped_fiat['total_fiat'])
     user_stats += "\n"
 
@@ -122,9 +120,7 @@ def update_user_stats(ctb=None, username=None):
     for c in coins:
         mysqlexec = ctb.db.execute(ctb.conf.db.sql.userstats.total_tipped_coin, (username, c))
         total_tipped_coin = mysqlexec.fetchone()
-        if total_tipped_coin['total_coin'] == None:
-            user_stats += "**%s**|%s %.6f\n" % (c, ctb.conf.coins[c].symbol, 0.0)
-        else:
+        if total_tipped_coin['total_coin'] != None:
             user_stats += "**%s**|%s %.6f\n" % (c, ctb.conf.coins[c].symbol, total_tipped_coin['total_coin'])
     user_stats += "\n"
 
@@ -134,9 +130,7 @@ def update_user_stats(ctb=None, username=None):
     for f in fiat:
         mysqlexec = ctb.db.execute(ctb.conf.db.sql.userstats.total_received_fiat, (username, f))
         total_received_fiat = mysqlexec.fetchone()
-        if total_received_fiat['total_fiat'] == None:
-            user_stats += "**%s**|%s %.2f\n" % (f, ctb.conf.fiat[f].symbol, 0.0)
-        else:
+        if total_received_fiat['total_fiat'] != None:
             user_stats += "**%s**|%s %.2f\n" % (f, ctb.conf.fiat[f].symbol, total_received_fiat['total_fiat'])
     user_stats += "\n"
 
@@ -145,9 +139,7 @@ def update_user_stats(ctb=None, username=None):
     for c in coins:
         mysqlexec = ctb.db.execute(ctb.conf.db.sql.userstats.total_received_coin, (username, c))
         total_received_coin = mysqlexec.fetchone()
-        if total_received_coin['total_coin'] == None:
-            user_stats += "**%s**|%s %.6f\n" % (c, ctb.conf.coins[c].symbol, 0.0)
-        else:
+        if total_received_coin['total_coin'] != None:
             user_stats += "**%s**|%s %.6f\n" % (c, ctb.conf.coins[c].symbol, total_received_coin['total_coin'])
     user_stats += "\n"
 
@@ -184,7 +176,7 @@ def format_value(m, k, username, ctb, compact=False):
         return "%s&nbsp;%.6f" % (coin_symbol, m[k])
 
     # Format fiat
-    elif type(m[k]) == float and k.find("fiat") > -1:
+    elif type(m[k]) == float and ( k.find("fiat") > -1 or k.find("usd") > -1 ):
         fiat_symbol = ctb.conf.fiat[m['fiat']].symbol
         return "%s&nbsp;%.2f" % (fiat_symbol, m[k])
 
