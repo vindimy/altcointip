@@ -1171,6 +1171,9 @@ def eval_comment(comment, ctb):
             if not u_to and not to_addr:
                 # set u_to to author of parent comment
                 u_to = ctb_misc.reddit_get_parent_author(comment, ctb.reddit, ctb)
+                if not u_to:
+                    # couldn't determine u_to, giving up
+                    return None
 
             # Check if from_user == to_user
             if u_to and comment.author.name.lower() == u_to.lower():

@@ -77,6 +77,9 @@ def reddit_get_parent_author(comment, reddit, ctb):
             lg.debug("< reddit_get_parent_author(%s) -> %s", comment.id, parentcomment.author.name)
             return parentcomment.author.name
 
+        except IndexError as e:
+            lg.warning("reddit_get_parent_author(): couldn't get author: %s", e)
+            return None
         except (HTTPError, RateLimitExceeded, timeout) as e:
             lg.warning("reddit_get_parent_author(): Reddit is down (%s), sleeping...", e)
             time.sleep(ctb.conf.misc.times.sleep_seconds)
