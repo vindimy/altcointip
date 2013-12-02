@@ -24,7 +24,12 @@ lg.setLevel(logging.DEBUG)
 
 ctb = cointipbot.CointipBot(self_checks=False, init_reddit=True, init_coins=False, init_exchanges=False, init_db=True, init_logging=False)
 
+# Update stats page
 result = ctb_stats.update_stats(ctb=ctb)
+lg.debug(result)
+
+# Update tips page
+result = ctb_stats.update_tips(ctb=ctb)
 lg.debug(result)
 
 # This isn't needed because it happens during the tip processing

@@ -36,12 +36,17 @@ sql:
       name: "Total Number of Tips"
       desc: "Total number of tips given"
       type: line
-      query: "SELECT COUNT(msg_id) AS total_tips FROM t_action WHERE type = 'givetip' AND state = 'completed' OR state = 'expired' OR state = 'declined'"
-    04a_total_tips_by_coin:
+      query: "SELECT COUNT(msg_id) AS total_tips FROM t_action WHERE type = 'givetip' AND state = 'completed'"
+    05a_total_tips_by_coin:
       name: "Total Number of Tips (by coin)"
       desc: "Total number of tips given grouped by coin"
       type: table
       query: "SELECT coin, count(*) AS total_tips FROM t_action WHERE type = 'givetip' AND state = 'completed' GROUP BY coin ORDER BY coin"
+    05b_total_karma_redeemed:
+      name: "Total Karma Redeemed (USD)"
+      desc: "Total value of redeemed karma"
+      type: line
+      query: "SELECT SUM(fiat_val) AS total_usd, fiat FROM t_action WHERE type = 'redeem' AND state = 'completed' AND fiat = 'usd'"
     06_top_10_tippers:
       name: "Top 10 Tippers"
       desc: "Top 10 all-time tippers as determined by total USD/EUR (fiat) value of their tips."
@@ -87,11 +92,6 @@ sql:
       desc: "Top 10 all-time tip receivers as determined by total USD/EUR (fiat) value of their received tips."
       type: table
       query: "SELECT to_user, SUM(fiat_val) AS total_fiat, fiat FROM t_action WHERE type = 'givetip' AND state = 'completed' AND fiat IN ('usd', 'eur') AND to_user IS NOT NULL GROUP BY to_user ORDER BY total_fiat DESC LIMIT 10"
-    09_total_karma_redeemed:
-      name: "Total Karma Redeemed (USD)"
-      desc: "Total value of redeemed karma"
-      type: line
-      query: "SELECT SUM(fiat_val) AS total_usd, fiat FROM t_action WHERE type = 'redeem' AND state = 'completed' AND fiat = 'usd'"
   userstats:
     users: "SELECT username FROM t_users WHERE username IN (SELECT from_user FROM t_action WHERE type = 'givetip') OR username in (SELECT to_user FROM t_action WHERE type = 'givetip') ORDER BY username"
     coins: 'SELECT DISTINCT coin FROM t_action WHERE coin IS NOT NULL ORDER BY coin'
@@ -104,3 +104,7 @@ sql:
   userhistory: 
     sql: "SELECT type, state, from_user, to_user, created_utc, to_addr, coin_val, coin, fiat_val, fiat, subreddit FROM t_action WHERE type IN ('givetip', 'redeem', 'withdraw') AND (from_user=%s OR to_user=%s) ORDER BY created_utc DESC LIMIT %s"
     limit: 75
+  tips:
+    sql_set: "SET @rank=0"
+    sql_list: "SELECT @rank :=@rank+1 AS num, created_utc, from_user, to_user, coin_val, coin, fiat_val, fiat, subreddit, msg_link FROM t_action WHERE type='givetip' AND state='completed' ORDER BY created_utc ASC LIMIT %s"
+    limit: 10000

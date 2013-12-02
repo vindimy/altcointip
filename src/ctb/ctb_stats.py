@@ -68,6 +68,34 @@ def update_stats(ctb=None):
     lg.debug("update_stats(): updating subreddit '%s', page '%s'" % (ctb.conf.reddit.stats.subreddit, ctb.conf.reddit.stats.page))
     return ctb_misc.praw_call(ctb.reddit.edit_wiki_page, ctb.conf.reddit.stats.subreddit, ctb.conf.reddit.stats.page, stats, "Update by ALTcointip bot")
 
+def update_tips(ctb=None):
+    """
+    Update page listing all tips
+    """
+
+    if not ctb.conf.reddit.stats.enabled:
+        return None
+
+    # Start building stats page
+    tip_list = "### All Completed Tips\n\n"
+
+    q = ctb.db.execute(ctb.conf.db.sql.tips.sql_set)
+    tips = ctb.db.execute(ctb.conf.db.sql.tips.sql_list, (ctb.conf.db.sql.tips.limit))
+    tip_list += ("|".join(tips.keys())) + "\n"
+    tip_list += ("|".join([":---"] * len(tips.keys()))) + "\n"
+
+    # Build tips table
+    for t in tips:
+        values = []
+        for k in tips.keys():
+            values.append(format_value(t, k, '', ctb))
+        tip_list += ("|".join(values)) + "\n"
+
+    lg.debug("update_tips(): updating subreddit '%s', page '%s'" % (ctb.conf.reddit.stats.subreddit, ctb.conf.reddit.stats.page_tips))
+    ctb_misc.praw_call(ctb.reddit.edit_wiki_page, ctb.conf.reddit.stats.subreddit, ctb.conf.reddit.stats.page_tips, tip_list, "Update by ALTcointip bot")
+
+    return True
+
 def update_all_user_stats(ctb=None):
     """
     Update individual user stats for all uers
@@ -173,7 +201,7 @@ def format_value(m, k, username, ctb, compact=False):
     # Format cryptocoin
     if type(m[k]) == float and k.find("coin") > -1:
         coin_symbol = ctb.conf.coins[m['coin']].symbol
-        return "%s&nbsp;%.6f" % (coin_symbol, m[k])
+        return "%s&nbsp;%.5g" % (coin_symbol, m[k])
 
     # Format fiat
     elif type(m[k]) == float and ( k.find("fiat") > -1 or k.find("usd") > -1 ):
@@ -188,7 +216,7 @@ def format_value(m, k, username, ctb, compact=False):
             un = ("**%s**" % m[k]) if m[k].lower() == username.lower() else m[k]
             toreturn = "[%s](/u/%s)" % (un, re.escape(m[k]))
             if m[k].lower() != username.lower():
-                toreturn += " ^[[stats]](/r/%s/wiki/%s_%s)" % (ctb.conf.reddit.stats.subreddit, ctb.conf.reddit.stats.page, m[k])
+                toreturn += "^[[stats]](/r/%s/wiki/%s_%s)" % (ctb.conf.reddit.stats.subreddit, ctb.conf.reddit.stats.page, m[k])
             return toreturn
 
     # Format address
