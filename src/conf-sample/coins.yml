@@ -58,8 +58,8 @@ ppc:
     txfee: 0.01
     walletpassphrase: 'mypass1'
     explorer:
-        address: 'http://www.cryptocoinexplorer.com:2750/address/'
-        transaction: 'http://www.cryptocoinexplorer.com:2750/tx/'
+        address: 'http://ppc.cryptocoinexplorer.com/address/'
+        transaction: 'http://ppc.cryptocoinexplorer.com/tx/'
     regex:
         address: '(P[1-9a-z]{20,40})'
         units: '(ppc|ppcoin|ppcoins|peercoin|peercoins|p2pcoin|p2pcoins)'
@@ -101,8 +101,8 @@ nvc:
     txfee: 0.01
     walletpassphrase: 'mypass1'
     explorer:
-        address: 'http://www.cryptocoinexplorer.com:6750/address/'
-        transaction: 'http://www.cryptocoinexplorer.com:6750/tx/'
+        address: 'http://nvc.cryptocoinexplorer.com/address/'
+        transaction: 'http://nvc.cryptocoinexplorer.com/tx/'
     regex:
         address: '(4[1-9a-z]{20,40})'
         units: '(nvc|novacoin|novacoins)'
@@ -123,8 +123,8 @@ trc:
     txfee: 0.01
     walletpassphrase: 'mypass1'
     explorer:
-        address: 'http://www.cryptocoinexplorer.com:3750/address/'
-        transaction: 'http://www.cryptocoinexplorer.com:3750/tx/'
+        address: 'http://trc.cryptocoinexplorer.com/address/'
+        transaction: 'http://trc.cryptocoinexplorer.com/tx/'
     regex:
         address: '(1[1-9a-z]{20,40})'
         units: '(trc|terracoin|terracoins)'
@@ -166,8 +166,8 @@ xpm:
     txfee: 0.01
     walletpassphrase: 'mypass1'
     explorer:
-        address: 'http://primecoin.21stcenturymoneytalk.org/?addr='
-        transaction: 'http://primecoin.21stcenturymoneytalk.org/?tx='
+        address: 'http://xpm.cryptocoinexplorer.com/address/'
+        transaction: 'http://xpm.cryptocoinexplorer.com/transaction/'
     regex:
         address: '(A[1-9a-z]{20,40})'
         units: '(xpm|primecoin|primecoins)'
