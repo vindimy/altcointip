@@ -130,6 +130,8 @@ class CtbUser(object):
             self.prawobj = ctb_misc.praw_call(self.ctb.reddit.get_redditor, self.name)
             if self.prawobj:
                 return True
+            else:
+                return False
 
         except Exception as e:
             lg.debug("< CtbUser::is_on_reddit(%s) DONE (no)", self.name)

@@ -42,6 +42,9 @@ def praw_call(prawFunc, *extraArgs, **extraKwArgs):
             if str(e) == "403 Client Error: Forbidden":
                 lg.warning("praw_call(): 403 forbidden")
                 return False
+            if str(e) == "404 Client Error: Not Found":
+                lg.warning("praw_call(): 404 not found")
+                return False
             lg.warning("praw_call(): Reddit is down (%s), sleeping...", e)
             time.sleep(30)
             pass

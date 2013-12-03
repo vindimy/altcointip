@@ -422,6 +422,13 @@ class CtbAction(object):
                 self.save('failed')
                 return False
 
+            if self.u_to and not self.u_to.is_on_reddit():
+                msg = self.ctb.jenv.get_template('not-on-reddit.tpl').render(a=self, ctb=self.ctb)
+                lg.debug("CtbAction::validate(): %s", msg)
+                self.u_from.tell(subj="+tip failed", msg=msg)
+                self.save('failed')
+                return False
+
             # Verify that coin type is set
             if not self.coin:
                 msg = self.ctb.jenv.get_template('no-coin-balances.tpl').render(a=self, ctb=self.ctb)
