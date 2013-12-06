@@ -136,11 +136,13 @@ def update_user_stats(ctb=None, username=None):
     # Total Tipped
     user_stats += "#### Total Tipped (Fiat)\n\n"
     user_stats += "fiat|total\n:---|---:\n"
+    total_tipped = []
     for f in fiat:
         mysqlexec = ctb.db.execute(ctb.conf.db.sql.userstats.total_tipped_fiat, (username, f))
         total_tipped_fiat = mysqlexec.fetchone()
         if total_tipped_fiat['total_fiat'] != None:
             user_stats += "**%s**|%s %.2f\n" % (f, ctb.conf.fiat[f].symbol, total_tipped_fiat['total_fiat'])
+            total_tipped.append("%s%.2f" % (ctb.conf.fiat[f].symbol, total_tipped_fiat['total_fiat']))
     user_stats += "\n"
 
     user_stats += "#### Total Tipped (Coins)\n\n"
@@ -155,11 +157,13 @@ def update_user_stats(ctb=None, username=None):
     # Total received
     user_stats += "#### Total Received (Fiat)\n\n"
     user_stats += "fiat|total\n:---|---:\n"
+    total_received = []
     for f in fiat:
         mysqlexec = ctb.db.execute(ctb.conf.db.sql.userstats.total_received_fiat, (username, f))
         total_received_fiat = mysqlexec.fetchone()
         if total_received_fiat['total_fiat'] != None:
             user_stats += "**%s**|%s %.2f\n" % (f, ctb.conf.fiat[f].symbol, total_received_fiat['total_fiat'])
+            total_received.append("%s%.2f" % (ctb.conf.fiat[f].symbol, total_received_fiat['total_fiat']))
     user_stats += "\n"
 
     user_stats += "#### Total Received (Coins)\n\n"
@@ -178,14 +182,38 @@ def update_user_stats(ctb=None, username=None):
     user_stats += ("|".join([":---"] * len(history.keys()))) + "\n"
 
     # Build history table
+    num_tipped = 0
+    num_received = 0
     for m in history:
+        if m['state'] == 'completed':
+            if m['from_user'] == username:
+                num_tipped += 1
+            elif m['to_user'] == username:
+                num_received += 1
         values = []
         for k in history.keys():
             values.append(format_value(m, k, username, ctb))
         user_stats += ("|".join(values)) + "\n"
 
+    # Submit changes
     lg.debug("update_user_stats(): updating subreddit '%s', page '%s'" % (ctb.conf.reddit.stats.subreddit, page))
     ctb_misc.praw_call(ctb.reddit.edit_wiki_page, ctb.conf.reddit.stats.subreddit, page, user_stats, "Update by ALTcointip bot")
+
+    # Update user flair on subreddit
+    if ctb.conf.reddit.stats.userflair and ( len(total_tipped) > 0 or len(total_received) > 0 ):
+        flair = ""
+        if len(total_tipped) > 0:
+            flair += "tipped[" + '|'.join(total_tipped) + "]"
+            flair += " (%d)" % num_tipped
+        if len(total_received) > 0:
+            if len(total_tipped) > 0:
+                flair += " / "
+            flair += "received[" + '|'.join(total_received) + "]"
+            flair += " (%d)" % num_received
+        lg.debug("update_user_stats(): updating flair for %s (%s)", username, flair)
+        r = ctb_misc.praw_call(ctb.reddit.get_subreddit, ctb.conf.reddit.stats.subreddit)
+        res = ctb_misc.praw_call(r.set_flair, username, flair, '')
+        lg.debug(res)
 
     return True
 
@@ -227,10 +255,7 @@ def format_value(m, k, username, ctb, compact=False):
     # Format state
     elif k.find("state") > -1:
         if m[k] == 'completed':
-            if compact:
-                return unicode('✓', 'utf8')
-            else:
-                return "**%s**" % m[k]
+            return unicode('✓', 'utf8')
         else:
             return m[k]
 

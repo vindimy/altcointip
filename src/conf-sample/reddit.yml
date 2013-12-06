@@ -43,9 +43,12 @@ banned_users:
 
 stats:
     enabled: false
+    userflair: false
     subreddit: mysubreddit
     page: stats
     url: http://www.reddit.com/r/mysubreddit/wiki/stats
+    page_tips: tips
+    url_tips: http://www.reddit.com/r/mysubreddit/wiki/tips
 
 regex:
     amount:
