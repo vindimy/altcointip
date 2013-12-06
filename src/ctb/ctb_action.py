@@ -67,6 +67,8 @@ class CtbAction(object):
         self.subreddit = subr
 
         # Do some checks
+        if not self.type:
+            raise Exception("CtbAction::__init__(type=?): type not set")
         if not self.ctb:
             raise Exception("CtbAction::__init__(type=%s): no reference to CointipBot", self.type)
         if not self.msg:
