@@ -36,7 +36,5 @@ nosetests.xml
 
 # cointipbot
 *.log
-pyvircurex
 pifkoin
 conf
-announcement.tpl
