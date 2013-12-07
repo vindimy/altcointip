@@ -31,3 +31,5 @@
 {% endif %}
 ^Quick ^commands|**^[+info]({{ i_url }})** ^[+history]({{ h_url }}) ^[+redeem]({{ k_url }}) ^[+rates]({{ r_url }}) ^[+withdraw]({{ w_url }})
 ^Resources|{{ help_link }}{{ contact_link }}{{ stats_user_link }}{{ stats_global_link }}
+
+{% include 'announcement.tpl' %}
