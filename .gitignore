@@ -39,3 +39,4 @@ nosetests.xml
 pyvircurex
 pifkoin
 conf
+announcement.tpl
