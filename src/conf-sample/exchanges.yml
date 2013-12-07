@@ -67,3 +67,13 @@ cryptsy:
     coinlist: ['btc','alf','amc','anc','arg','bqc','bte','btg','buk','cap','cgb','clr','cmc','crc','csc','dgc','dmd','elc','emd','frc','frk','fst','ftc','gdc','glc','glx','hbn','ixc','kgc','lk7','lky','ltc','mec','mnc','nbl','nec','nmc','nrb','nvc,',phs','ppc','pts','pxc','pyc','qrk','sbc','spt','src','tag','tek','trc','wdc','xjo','xpm','yac','zet']
     fiatlist: []
     uppercase: true
+
+bter:
+    enabled: true
+    domain: 'bter.com'
+    https: true
+    urlpaths: ['/api/1/ticker/{THING_FROM}_{THING_TO}']
+    jsonpaths: ['avg']
+    coinlist: ['btc','ltc','ppc','frc','ftc','cnc','bqc','btb','wdc']
+    fiatlist: ['cny']
+    uppercase: false
