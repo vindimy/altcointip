@@ -186,9 +186,9 @@ def update_user_stats(ctb=None, username=None):
     num_received = 0
     for m in history:
         if m['state'] == 'completed':
-            if m['from_user'] == username:
+            if m['from_user'].lower() == username.lower():
                 num_tipped += 1
-            elif m['to_user'] == username:
+            elif m['to_user'].lower() == username.lower():
                 num_received += 1
         values = []
         for k in history.keys():

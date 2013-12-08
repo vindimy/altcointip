@@ -195,7 +195,8 @@ class CointipBot(object):
         try:
 
             # Try to fetch some messages
-            messages = ctb_misc.praw_call(self.reddit.get_unread, limit=self.conf.reddit.scan.batch_limit)
+            messages = list(ctb_misc.praw_call(self.reddit.get_unread, limit=self.conf.reddit.scan.batch_limit))
+            messages.reverse()
 
             # Process messages
             for m in messages:
