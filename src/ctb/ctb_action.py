@@ -175,6 +175,12 @@ class CtbAction(object):
         """
         lg.debug("> CtbAction::save(%s)", state)
 
+        # Make sure no negative values exist
+        if self.coinval < 0.0:
+            self.coinval = 0.0
+        if self.fiatval < 0.0:
+            self.fiatval = 0.0
+
         conn = self.ctb.db
         sql = "REPLACE INTO t_action (type, state, created_utc, from_user, to_user, to_addr, coin_val, fiat_val, txid, coin, fiat, subreddit, msg_id, msg_link)"
         sql += " values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
