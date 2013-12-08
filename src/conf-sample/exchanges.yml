@@ -77,3 +77,13 @@ bter:
     coinlist: ['btc','ltc','ppc','frc','ftc','cnc','bqc','btb','wdc']
     fiatlist: ['cny']
     uppercase: false
+
+cryptotrade:
+    enabled: true
+    domain: 'crypto-trade.com'
+    https: true
+    urlpaths: ['/api/1/ticker/{THING_FROM}_{THING_TO}']
+    jsonpaths: ['data.min_ask', 'data.max_bid']
+    coinlist: ['btc','ltc','nmc','xpm','ppc','trc','ftc','dvc','wdc','dgc']
+    fiatlist: ['usd','eur'] 
+    uppercase: false
