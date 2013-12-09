@@ -45,11 +45,11 @@ class CtbAction(object):
     msg=None            # Reddit object pointing to originating message/comment
     ctb=None            # CointipBot instance
 
-    def __init__(self, atype=None, msg=None, to_user=None, to_addr=None, coin=None, fiat=None, coin_val=None, fiat_val=None, subr=None, ctb=None):
+    def __init__(self, atype=None, msg=None, from_user=None, to_user=None, to_addr=None, coin=None, fiat=None, coin_val=None, fiat_val=None, subr=None, ctb=None):
         """
         Initialize CtbAction object with given parameters and run basic checks
         """
-        lg.debug("> CtbAction::__init__(atype=%s, from_user=%s)", atype, msg.author.name)
+        lg.debug("> CtbAction::__init__(type=%s)", atype)
 
         self.type = atype
 
@@ -63,7 +63,7 @@ class CtbAction(object):
 
         self.addr_to = to_addr
         self.u_to = ctb_user.CtbUser(name=to_user, ctb=ctb) if to_user else None
-        self.u_from = ctb_user.CtbUser(name=msg.author.name, redditobj=msg.author, ctb=ctb) if msg else None
+        self.u_from = ctb_user.CtbUser(name=msg.author.name, redditobj=msg.author, ctb=ctb) if (msg and msg.author) else ctb_user.CtbUser(name=from_user, ctb=ctb)
         self.subreddit = subr
 
         # Do some checks
@@ -165,8 +165,8 @@ class CtbAction(object):
         """""
         Return string representation of self
         """
-        me = "<CtbAction: atype=%s, msg=%s, to_user=%s, to_addr=%s, coin=%s, fiat=%s, coin_val=%s, fiat_val=%s, subr=%s, ctb=%s>"
-        me = me % (self.type, self.msg, self.u_to, self.addr_to, self.coin, self.fiat, self.coinval, self.fiatval, self.subreddit, self.ctb)
+        me = "<CtbAction: type=%s, msg=%s, from_user=%s, to_user=%s, to_addr=%s, coin=%s, fiat=%s, coin_val=%s, fiat_val=%s, subr=%s, ctb=%s>"
+        me = me % (self.type, self.msg, self.u_from, self.u_to, self.addr_to, self.coin, self.fiat, self.coinval, self.fiatval, self.subreddit, self.ctb)
         return me
 
     def save(self, state=None):
@@ -1148,6 +1148,7 @@ def eval_message(msg, ctb):
             # Return CtbAction instance with given variables
             return CtbAction(   atype=r.action,
                                 msg=msg,
+                                from_user=msg.author,
                                 to_user=None,
                                 to_addr=to_addr,
                                 coin=r.coin,
@@ -1302,25 +1303,27 @@ def get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=None
             for m in mysqlexec:
                 lg.debug("get_actions(): found %s", m['msg_link'])
 
+                # Get PRAW message (msg) and author (msg.author) objects
                 submission = ctb_misc.praw_call(ctb.reddit.get_submission, m['msg_link'])
+                msg = None
                 if not len(submission.comments) > 0:
                     lg.warning("get_actions(): could not fetch msg (deleted?) from msg_link %s", m['msg_link'])
-                    continue
-                msg = submission.comments[0]
-                if not msg.author:
-                    lg.warning("get_actions(): could not fetch msg.author (deleted?) from msg_link %s", m['msg_link'])
-                    continue
+                else:
+                    msg = submission.comments[0]
+                    if not msg.author:
+                        lg.warning("get_actions(): could not fetch msg.author (deleted?) from msg_link %s", m['msg_link'])
 
-                r.append( CtbAction(  atype=atype,
-                                      msg=msg,
-                                      to_user=m['to_user'],
-                                      to_addr=m['to_addr'] if not m['to_user'] else None,
-                                      coin=m.coin,
-                                      fiat=m.fiat,
-                                      coin_val=float(m['coin_val']) if m['coin_val'] else None,
-                                      fiat_val=float(m['fiat_val']) if m['fiat_val'] else None,
-                                      subr=m['subreddit'],
-                                      ctb=ctb))
+                r.append( CtbAction( atype=atype,
+                                     msg=msg,
+                                     from_user=m['from_user'],
+                                     to_user=m['to_user'],
+                                     to_addr=m['to_addr'] if not m['to_user'] else None,
+                                     coin=m['coin'],
+                                     fiat=m['fiat'],
+                                     coin_val=float(m['coin_val']) if m['coin_val'] else None,
+                                     fiat_val=float(m['fiat_val']) if m['fiat_val'] else None,
+                                     subr=m['subreddit'],
+                                     ctb=ctb))
 
             lg.debug("< get_actions() DONE (yes)")
             return r
