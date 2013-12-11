@@ -76,7 +76,7 @@ class CtbExchange(object):
             return float(1)
 
         if not self.supports_pair(_name1=_name1, _name2=_name2):
-            raise Exception("CtbExchange::get_ticker_value(%s, %s): pair not supported" % (_name1, _name2))
+            raise Exception("CtbExchange::get_ticker_value(%s, %s, %s): pair not supported" % (self.conf.domain, _name1, _name2))
 
         results = []
         for myurlpath in self.conf.urlpaths:
@@ -88,7 +88,7 @@ class CtbExchange(object):
                     myjsonpath = myjsonpath.replace(t, toreplace[t])
 
                 try:
-                    lg.debug("CtbExchange::get_ticker_value(%s, %s): calling %s%s to get path %s...", _name1, _name2, self.conf.domain, myurlpath, myjsonpath)
+                    lg.debug("CtbExchange::get_ticker_value(%s, %s, %s): calling %s to get %s...", self.conf.domain, _name1, _name2, myurlpath, myjsonpath)
                     if self.conf.https:
                         connection = httplib.HTTPSConnection(self.conf.domain)
                         connection.request("GET", myurlpath, {}, {})
@@ -97,22 +97,21 @@ class CtbExchange(object):
                         connection.request("GET", myurlpath)
                     response = json.loads(connection.getresponse().read())
                     result = xpath_get(response, myjsonpath)
-                    lg.debug("CtbExchange::get_ticker_value(%s, %s): result: %.6f", _name1, _name2, float(result))
+                    lg.debug("CtbExchange::get_ticker_value(%s, %s, %s): result: %.6f", self.conf.domain, _name1, _name2, float(result))
                     results.append( float(result) )
 
                 except urllib2.URLError as e:
-                    lg.error("CtbExchange::get_ticker_value(%s, %s): %s", _name1, _name2, e)
+                    lg.error("CtbExchange::get_ticker_value(%s, %s, %s): %s", self.conf.domain, _name1, _name2, e)
                     return None
                 except urllib2.HTTPError as e:
-                    lg.error("CtbExchange::get_ticker_value(%s, %s): %s", _name1, _name2, e)
+                    lg.error("CtbExchange::get_ticker_value(%s, %s, %s): %s", self.conf.domain, _name1, _name2, e)
                     return None
                 except Exception as e:
-                    lg.error("CtbExchange::get_ticker_value(%s, %s): %s", _name1, _name2, e)
+                    lg.error("CtbExchange::get_ticker_value(%s, %s, %s): %s", self.conf.domain, _name1, _name2, e)
                     return None
 
         # Return average of all responses
         return ( sum(results) / float(len(results)) )
-
 
 
 def xpath_get(mydict, path):
