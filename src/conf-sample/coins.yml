@@ -155,7 +155,7 @@ xpm:
     enabled: false
     unit: xpm
     name: Primecoin
-    symbol: 'X'
+    symbol: 'Ψ'
     config_file: '~/.primecoin/primecoin.conf'
     minconf:
         givetip: 10
