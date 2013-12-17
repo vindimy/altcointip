@@ -5,6 +5,7 @@ btc:
     name: Bitcoin
     symbol: 'Ƀ'
     config_file: '~/.bitcoin/bitcoin.conf'
+    config_rpcserver: '127.0.0.1'
     minconf:
         givetip: 1
         withdraw: 144
@@ -27,6 +28,7 @@ ltc:
     name: Litecoin
     symbol: 'Ł'
     config_file: '~/.litecoin/litecoin.conf'
+    config_rpcserver: '127.0.0.1'
     minconf:
         givetip: 4
         withdraw: 576
@@ -49,6 +51,7 @@ ppc:
     name: Peercoin
     symbol: 'Ƥ'
     config_file: '~/.ppcoin/ppcoin.conf'
+    config_rpcserver: '127.0.0.1'
     minconf:
         givetip: 1
         withdraw: 144
@@ -71,6 +74,7 @@ nmc:
     name: Namecoin
     symbol: 'Ɲ'
     config_file: '~/.namecoin/bitcoin.conf'
+    config_rpcserver: '127.0.0.1'
     minconf:
         givetip: 1
         withdraw: 144
@@ -92,6 +96,7 @@ nvc:
     name: Novacoin
     symbol: 'Ɣ'
     config_file: '~/.novacoin/novacoin.conf'
+    config_rpcserver: '127.0.0.1'
     minconf:
         givetip: 1
         withdraw: 144
@@ -114,6 +119,7 @@ trc:
     name: Terracoin
     symbol: 'Ʈ'
     config_file: '~/.terracoin/terracoin.conf'
+    config_rpcserver: '127.0.0.1'
     minconf:
         givetip: 5
         withdraw: 720
@@ -136,6 +142,7 @@ dvc:
     name: Devcoin
     symbol: 'Ð'
     config_file: '~/.devcoin/devcoin.conf'
+    config_rpcserver: '127.0.0.1'
     minconf:
         givetip: 1
         withdraw: 144
@@ -157,6 +164,7 @@ xpm:
     name: Primecoin
     symbol: 'Ψ'
     config_file: '~/.primecoin/primecoin.conf'
+    config_rpcserver: '127.0.0.1'
     minconf:
         givetip: 10
         withdraw: 1440
@@ -179,6 +187,7 @@ ftc:
     name: Feathercoin
     symbol: 'Ƒ'
     config_file: '~/.feathercoin/feathercoin.conf'
+    config_rpcserver: '127.0.0.1'
     minconf:
         givetip: 4
         withdraw: 576
@@ -201,6 +210,7 @@ mec:
     name: Megacoin
     symbol: 'M'
     config_file: '~/.megacoin/megacoin.conf'
+    config_rpcserver: '127.0.0.1'
     minconf:
         givetip: 4
         withdraw: 576

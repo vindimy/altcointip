@@ -43,7 +43,7 @@ class CtbCoin(object):
         # connect to coin daemon
         try:
             lg.debug("CtbCoin::__init__(): connecting to %s...", self.conf.name)
-            self.conn = Bitcoind(self.conf.config_file)
+            self.conn = Bitcoind(self.conf.config_file, rpcserver=self.conf.config_rpcserver)
         except BitcoindException as e:
             lg.error("CtbCoin::__init__(): error connecting to %s using %s: %s", self.conf.name, self.conf.config_file, e)
             raise
