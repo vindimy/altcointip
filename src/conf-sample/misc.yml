@@ -5,29 +5,6 @@ times:
 backup:
     encryptionpassphrase: 'ChangeAndRememberMe11'
 
-keywords:
-    all: "float( self.u_from.get_balance(coin=self.coin, kind=('withdraw' if bool(self.addr_to) else 'givetip')) - (self.ctb.conf.coins[self.coin].txfee if bool(self.addr_to) else 0.0) ) if self.u_from.is_registered() and bool(self.coin) else None"
-    flip: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,2)) )"
-    roll: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,6)) )"
-    upvote: 0.1
-    pi: 3.14159265
-    e: 2.7182818
-    leet: 1.337
-    quarter: 0.25
-    half: 0.5
-    one: 1.0
-    two: 2.0
-    three: 3.0
-    four: 4.0
-    five: 5.0
-    six: 6.0
-    seven: 7.0
-    eight: 8.0
-    nine: 9.0
-    ten: 10.0
-    eleven: 11.0
-    twelve: 12.0
-
 qr_service_url: 'https://chart.googleapis.com/chart?cht=qr&choe=UTF-8&chs=300x300&chl='
 
 notify:
@@ -39,14 +16,3 @@ notify:
     smtp_tls: true
     smtp_username: 'user@example.com'
     smtp_password: 'examplePass'
-
-actions:
-    accept: true
-    decline: true
-    givetip: true
-    history: true
-    info: true
-    rates: true
-    redeem: true
-    register: true
-    withdraw: true

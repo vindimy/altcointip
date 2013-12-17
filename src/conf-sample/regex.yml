@@ -1,0 +1,251 @@
+values:
+    username:
+        regex: '(@\w+)'
+    amount:
+        regex: '([0-9]{1,9}(?:\.[0-9]{0,16})?)'
+    tip_init:
+        regex: '(/u/mybotuser|mybotuser)'
+
+actions:
+    givetip:
+        enabled: true
+        public: true
+        simple: false
+        regex:
+            a:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_AMOUNT}(\s+){REGEX_COIN}'
+                rg_amount: 4
+                rg_keyword: 0
+                rg_address: 0
+                rg_to_user: 0
+                rg_coin: 6
+                rg_fiat: 0
+            aa:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_KEYWORD}(\s+){REGEX_COIN}'
+                rg_amount: 0
+                rg_keyword: 4
+                rg_address: 0
+                rg_to_user: 0
+                rg_coin: 6
+                rg_fiat: 0
+            b:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_ADDRESS}(\s+){REGEX_AMOUNT}(\s+){REGEX_COIN}'
+                rg_amount: 6
+                rg_keyword: 0
+                rg_address: 4
+                rg_to_user: 0
+                rg_coin: 8
+                rg_fiat: 0
+            bb:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_ADDRESS}(\s+){REGEX_KEYWORD}(\s+){REGEX_COIN}'
+                rg_amount: 0
+                rg_keyword: 6
+                rg_address: 4
+                rg_to_user: 0
+                rg_coin: 8
+                rg_fiat: 0
+            c:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_USER}(\s+){REGEX_AMOUNT}(\s+){REGEX_COIN}'
+                rg_amount: 6
+                rg_keyword: 0
+                rg_address: 0
+                rg_to_user: 4
+                rg_coin: 8
+                rg_fiat: 0
+            cc:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_USER}(\s+){REGEX_KEYWORD}(\s+){REGEX_COIN}'
+                rg_amount: 0
+                rg_keyword: 6
+                rg_address: 0
+                rg_to_user: 4
+                rg_coin: 8
+                rg_fiat: 0
+            d:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_FIAT}{REGEX_AMOUNT}(\s+){REGEX_COIN}'
+                rg_amount: 5
+                rg_keyword: 0
+                rg_address: 0
+                rg_to_user: 0
+                rg_coin: 7
+                rg_fiat: 4
+            dd:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_FIAT}{REGEX_KEYWORD}(\s+){REGEX_COIN}'
+                rg_amount: 0
+                rg_keyword: 5
+                rg_address: 0
+                rg_to_user: 0
+                rg_coin: 7
+                rg_fiat: 4
+            e:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_ADDRESS}(\s+){REGEX_FIAT}{REGEX_AMOUNT}(\s+){REGEX_COIN}'
+                rg_amount: 7
+                rg_keyword: 0
+                rg_address: 4
+                rg_to_user: 0
+                rg_coin: 9
+                rg_fiat: 6
+            ee:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_ADDRESS}(\s+){REGEX_FIAT}{REGEX_KEYWORD}(\s+){REGEX_COIN}'
+                rg_amount: 0
+                rg_keyword: 7
+                rg_address: 4
+                rg_to_user: 0
+                rg_coin: 9
+                rg_fiat: 6
+            f:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_USER}(\s+){REGEX_FIAT}{REGEX_AMOUNT}(\s+){REGEX_COIN}'
+                rg_amount: 7
+                rg_keyword: 0
+                rg_address: 0
+                rg_to_user: 4
+                rg_coin: 9
+                rg_fiat: 6
+            ff:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_USER}(\s+){REGEX_FIAT}{REGEX_KEYWORD}(\s+){REGEX_COIN}'
+                rg_amount: 0
+                rg_keyword: 7
+                rg_address: 0
+                rg_to_user: 4
+                rg_coin: 9
+                rg_fiat: 6
+            g:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_FIAT}{REGEX_AMOUNT}'
+                rg_amount: 5
+                rg_keyword: 0
+                rg_address: 0
+                rg_to_user: 0
+                rg_coin: 0
+                rg_fiat: 4
+            gg:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_FIAT}{REGEX_KEYWORD}'
+                rg_amount: 0
+                rg_keyword: 5
+                rg_address: 0
+                rg_to_user: 0
+                rg_coin: 0
+                rg_fiat: 4
+            h:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_USER}(\s+){REGEX_FIAT}{REGEX_AMOUNT}'
+                rg_amount: 7
+                rg_keyword: 0
+                rg_address: 0
+                rg_to_user: 4
+                rg_coin: 0
+                rg_fiat: 6
+            hh:
+                value: '(\+){REGEX_TIP_INIT}(\s+){REGEX_USER}(\s+){REGEX_FIAT}{REGEX_KEYWORD}'
+                rg_amount: 0
+                rg_keyword: 7
+                rg_address: 0
+                rg_to_user: 4
+                rg_coin: 0
+                rg_fiat: 6
+    info:
+        enabled: true
+        public: false
+        simple: true
+        regex: '(\+)(info|balance)'
+    register:
+        enabled: true
+        public: false
+        simple: true
+        regex: '(\+)(register)'
+    accept:
+        enabled: true
+        public: false
+        simple: true
+        regex: '(\+)(accept)'
+    decline:
+        enabled: true
+        public: false
+        simple: true
+        regex: '(\+)(decline)'
+    withdraw:
+        enabled: true
+        public: false
+        simple: false
+        regex:
+            a:
+                value: '(\+)(withdraw)(\s+){REGEX_ADDRESS}(\s+){REGEX_AMOUNT}(\s+){REGEX_COIN}'
+                rg_amount: 6
+                rg_keyword: 0
+                rg_address: 4
+                rg_to_user: 0
+                rg_coin: 8
+                rg_fiat: 0
+            aa:
+                value: '(\+)(withdraw)(\s+){REGEX_ADDRESS}(\s+){REGEX_KEYWORD}(\s+){REGEX_COIN}'
+                rg_amount: 0
+                rg_keyword: 6
+                rg_address: 4
+                rg_to_user: 0
+                rg_coin: 8
+                rg_fiat: 0
+            b:
+                value: '(\+)(withdraw)(\s+){REGEX_ADDRESS}(\s+){REGEX_FIAT}{REGEX_AMOUNT}(\s+){REGEX_COIN}'
+                rg_amount: 7
+                rg_keyword: 0
+                rg_address: 4
+                rg_to_user: 0
+                rg_coin: 9
+                rg_fiat: 6
+            bb:
+                value: '(\+)(withdraw)(\s+){REGEX_ADDRESS}(\s+){REGEX_FIAT}{REGEX_KEYWORD}(\s+){REGEX_COIN}'
+                rg_amount: 0
+                rg_keyword: 7
+                rg_address: 4
+                rg_to_user: 0
+                rg_coin: 9
+                rg_fiat: 6
+    history:
+        enabled: true
+        public: false
+        simple: true
+        regex: '(\+)(history)'
+    redeem:
+        enabled: true
+        public: false
+        simple: false
+        regex:
+            a:
+                value: '(\+)(redeem)(\s+){REGEX_COIN}'
+                rg_amount: 0
+                rg_keyword: 0
+                rg_address: 0
+                rg_to_user: 0
+                rg_coin: 4
+                rg_fiat: 0
+    rates:
+        enabled: true
+        public: false
+        simple: true
+        regex: '(\+)(rates)'
+
+keywords:
+    all:
+        regex: '(all|everything|savings|lifesavings)'
+        value: "float( self.u_from.get_balance(coin=self.coin, kind=('withdraw' if bool(self.addr_to) else 'givetip')) - (self.ctb.conf.coins[self.coin].txfee if bool(self.addr_to) else 0.0) ) if self.u_from.is_registered() and bool(self.coin) else None"
+    flip:
+        regex: '(flip)'
+        value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,2)) )"
+    roll:
+        regex: '(roll)'
+        value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,6)) )"
+    upvote:
+        regex: '(upvote|upboat|upboats)'
+        value: 0.1
+    pi:
+        regex: '(pi|π)'
+        value: 3.14159265
+    e:
+        regex: '(e)'
+        value: 2.7182818
+    leet:
+        regex: '(leet|l33t)'
+        value: 1.337
+    quarter:
+        regex: '(quarter|¼)'
+        value: 0.25
+    half:
+        regex: '(half|½)'
+        value: 0.5

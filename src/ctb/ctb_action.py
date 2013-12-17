@@ -39,13 +39,14 @@ class CtbAction(object):
     fiat=None           # fiat for this action (for example, 'usd'), if applicable
     coinval=None        # coin value of 'givetip' and 'withdraw' actions
     fiatval=None        # fiat value of the 'givetip' or 'withdraw' action
+    keyword=None        # keyword that's used instead of coinval/fiatval
 
     subreddit=None      # subreddit that originated the action, if applicable
 
     msg=None            # Reddit object pointing to originating message/comment
     ctb=None            # CointipBot instance
 
-    def __init__(self, atype=None, msg=None, from_user=None, to_user=None, to_addr=None, coin=None, fiat=None, coin_val=None, fiat_val=None, subr=None, ctb=None):
+    def __init__(self, atype=None, msg=None, from_user=None, to_user=None, to_addr=None, coin=None, fiat=None, coin_val=None, fiat_val=None, keyword=None, subr=None, ctb=None):
         """
         Initialize CtbAction object with given parameters and run basic checks
         """
@@ -57,6 +58,7 @@ class CtbAction(object):
         self.fiat = fiat.lower() if fiat else None
         self.coinval = coin_val
         self.fiatval = fiat_val
+        self.keyword = keyword
 
         self.msg = msg
         self.ctb = ctb
@@ -78,8 +80,8 @@ class CtbAction(object):
                 raise Exception("CtbAction::__init__(atype=%s, from_user=%s): u_to xor addr_to must be set" % (self.type, self.u_from.name))
             if not (bool(self.coin) or bool(self.fiat)):
                 raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coin or fiat must be set" % (self.type, self.u_from.name))
-            if not (bool(self.coinval) or bool(self.fiatval)):
-                raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coinval or fiatval must be set" % (self.type, self.u_from.name))
+            if not (bool(self.coinval) or bool(self.fiatval) or bool(self.keyword)):
+                raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coinval or fiatval or keyword must be set" % (self.type, self.u_from.name))
 
         # Convert coinval and fiat to float, if necesary
         if self.coinval and type(self.coinval) == unicode and self.coinval.replace('.', '').isnumeric():
@@ -89,38 +91,44 @@ class CtbAction(object):
 
         lg.debug("CtbAction::__init__(): %s", self)
 
-        # Determine amount, if keyword is given instead of numeric value
+        # Determine coinval or fiatval, if keyword is given instead of numeric value
         if self.type in ['givetip', 'withdraw']:
-            if self.coin and not type(self.coinval) in [float, int] and not self.coinval == None:
+
+            if self.coin and not type(self.coinval) in [float, int] and self.keyword:
                 # Determine coin value
-                lg.debug("CtbAction::__init__(): determining coin value given '%s'", self.coinval)
-                val = self.ctb.conf.misc.keywords[self.coinval.lower()]
+                lg.debug("CtbAction::__init__(): determining coin value given '%s'", self.keyword)
+                val = self.ctb.conf.regex.keywords[self.keyword].value
                 if type(val) == float:
                     self.coinval = val
                 elif type(val) == str:
                     lg.debug("CtbAction::__init__(): evaluating '%s'", val)
                     self.coinval = eval(val)
                     if not type(self.coinval) == float:
-                        lg.warning("CtbAction::__init__(atype=%s, from_user=%s): could not determine coinval given %s" % (self.type, self.u_from.name, self.coinval))
+                        lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine coinval from keyword '%s' (not float)" % (self.type, self.u_from.name, self.keyword))
                         return None
                 else:
-                    lg.warning("CtbAction::__init__(atype=%s, from_user=%s): could not determine coinval given %s" % (self.type, self.u_from.name, self.coinval))
+                    lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine coinval from keyword '%s' (not float or str)" % (self.type, self.u_from.name, self.keyword))
                     return None
-            if self.fiat and not type(self.fiatval) in [float, int] and not self.fiatval == None:
-                # Determine fiat value given keyword from self.ctb.conf.misc.keywords
-                lg.debug("CtbAction::__init__(): determining fiat value given '%s'", self.fiatval)
-                val = self.ctb.conf.misc.keywords[self.fiatval.lower()]
+
+            elif self.fiat and not type(self.fiatval) in [float, int] and self.keyword:
+                # Determine fiat value
+                lg.debug("CtbAction::__init__(): determining fiat value given '%s'", self.keyword)
+                val = self.ctb.conf.regex.keywords[self.keyword].value
                 if type(val) == float:
                     self.fiatval = val
                 elif type(val) == str:
                     lg.debug("CtbAction::__init__(): evaluating '%s'", val)
                     self.fiatval = eval(val)
                     if not type(self.fiatval) == float:
-                        lg.warning("CtbAction::__init__(atype=%s, from_user=%s): could not determine fiat given %s" % (self.type, self.u_from.name, self.fiatval))
+                        lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine fiatval from keyword '%s' (not float)" % (self.type, self.u_from.name, self.keyword))
                         return None
                 else:
-                    lg.warning("CtbAction::__init__(atype=%s, from_user=%s): could not determine fiat given %s" % (self.type, self.u_from.name, self.fiatval))
+                    lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine fiatval from keyword '%s' (not float or str)" % (self.type, self.u_from.name, self.keyword))
                     return None
+
+            # By this point we should have a proper coinval or fiatval
+            if not type(self.coinval) in [float, int] and not type(self.fiatval) in [float, int]:
+                raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coinval or fiatval isn't determined" % (self.type, self.u_from.name))
 
         # Determine coin, if applicable
         if self.type in ['givetip']:
@@ -147,7 +155,7 @@ class CtbAction(object):
                 lg.warning("CtbAction::__init__(): can't determine coin for user %s", self.u_from.name)
                 return None
 
-        # Determine fiat or coin value
+        # Calculate fiat or coin value with exchange rates
         if self.type in ['givetip', 'withdraw']:
             if not self.fiat:
                 # Set fiat to 'usd' if not specified
@@ -234,9 +242,9 @@ class CtbAction(object):
             lg.warning("CtbAction::do(): duplicate action %s (msg.id %s), ignoring", self.type, self.msg.id)
             return False
 
-        if not self.ctb.conf.misc.actions[self.type]:
+        if not self.ctb.conf.regex.actions[self.type].enabled:
 	        msg = self.ctb.jenv.get_template('command-disabled.tpl').render(a=self, ctb=self.ctb)
-	        lg.info("CtbAction::do(): %s command disabled", self.type)
+	        lg.info("CtbAction::do(): action %s is disabled", self.type)
 	        ctb_misc.praw_call(self.msg.reply, msg)
 	        return False
 
@@ -363,7 +371,7 @@ class CtbAction(object):
                 # Respond to tip comment
                 msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Declined', a=a, ctb=a.ctb, source_link=a.msg.permalink if a.msg else None)
                 lg.debug("CtbAction::decline(): " + msg)
-                if self.ctb.conf.reddit.comments.declined:
+                if self.ctb.conf.reddit.messages.declined:
                     if not ctb_misc.praw_call(a.msg.reply, msg):
                         a.u_from.tell(subj="+tip declined", msg=msg)
                 else:
@@ -406,7 +414,7 @@ class CtbAction(object):
         # Respond to tip comment
         msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Expired', a=self, ctb=self.ctb, source_link=self.msg.permalink if self.msg else None)
         lg.debug("CtbAction::expire(): " + msg)
-        if self.ctb.conf.reddit.comments.expired:
+        if self.ctb.conf.reddit.messages.expired:
             if not ctb_misc.praw_call(self.msg.reply, msg):
                 self.u_from.tell(subj="+tip expired", msg=msg)
         else:
@@ -512,7 +520,7 @@ class CtbAction(object):
                 # Respond to tip comment
                 msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Verified', a=self, ctb=self.ctb)
                 lg.debug("CtbAction::validate(): " + msg)
-                if self.ctb.conf.reddit.comments.verify:
+                if self.ctb.conf.reddit.messages.verified:
                     if not ctb_misc.praw_call(self.msg.reply, msg):
                         self.u_from.tell(subj="+tip pending +accept", msg=msg)
                 else:
@@ -591,7 +599,7 @@ class CtbAction(object):
             if not is_pending:
                 msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Verified', a=self, ctb=self.ctb)
                 lg.debug("CtbAction::givetip(): " + msg)
-                if self.ctb.conf.reddit.comments.verify:
+                if self.ctb.conf.reddit.messages.verified:
                     if not ctb_misc.praw_call(self.msg.reply, msg):
                         self.u_from.tell(subj="+tip succeeded", msg=msg)
                 else:
@@ -624,7 +632,7 @@ class CtbAction(object):
             # Post verification comment
             msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Verified', a=self, ctb=self.ctb)
             lg.debug("CtbAction::givetip(): " + msg)
-            if self.ctb.conf.reddit.comments.verify:
+            if self.ctb.conf.reddit.messages.verified:
                 if not ctb_misc.praw_call(self.msg.reply, msg):
                     self.u_from.tell(subj="+tip succeeded", msg=msg)
             else:
@@ -786,8 +794,8 @@ class CtbAction(object):
         for coin in self.ctb.coins:
             coins.append(coin)
             rates[coin] = {'average': {}}
-            rates[coin]['average']['btc'] = self.ctb._ev[coin]['btc']
-            rates[coin]['average'][fiat] = self.ctb._ev[coin]['btc'] * self.ctb._ev['btc'][fiat]
+            rates[coin]['average']['btc'] = self.ctb.runtime['ev'][coin]['btc']
+            rates[coin]['average'][fiat] = self.ctb.runtime['ev'][coin]['btc'] * self.ctb.runtime['ev']['btc'][fiat]
             for exchange in self.ctb.exchanges:
                 try:
                     rates[coin][exchange] = {}
@@ -798,7 +806,7 @@ class CtbAction(object):
                             rates[coin][exchange][fiat] = rates[coin][exchange]['btc'] * self.ctb.exchanges[exchange].get_ticker_value(_name1='btc', _name2=fiat)
                         else:
                             # Use average value to calculate coin's fiat value
-                            rates[coin][exchange][fiat] = rates[coin][exchange]['btc'] * self.ctb._ev['btc'][fiat]
+                            rates[coin][exchange][fiat] = rates[coin][exchange]['btc'] * self.ctb.runtime['ev']['btc'][fiat]
                     else:
                         rates[coin][exchange]['btc'] = None
                         rates[coin][exchange][fiat] = None
@@ -825,300 +833,133 @@ def init_regex(ctb):
     """
     Initialize regular expressions used to match messages and comments
     """
-    lg.debug("> init_regex")
+    lg.debug("> init_regex()")
 
     cc = ctb.conf.coins
     fiat = ctb.conf.fiat
+    actions = ctb.conf.regex.actions
+    ctb.runtime['regex'] = []
 
-    if not ctb._rlist_message:
-        # rlist_message is a list of regular expressions to test _message against
-        #   'regex': regular expression
-        #   'action': action type
-        #   'coin': unit of cryptocurrency, if applicable
-        #   'fiat': unit of fiat, if applicable
-        #   'rg_amount': group number to retrieve amount, if applicable
-        #   'rg_address': group number to retrieve coin address, if applicable
+    for a in vars(actions):
+        if actions[a].simple:
 
-        # Add 'register', 'accept', 'decline', 'history', and 'info' regex
-        ctb._rlist_message = [
-                ctb_misc.DotDict(
-                {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.register,
-                 'action':     'register',
-                 'rg_amount':  None,
-                 'rg_address': None,
-                 'coin':       None,
-                 'fiat':       None}),
-                ctb_misc.DotDict(
-                {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.accept,
-                 'action':     'accept',
-                 'rg_amount':  None,
-                 'rg_address': None,
-                 'coin':       None,
-                 'fiat':       None}),
-                ctb_misc.DotDict(
-                {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.decline,
-                 'action':     'decline',
-                 'rg_amount':  None,
-                 'rg_address': None,
-                 'coin':       None,
-                 'fiat':       None}),
-                ctb_misc.DotDict(
-                {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.history,
-                 'action':     'history',
-                 'rg_amount':  None,
-                 'rg_address': None,
-                 'coin':       None,
-                 'fiat':       None}),
-                ctb_misc.DotDict(
-                {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.info,
-                 'action':     'info',
-                 'rg_amount':  None,
-                 'rg_address': None,
-                 'coin':       None,
-                 'fiat':       None}),
-                ctb_misc.DotDict(
-                {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.rates,
-                 'action':     'rates',
-                 'rg_amount':  None,
-                 'rg_address': None,
-                 'coin':       None,
-                 'fiat':       None})
-                ]
+            # Add simple message actions (info, register, accept, decline, history, rates)
 
-        # Add 'withdraw' regex for each enabled cryptocoin and fiat
-        for c in vars(cc):
-            if cc[c].enabled:
-                ctb._rlist_message.append(
-                   # +withdraw ADDR 0.25 UNIT
-                   ctb_misc.DotDict(
-                   {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.withdraw + '(\\s+)' + cc[c].regex.address + '(\\s+)' + ctb.conf.reddit.regex.amount.num + '(\\s+)' + cc[c].regex.units,
-                    'action':     'withdraw',
-                    'coin':       cc[c].unit,
-                    'fiat':       None,
-                    'rg_amount':  6,
-                    'rg_address': 4}))
-                ctb._rlist_message.append(
-                   # +withdraw ADDR KEYWORD UNIT
-                   ctb_misc.DotDict(
-                   {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.withdraw + '(\\s+)' + cc[c].regex.address + '(\\s+)' + ctb.conf.reddit.regex.amount.keyword + '(\\s+)' + cc[c].regex.units,
-                    'action':     'withdraw',
-                    'coin':       cc[c].unit,
-                    'fiat':       None,
-                    'rg_amount':  6,
-                    'rg_address': 4}))
-            for f in vars(fiat):
-                if fiat[f].enabled:
-                    ctb._rlist_message.append(
-                       # +withdraw ADDR $0.25 UNIT
-                       ctb_misc.DotDict(
-                       {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.withdraw + '(\\s+)' + cc[c].regex.address + '(\\s+)' + fiat[f].regex.units + ctb.conf.reddit.regex.amount.num + '(\\s+)' + cc[c].regex.units,
-                        'action':     'withdraw',
-                        'coin':       cc[c].unit,
-                        'fiat':       fiat[f].unit,
-                        'rg_amount':  7,
-                        'rg_address': 4}))
-                    ctb._rlist_message.append(
-                       # +withdraw ADDR $KEYWORD UNIT
-                       ctb_misc.DotDict(
-                       {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.withdraw + '(\\s+)' + cc[c].regex.address + '(\\s+)' + fiat[f].regex.units + ctb.conf.reddit.regex.amount.keyword + '(\\s+)' + cc[c].regex.units,
-                        'action':     'withdraw',
-                        'coin':       cc[c].unit,
-                        'fiat':       fiat[f].unit,
-                        'rg_amount':  7,
-                        'rg_address': 4}))
-
-        # Add 'redeem' regex for each enabled cryptocoin
-        for c in vars(cc):
-            if cc[c].enabled:
-                ctb._rlist_message.append(
-                   # +redeem UNIT
-                   ctb_misc.DotDict(
-                   {'regex':      '(\\+)' + ctb.conf.reddit.regex.keywords.redeem + '(\\s+)' + cc[c].regex.units,
-                    'action':     'redeem',
-                    'coin':       cc[c].unit,
-                    'fiat':       None,
-                    'rg_amount':  None,
-                    'rg_address': None}))
-
-    if not ctb._rlist_comment:
-        # rlist_comment is a list of regular expressions to test _comment against
-        #   'regex': regular expression
-        #   'action': action type
-        #   'rg_to_user': group number to retrieve tip receiver username
-        #   'rg_amount': group number to retrieve tip amount
-        #   'rg_address': group number to retrieve tip receiver coin address
-        #   'coin': unit of cryptocurrency
-        #   'fiat': unit of fiat, if applicable
-
-        # Add 'givetip' regex for each enabled cryptocoin and fiat
-        for c in vars(cc):
-            if cc[c].enabled:
-                ctb._rlist_comment.append(
-                    # +givetip ADDR 0.25 UNIT
-                    ctb_misc.DotDict(
-                    {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + cc[c].regex.address + '(\\s+)' + ctb.conf.reddit.regex.amount.num + '(\\s+)' + cc[c].regex.units,
-                     'action':      'givetip',
-                     'rg_to_user':  None,
-                     'rg_amount':   6,
-                     'rg_address':  4,
-                     'coin':        cc[c].unit,
-                     'fiat':        None}))
-                ctb._rlist_comment.append(
-                    # +givetip 0.25 UNIT
-                    ctb_misc.DotDict(
-                    {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + ctb.conf.reddit.regex.amount.num + '(\\s+)' + cc[c].regex.units,
-                     'action':      'givetip',
-                     'rg_to_user':  None,
-                     'rg_amount':   4,
-                     'rg_address':  None,
-                     'coin':        cc[c].unit,
-                     'fiat':        None}))
-                ctb._rlist_comment.append(
-                    # +givetip @USER 0.25 UNIT
-                    ctb_misc.DotDict(
-                    {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + '(@\w+)' + '(\\s+)' + ctb.conf.reddit.regex.amount.num + '(\\s+)' + cc[c].regex.units,
-                     'action':      'givetip',
-                     'rg_to_user':  4,
-                     'rg_amount':   6,
-                     'rg_address':  None,
-                     'coin':        cc[c].unit,
-                     'fiat':        None}))
-                ctb._rlist_comment.append(
-                    # +givetip ADDR KEYWORD UNIT
-                    ctb_misc.DotDict(
-                    {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + cc[c].regex.address + '(\\s+)' + ctb.conf.reddit.regex.amount.keyword + '(\\s+)' + cc[c].regex.units,
-                     'action':      'givetip',
-                     'rg_to_user':  None,
-                     'rg_amount':   6,
-                     'rg_address':  4,
-                     'coin':        cc[c].unit,
-                     'fiat':        None}))
-                ctb._rlist_comment.append(
-                    # +givetip KEYWORD UNIT
-                    ctb_misc.DotDict(
-                    {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + ctb.conf.reddit.regex.amount.keyword + '(\\s+)' + cc[c].regex.units,
-                     'action':      'givetip',
-                     'rg_to_user':  None,
-                     'rg_amount':   4,
-                     'rg_address':  None,
-                     'coin':        cc[c].unit,
-                     'fiat':        None}))
-                ctb._rlist_comment.append(
-                    # +givetip @USER KEYWORD UNIT
-                    ctb_misc.DotDict(
-                    {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + '(@\w+)' + '(\\s+)' + ctb.conf.reddit.regex.amount.keyword + '(\\s+)' + cc[c].regex.units,
-                     'action':      'givetip',
-                     'rg_to_user':  4,
-                     'rg_amount':   6,
-                     'rg_address':  None,
-                     'coin':        cc[c].unit,
-                     'fiat':        None}))
-            for f in vars(fiat):
-                if fiat[f].enabled:
-                    ctb._rlist_comment.append(
-                        # +givetip ADDR $0.25 UNIT
-                        ctb_misc.DotDict(
-                        {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + cc[c].regex.address + '(\\s+)' + fiat[f].regex.units + ctb.conf.reddit.regex.amount.num + '(\\s+)' + cc[c].regex.units,
-                         'action':      'givetip',
-                         'rg_to_user':  None,
-                         'rg_amount':   7,
-                         'rg_address':  4,
-                         'coin':        cc[c].unit,
-                         'fiat':        fiat[f].unit}))
-                    ctb._rlist_comment.append(
-                        # +givetip $0.25 UNIT
-                        ctb_misc.DotDict(
-                        {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + fiat[f].regex.units + ctb.conf.reddit.regex.amount.num + '(\\s+)' + cc[c].regex.units,
-                         'action':      'givetip',
-                         'rg_to_user':  None,
-                         'rg_amount':   5,
-                         'rg_address':  None,
-                         'coin':        cc[c].unit,
-                         'fiat':        fiat[f].unit}))
-                    ctb._rlist_comment.append(
-                        # +givetip @USER $0.25 UNIT
-                        ctb_misc.DotDict(
-                        {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + '(@\w+)' + '(\\s+)' + fiat[f].regex.units + ctb.conf.reddit.regex.amount.num + '(\\s+)' + cc[c].regex.units,
-                         'action':      'givetip',
-                         'rg_to_user':  4,
-                         'rg_amount':   7,
-                         'rg_address':  None,
-                         'coin':        cc[c].unit,
-                         'fiat':        fiat[f].unit}))
-                    ctb._rlist_comment.append(
-                        # +givetip ADDR $KEYWORD UNIT
-                        ctb_misc.DotDict(
-                        {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + cc[c].regex.address + '(\\s+)' + fiat[f].regex.units + ctb.conf.reddit.regex.amount.keyword + '(\\s+)' + cc[c].regex.units,
-                         'action':      'givetip',
-                         'rg_to_user':  None,
-                         'rg_amount':   7,
-                         'rg_address':  4,
-                         'coin':        cc[c].unit,
-                         'fiat':        fiat[f].unit}))
-                    ctb._rlist_comment.append(
-                        # +givetip $KEYWORD UNIT
-                        ctb_misc.DotDict(
-                        {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + fiat[f].regex.units + ctb.conf.reddit.regex.amount.keyword + '(\\s+)' + cc[c].regex.units,
-                         'action':      'givetip',
-                         'rg_to_user':  None,
-                         'rg_amount':   5,
-                         'rg_address':  None,
-                         'coin':        cc[c].unit,
-                         'fiat':        fiat[f].unit}))
-                    ctb._rlist_comment.append(
-                        # +givetip @USER $KEYWORD UNIT
-                        ctb_misc.DotDict(
-                        {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + '(@\w+)' + '(\\s+)' + fiat[f].regex.units + ctb.conf.reddit.regex.amount.keyword + '(\\s+)' + cc[c].regex.units,
-                         'action':      'givetip',
-                         'rg_to_user':  4,
-                         'rg_amount':   7,
-                         'rg_address':  None,
-                         'coin':        cc[c].unit,
-                         'fiat':        fiat[f].unit}))
-
-    # These should always be last because they're very general
-    for f in vars(fiat):
-        if fiat[f].enabled:
-            ctb._rlist_comment.append(
-                # +givetip $0.25
-                ctb_misc.DotDict(
-                {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + fiat[f].regex.units + ctb.conf.reddit.regex.amount.num,
-                 'action':      'givetip',
-                 'rg_to_user':  None,
-                 'rg_amount':   5,
-                 'rg_address':  None,
+            entry = ctb_misc.DotDict(
+                {'regex':       actions[a].regex,
+                 'action':      a,
+                 'rg_amount':   0,
+                 'rg_keyword':  0,
+                 'rg_address':  0,
+                 'rg_to_user':  0,
                  'coin':        None,
-                 'fiat':        fiat[f].unit}))
-            ctb._rlist_comment.append(
-                # +givetip $KEYWORD
-                ctb_misc.DotDict(
-                {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + fiat[f].regex.units + ctb.conf.reddit.regex.amount.keyword,
-                 'action':      'givetip',
-                 'rg_to_user':  None,
-                 'rg_amount':   5,
-                 'rg_address':  None,
-                 'coin':        None,
-                 'fiat':        fiat[f].unit}))
-            ctb._rlist_comment.append(
-                # +givetip @USER $0.25
-                ctb_misc.DotDict(
-                {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + '(@\w+)' + '(\\s+)' + fiat[f].regex.units + ctb.conf.reddit.regex.amount.num,
-                 'action':      'givetip',
-                 'rg_to_user':  4,
-                 'rg_amount':   7,
-                 'rg_address':  None,
-                 'coin':        None,
-                 'fiat':        fiat[f].unit}))
-            ctb._rlist_comment.append(
-                # +givetip @USER $KEYWORD
-                ctb_misc.DotDict(
-                {'regex':       '(\\+)' + ctb.conf.reddit.regex.keywords.givetip + '(\\s+)' + '(@\w+)' + '(\\s+)' + fiat[f].regex.units + ctb.conf.reddit.regex.amount.keyword,
-                 'action':      'givetip',
-                 'rg_to_user':  4,
-                 'rg_amount':   7,
-                 'rg_address':  None,
-                 'coin':        None,
-                 'fiat':        fiat[f].unit}))
+                 'fiat':        None,
+                 'keyword':     None
+                })
+            lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
+            ctb.runtime['regex'].append(entry)
+
+        else:
+
+            # Add non-simple actions (givetip, redeem, withdraw)
+
+            for r in sorted(vars(actions[a].regex)):
+                lg.debug("init_regex(): processing regex %s", actions[a].regex[r].value)
+                rval1 = actions[a].regex[r].value
+                rval1 = rval1.replace('{REGEX_TIP_INIT}', ctb.conf.regex.values.tip_init.regex)
+                rval1 = rval1.replace('{REGEX_USER}', ctb.conf.regex.values.username.regex)
+                rval1 = rval1.replace('{REGEX_AMOUNT}', ctb.conf.regex.values.amount.regex)
+
+                if actions[a].regex[r].rg_coin > 0:
+                    for c in sorted(vars(cc)):
+                        if not cc[c].enabled:
+                            continue
+                        # lg.debug("init_regex(): processing coin %s", c)
+
+                        rval2 = rval1.replace('{REGEX_COIN}', cc[c].regex.units)
+                        rval2 = rval2.replace('{REGEX_ADDRESS}', cc[c].regex.address)
+
+                        if actions[a].regex[r].rg_fiat > 0:
+                            for f in sorted(vars(fiat)):
+                                if not fiat[f].enabled:
+                                    continue
+                                # lg.debug("init_regex(): processing fiat %s", f)
+
+                                rval3 = rval2.replace('{REGEX_FIAT}', fiat[f].regex.units)
+
+                                if actions[a].regex[r].rg_keyword > 0:
+                                    for k in sorted(vars(ctb.conf.regex.keywords)):
+                                        # lg.debug("init_regex(): processing keyword %s", k)
+
+                                        rval4 = rval3.replace('{REGEX_KEYWORD}', ctb.conf.regex.keywords[k].regex)
+
+                                        entry = ctb_misc.DotDict(
+                                            {'regex':           rval4,
+                                             'action':          a,
+                                             'rg_amount':       actions[a].regex[r].rg_amount,
+                                             'rg_keyword':      actions[a].regex[r].rg_keyword,
+                                             'rg_address':      actions[a].regex[r].rg_address,
+                                             'rg_to_user':      actions[a].regex[r].rg_to_user,
+                                             'coin':            cc[c].unit,
+                                             'fiat':            fiat[f].unit,
+                                             'keyword':         k
+                                            })
+                                        lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
+                                        ctb.runtime['regex'].append(entry)
+
+                                else:
+
+                                    entry = ctb_misc.DotDict(
+                                        {'regex':           rval3,
+                                         'action':          a,
+                                         'rg_amount':       actions[a].regex[r].rg_amount,
+                                         'rg_keyword':      actions[a].regex[r].rg_keyword,
+                                         'rg_address':      actions[a].regex[r].rg_address,
+                                         'rg_to_user':      actions[a].regex[r].rg_to_user,
+                                         'coin':            cc[c].unit,
+                                         'fiat':            fiat[f].unit,
+                                         'keyword':         None
+                                        })
+                                    lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
+                                    ctb.runtime['regex'].append(entry)
+
+                        else:
+
+                            if actions[a].regex[r].rg_keyword > 0:
+                                for k in sorted(vars(ctb.conf.regex.keywords)):
+                                    # lg.debug("init_regex(): processing keyword %s", k)
+
+                                    rval3 = rval2.replace('{REGEX_KEYWORD}', ctb.conf.regex.keywords[k].regex)
+
+                                    entry = ctb_misc.DotDict(
+                                        {'regex':           rval3,
+                                         'action':          a,
+                                         'rg_amount':       actions[a].regex[r].rg_amount,
+                                         'rg_keyword':      actions[a].regex[r].rg_keyword,
+                                         'rg_address':      actions[a].regex[r].rg_address,
+                                         'rg_to_user':      actions[a].regex[r].rg_to_user,
+                                         'coin':            cc[c].unit,
+                                         'fiat':            None,
+                                         'keyword':         k
+                                        })
+                                    lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
+                                    ctb.runtime['regex'].append(entry)
+
+                            else:
+
+                                entry = ctb_misc.DotDict(
+                                    {'regex':           rval2,
+                                     'action':          a,
+                                     'rg_amount':       actions[a].regex[r].rg_amount,
+                                     'rg_keyword':      actions[a].regex[r].rg_keyword,
+                                     'rg_address':      actions[a].regex[r].rg_address,
+                                     'rg_to_user':      actions[a].regex[r].rg_to_user,
+                                     'coin':            cc[c].unit,
+                                     'fiat':            None,
+                                     'keyword':         None
+                                    })
+                                lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
+                                ctb.runtime['regex'].append(entry)
 
     lg.debug("< init_regex() DONE")
     return None
@@ -1130,11 +971,12 @@ def eval_message(msg, ctb):
     """
     lg.debug("> eval_message()")
 
-    # Do the matching
     body = msg.body
-    for r in ctb._rlist_message:
+    for r in ctb.runtime['regex']:
+
+        # Attempt a match
         rg = re.compile(r.regex, re.IGNORECASE|re.DOTALL)
-        #lg.debug("matching '%s' with '%s'", msg.body, r.regex)
+        lg.debug("matching '%s' with '%s'", msg.body, r.regex)
         m = rg.search(body)
 
         if m:
@@ -1142,8 +984,9 @@ def eval_message(msg, ctb):
             lg.debug("eval_message(): match found")
 
             # Extract matched fields into variables
-            to_addr = m.group(r.rg_address) if r.rg_address else None
-            amount = m.group(r.rg_amount) if r.rg_amount else None
+            to_addr = m.group(r.rg_address) if r.rg_address > 0 else None
+            amount = m.group(r.rg_amount) if r.rg_amount > 0 else None
+            keyword = m.group(r.rg_keyword) if r.rg_keyword > 0 else None
 
             # Return CtbAction instance with given variables
             return CtbAction(   atype=r.action,
@@ -1155,6 +998,7 @@ def eval_message(msg, ctb):
                                 coin_val=amount if not r.fiat else None,
                                 fiat=r.fiat,
                                 fiat_val=amount if r.fiat else None,
+                                keyword=keyword,
                                 ctb=ctb)
 
     # No match found
@@ -1167,9 +1011,14 @@ def eval_comment(comment, ctb):
     """
     lg.debug("> eval_comment()")
 
-    # Do the matching
     body = comment.body
-    for r in ctb._rlist_comment:
+    for r in ctb.runtime['regex']:
+
+        # Skip non-public actions
+        if not ctb.conf.regex.actions[r.action].public:
+            continue
+
+        # Attempt a match
         rg = re.compile(r.regex, re.IGNORECASE|re.DOTALL)
         #lg.debug("eval_comment(): matching '%s' with <%s>", comment.body, r.regex)
         m = rg.search(body)
@@ -1179,9 +1028,10 @@ def eval_comment(comment, ctb):
             lg.debug("eval_comment(): match found")
 
             # Extract matched fields into variables
-            u_to = m.group(r.rg_to_user)[1:] if r.rg_to_user else None
-            to_addr = m.group(r.rg_address) if r.rg_address else None
-            amount = m.group(r.rg_amount) if r.rg_amount else None
+            u_to = m.group(r.rg_to_user)[1:] if r.rg_to_user > 0 else None
+            to_addr = m.group(r.rg_address) if r.rg_address > 0 else None
+            amount = m.group(r.rg_amount) if r.rg_amount > 0 else None
+            keyword = m.group(r.rg_keyword) if r.rg_keyword > 0 else None
 
             # If no destination mentioned, find parent submission's author
             if not u_to and not to_addr:
@@ -1207,6 +1057,7 @@ def eval_comment(comment, ctb):
                                 coin_val=amount if not r.fiat else None,
                                 fiat=r.fiat,
                                 fiat_val=amount if r.fiat else None,
+                                keyword=keyword,
                                 subr=comment.subreddit,
                                 ctb=ctb)
 

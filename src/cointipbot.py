@@ -42,10 +42,7 @@ class CointipBot(object):
     coins = {}
     exchanges = {}
     jenv = None
-
-    _ev = {}
-    _rlist_message = []
-    _rlist_comment = []
+    runtime = {'ev': {}, 'regex': []}
 
     def init_logging(self):
         """
@@ -88,7 +85,7 @@ class CointipBot(object):
         conf = {}
         try:
             prefix='./conf/'
-            for i in ['coins', 'db', 'exchanges', 'fiat', 'logs', 'misc', 'reddit']:
+            for i in ['coins', 'db', 'exchanges', 'fiat', 'logs', 'misc', 'reddit', 'regex']:
                 lg.debug("CointipBot::parse_config(): reading %s%s.yml", prefix, i)
                 conf[i] = yaml.load(open(prefix+i+'.yml'))
         except yaml.YAMLError as e:
@@ -234,6 +231,7 @@ class CointipBot(object):
                 # Perform action, if found
                 if action:
                     lg.info("CointipBot::check_inbox(): %s from %s (m.id %s)", action.type, action.u_from.name, m.id)
+                    lg.debug("CointipBot::check_subreddits(): <%s>", m.body)
                     action.do()
                     if m.was_comment:
                         ctb_misc.praw_call(m.upvote)
@@ -346,9 +344,9 @@ class CointipBot(object):
                 # Perform action, if found
                 if action:
                     lg.info("CointipBot::check_subreddits(): %s from %s (%s)", action.type, action.u_from.name, c.id)
+                    lg.debug("CointipBot::check_subreddits(): <%s>", c.body)
                     action.do()
-                    if m.was_comment:
-                        ctb_misc.praw_call(m.upvote)
+                    ctb_misc.praw_call(c.upvote)
                 else:
                     lg.info("CointipBot::check_subreddits(): no match")
 
@@ -408,10 +406,10 @@ class CointipBot(object):
                     # BTC/BTC rate is always 1
                     result = 1.0
 
-                # Assign result to self._ev
-                if not self._ev.has_key(c):
-                    self._ev[c] = {}
-                self._ev[c]['btc'] = result
+                # Assign result to self.runtime['ev']
+                if not self.runtime['ev'].has_key(c):
+                    self.runtime['ev'][c] = {}
+                self.runtime['ev'][c]['btc'] = result
 
         # For each enabled fiat...
         for f in vars(self.conf.fiat):
@@ -433,12 +431,12 @@ class CointipBot(object):
                 if len(values) > 0:
                     result = sum(values) / float(len(values))
 
-                # Assign result to self._ev
-                if not self._ev.has_key('btc'):
-                    self._ev['btc'] = {}
-                self._ev['btc'][f] = result
+                # Assign result to self.runtime['ev']
+                if not self.runtime['ev'].has_key('btc'):
+                    self.runtime['ev']['btc'] = {}
+                self.runtime['ev']['btc'][f] = result
 
-        lg.debug("CointipBot::refresh_ev(): %s", self._ev)
+        lg.debug("CointipBot::refresh_ev(): %s", self.runtime['ev'])
 
         # Update last_refresh
         self.conf.exchanges.last_refresh = int(time.mktime(time.gmtime()))
@@ -447,7 +445,7 @@ class CointipBot(object):
         """
         Quick method to return _fiat value of _coin
         """
-        return self._ev[_coin]['btc'] * self._ev['btc'][_fiat]
+        return self.runtime['ev'][_coin]['btc'] * self.runtime['ev']['btc'][_fiat]
 
     def notify(self, _msg=None):
         """
@@ -522,8 +520,8 @@ class CointipBot(object):
         """
         Return string representation of self
         """
-        me = "<CointipBot: sleepsec=%s, batchlim=%s, _ev=%s"
-        me = me % (self.conf.misc.times.sleep_seconds, self.conf.reddit.scan.batch_limit, self._ev)
+        me = "<CointipBot: sleepsec=%s, batchlim=%s, ev=%s"
+        me = me % (self.conf.misc.times.sleep_seconds, self.conf.reddit.scan.batch_limit, self.runtime['ev'])
         return me
 
     def main(self):
