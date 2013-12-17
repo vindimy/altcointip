@@ -133,6 +133,7 @@ class CtbAction(object):
         # Determine coin, if applicable
         if self.type in ['givetip']:
             if self.fiat and not self.coin:
+                lg.debug("CtbAction::__init__(atype=%s, from_user=%s): determining coin..." % (self.type, self.u_from.name))
                 if not self.u_from.is_registered():
                     # Can't proceed, abort
                     lg.warning("CtbAction::__init__(): can't determine coin for un-registered user %s", self.u_from.name)
@@ -140,6 +141,7 @@ class CtbAction(object):
                 # Set the coin based on from_user's available balance
                 cc = self.ctb.conf.coins
                 for c in sorted(self.ctb.coins):
+                    lg.debug("CtbAction::__init__(atype=%s, from_user=%s): considering %s" % (self.type, self.u_from.name, c))
                     # First, check if we have a ticker value for this coin and fiat
                     if not self.ctb.coin_value(cc[c].unit, self.fiat) > 0.0:
                         continue
@@ -982,7 +984,7 @@ def init_regex(ctb):
                                      'rg_keyword':      actions[a].regex[r].rg_keyword,
                                      'rg_address':      actions[a].regex[r].rg_address,
                                      'rg_to_user':      actions[a].regex[r].rg_to_user,
-                                     'coin':            cc[c].unit,
+                                     'coin':            None,
                                      'fiat':            fiat[f].unit,
                                      'keyword':         k
                                     })
@@ -998,7 +1000,7 @@ def init_regex(ctb):
                                  'rg_keyword':      actions[a].regex[r].rg_keyword,
                                  'rg_address':      actions[a].regex[r].rg_address,
                                  'rg_to_user':      actions[a].regex[r].rg_to_user,
-                                 'coin':            cc[c].unit,
+                                 'coin':            None,
                                  'fiat':            fiat[f].unit,
                                  'keyword':         None
                                 })
