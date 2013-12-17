@@ -18,15 +18,15 @@ The following Python libraries are necessary to run ALTcointip bot:
 * __sqlalchemy__ (http://www.sqlalchemy.org/)
 * __yaml__ (http://pyyaml.org/wiki/PyYAML)
 
-You can install _jinja2_, _praw_, _sqlalchemy_, and _yaml_ using _pip_ (Python Package Index tool) or a package manager in your OS. For _pifkoin_, you'll need to copy or symlink its "python" subdirectory to "src/ctb/pifkoin".
+You can install `jinja2`, `praw`, `sqlalchemy`, and `yaml` using `pip` (Python Package Index tool) or a package manager in your OS. For `pifkoin`, you'll need to copy or symlink its "python" subdirectory to `src/ctb/pifkoin`.
 
 ### Database
 
-Create a new MySQL database instance and run included SQL file _[altcointip.sql](altcointip.sql)_ to create necessary tables. Create a MySQL user and grant it all privileges on the database. If you don't like to deal with command-line MySQL, use _phpMyAdmin_.
+Create a new MySQL database instance and run included SQL file [altcointip.sql](altcointip.sql) to create necessary tables. Create a MySQL user and grant it all privileges on the database. If you don't like to deal with command-line MySQL, use `phpMyAdmin`.
 
 ### Coin Daemons
 
-Download one or more coin daemon executable. Create a configuration file for it in appropriate directory (such as `~/.litecoin/litecoin.conf` for Litecoin), specifying `rpcuser`, `rpcpassword`, `rpcport`, and `server=1`, then start the daemon. It will take some time for the daemon to download the blockchain, after which you should verify that it's accepting commands (such as `getinfo`).
+Download one or more coin daemon executable. Create a configuration file for it in appropriate directory (such as `~/.mycoin/mycoin.conf` for Litecoin), specifying `rpcuser`, `rpcpassword`, `rpcport`, and `server=1`, then start the daemon. It will take some time for the daemon to download the blockchain, after which you should verify that it's accepting commands (such as `mycoind getinfo` and `mycoind listaccounts`).
 
 ### Reddit Account
 
@@ -34,7 +34,7 @@ You should create a dedicated Reddit account for your bot. Initially, Reddit wil
 
 ### Configuration
 
-Copy included set of configuration files _[src/conf-sample/](src/conf-sample/)_ as _src/conf/_ and edit `reddit.yml`, `db.yml`, `coins.yml`, and `regex.yml`, specifying necessary settings.
+Copy included set of configuration files [src/conf-sample/](src/conf-sample/) as `src/conf/` and edit `reddit.yml`, `db.yml`, `coins.yml`, and `regex.yml`, specifying necessary settings.
 
 Most configuration options are described inline in provided sample configuration files.
 
@@ -42,9 +42,8 @@ Most configuration options are described inline in provided sample configuration
 
 1. Ensure MySQL is running and accepting connections given configured username/password
 1. Ensure each configured coin daemon is running and responding to commands
-1. Ensure Reddit authenticates configured user. _Note that from new users Reddit will require CAPTCHA responses when posting and sending messages. You will be able to type in CAPTCHA responses._
-1. Execute `_start.sh` from _[src](src/)_ directory. The command will not return for as long as the bot is running.
-1. Monitor configured INFO-level or DEBUG-level log file wth `tail -f filename.log` (where _filename.log_ is the log file name you've configured).
+1. Ensure Reddit authenticates configured user. _Note that from new users Reddit will require CAPTCHA responses when posting and sending messages. You will be able to type in CAPTCHA responses when required._
+1. Execute `_start.sh` from [src](src/) directory. The command will not return for as long as the bot is running.
 
 Here's the first few lines of DEBUG-level console output during successful initialization.
 
@@ -108,7 +107,7 @@ Here's the first few lines of DEBUG-level console output during successful initi
     
 ALTcointip bot is configured by default to append INFO-level log messages to `logs/info.log`, and WARNING-level log messages to `logs/warning.log`, while DEBUG-level log messages are output to the console.
 
-### Backups
+### Cron: Backups
 
 Backups are very important! The last thing you want is losing user wallets or record of transactions in the databse. 
 
@@ -118,7 +117,7 @@ There are three simple backup scripts included that support backing up database,
     0 9,21 * * * cd /opt/altcointip/altcointip/src && python _backup_wallets.py ~/backups
     0 10 * * * cd /opt/altcointip/altcointip/src && python _backup_config.py ~/backups
 
-### Statistics
+### Cron: Statistics
 
 ALTcointip bot can be configured to generate tipping statistics pages (overall and per-user) and publish them using subreddit's wiki. After you configure and enable statistics in configuration, add the following cron job to update the main statistics page periodically:
 
@@ -126,4 +125,4 @@ ALTcointip bot can be configured to generate tipping statistics pages (overall a
     
 ### What If I Want To Enable More Cryptocoins Later?
 
-If you want to add a new cryptocoin after you already have a few registered users, you need to retroactively create the new cryptocoin address for users who have already registered. See _[src/_add_coin.py](src/_add_coin.py)_ for details on how to do that.
+If you want to add a new cryptocoin after you already have a few registered users, you need to retroactively create the new cryptocoin address for users who have already registered. See [src/_add_coin.py](src/_add_coin.py) for details.
