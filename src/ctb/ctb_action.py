@@ -976,7 +976,7 @@ def eval_message(msg, ctb):
 
         # Attempt a match
         rg = re.compile(r.regex, re.IGNORECASE|re.DOTALL)
-        lg.debug("matching '%s' with '%s'", msg.body, r.regex)
+        #lg.debug("matching '%s' with '%s'", msg.body, r.regex)
         m = rg.search(body)
 
         if m:
