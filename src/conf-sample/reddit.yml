@@ -1,6 +1,6 @@
 auth:
-    user: mybotuser
-    password: mybotpass
+    user: 'mybotuser'
+    password: 'mybotpass'
 
 scan:
     batch_limit: 1000
@@ -9,23 +9,20 @@ scan:
 
 help:
     enabled: true
-    url: http://www.reddit.com/r/mysubreddit/wiki/index
+    url: 'http://www.reddit.com/r/mysubreddit/wiki/index'
 
 contact:
     enabled: true
-    url: http://www.reddit.com/message/compose/?to=YOUR_NAME
+    url: 'http://www.reddit.com/message/compose/?to=YOUR_NAME'
 
-comments:
-    verify: true
+messages:
+    verified: true
     pending: false
     expired: false
     declined: false
-
-messages:
     sorry: true
 
 redeem:
-    enabled: false
     unit: 'usd'
     multicoin: true
     min_karma: 150
@@ -38,29 +35,14 @@ redeem:
 
 banned_users:
     method: list
-    list: [mybotuser, bitcointip, altcointip]
-    subreddit: mysubreddit
+    list: ['mybotuser', 'bitcointip', 'altcointip']
+    subreddit: 'mysubreddit'
 
 stats:
     enabled: false
     userflair: false
-    subreddit: mysubreddit
-    page: stats
-    url: http://www.reddit.com/r/mysubreddit/wiki/stats
-    page_tips: tips
-    url_tips: http://www.reddit.com/r/mysubreddit/wiki/tips
-
-regex:
-    amount:
-        num: '([0-9]{1,9}(?:\.[0-9]{0,16})?)'
-        keyword: '(all|flip|roll|upvote|pi|e|leet|quarter|half|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)'
-    keywords:
-        givetip: '(/u/mybotuser|mybotuser)'
-        info: '(info)'
-        register: '(register)'
-        accept: '(accept)'
-        decline: '(decline)'
-        withdraw: '(withdraw)'
-        history: '(history)'
-        redeem: '(redeem)'
-        rates: '(rates)'
+    subreddit: 'mysubreddit'
+    page: 'stats'
+    url: 'http://www.reddit.com/r/mysubreddit/wiki/stats'
+    page_tips: 'tips'
+    url_tips: 'http://www.reddit.com/r/mysubreddit/wiki/tips'
