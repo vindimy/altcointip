@@ -1030,7 +1030,7 @@ def eval_message(msg, ctb):
             # Extract matched fields into variables
             to_addr = m.group(r.rg_address) if r.rg_address > 0 else None
             amount = m.group(r.rg_amount) if r.rg_amount > 0 else None
-            keyword = m.group(r.rg_keyword) if r.rg_keyword > 0 else None
+            keyword = r.keyword if r.rg_keyword > 0 else None
 
             # Return CtbAction instance with given variables
             return CtbAction(   atype=r.action,
@@ -1075,7 +1075,7 @@ def eval_comment(comment, ctb):
             u_to = m.group(r.rg_to_user)[1:] if r.rg_to_user > 0 else None
             to_addr = m.group(r.rg_address) if r.rg_address > 0 else None
             amount = m.group(r.rg_amount) if r.rg_amount > 0 else None
-            keyword = m.group(r.rg_keyword) if r.rg_keyword > 0 else None
+            keyword = r.keyword if r.rg_keyword > 0 else None
 
             # If no destination mentioned, find parent submission's author
             if not u_to and not to_addr:
