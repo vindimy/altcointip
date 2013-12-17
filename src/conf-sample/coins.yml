@@ -35,7 +35,7 @@ ltc:
     txmin:
         givetip: 0.001
         withdraw: 0.05
-    txfee: 0.02
+    txfee: 0.001
     walletpassphrase: 'mypass1'
     explorer:
         address: 'http://block-explorer.com/address/'
