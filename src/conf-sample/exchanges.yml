@@ -87,3 +87,13 @@ cryptotrade:
     coinlist: ['btc','ltc','nmc','xpm','ppc','trc','ftc','dvc','wdc','dgc']
     fiatlist: ['usd','eur'] 
     uppercase: false
+
+coinse:
+    enabled: true
+    domain: 'www.coins-e.com'
+    https: true
+    urlpaths: ['/api/v2/markets/data/']
+    jsonpaths: ['markets.{THING_FROM}_{THING_TO}.marketstat.24h.avg_rate']
+    coinlist: ['btc','alp','amc','anc','bet','bqc','cgb','cin','crc','dem','dtc','elc','elp','emd','frk','ftc','gdc','glc','kgc','ltc','mec','nan','net','nrb','nvc','orb','ppc','pts','qrk','rec','red','spt','tag','trc','uno','wdc','xnc','xpm','zet']
+    fiatlist: []
+    uppercase: true
