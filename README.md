@@ -46,7 +46,7 @@ Most configuration options are described inline in provided sample configuration
 1. Execute `_start.sh` from _[src](src/)_ directory. The command will not return for as long as the bot is running.
 1. Monitor configured INFO-level or DEBUG-level log file wth `tail -f filename.log` (where _filename.log_ is the log file name you've configured).
 
-Here's the first few lines of INFO-level log after successful initialization:
+Here's the first few lines of DEBUG-level console output during successful initialization.
 
     user@host:/opt/altcointip/altcointip/src$ ./_start.sh
     INFO:cointipbot:CointipBot::init_logging(): -------------------- logging initialized --------------------
@@ -105,6 +105,8 @@ Here's the first few lines of INFO-level log after successful initialization:
     DEBUG:cointipbot:CointipBot::connect_reddit(): connecting to Reddit...
     INFO:cointipbot:CointipBot::connect_reddit(): logged in to Reddit as ALTcointip
     ...
+    
+ALTcointip bot is configured by default to append INFO-level log messages to `logs/info.log`, and WARNING-level log messages to `logs/warning.log`, while DEBUG-level log messages are output to the console.
 
 ### Backups
 
