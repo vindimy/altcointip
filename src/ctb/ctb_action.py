@@ -961,6 +961,50 @@ def init_regex(ctb):
                                 lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
                                 ctb.runtime['regex'].append(entry)
 
+                elif actions[a].regex[r].rg_fiat > 0:
+                    for f in sorted(vars(fiat)):
+                        if not fiat[f].enabled:
+                            continue
+                        # lg.debug("init_regex(): processing fiat %s", f)
+
+                        rval2 = rval1.replace('{REGEX_FIAT}', fiat[f].regex.units)
+
+                        if actions[a].regex[r].rg_keyword > 0:
+                            for k in sorted(vars(ctb.conf.regex.keywords)):
+                                # lg.debug("init_regex(): processing keyword %s", k)
+
+                                rval3 = rval2.replace('{REGEX_KEYWORD}', ctb.conf.regex.keywords[k].regex)
+
+                                entry = ctb_misc.DotDict(
+                                    {'regex':           rval3,
+                                     'action':          a,
+                                     'rg_amount':       actions[a].regex[r].rg_amount,
+                                     'rg_keyword':      actions[a].regex[r].rg_keyword,
+                                     'rg_address':      actions[a].regex[r].rg_address,
+                                     'rg_to_user':      actions[a].regex[r].rg_to_user,
+                                     'coin':            cc[c].unit,
+                                     'fiat':            fiat[f].unit,
+                                     'keyword':         k
+                                    })
+                                lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
+                                ctb.runtime['regex'].append(entry)
+
+                        else:
+
+                            entry = ctb_misc.DotDict(
+                                {'regex':           rval2,
+                                 'action':          a,
+                                 'rg_amount':       actions[a].regex[r].rg_amount,
+                                 'rg_keyword':      actions[a].regex[r].rg_keyword,
+                                 'rg_address':      actions[a].regex[r].rg_address,
+                                 'rg_to_user':      actions[a].regex[r].rg_to_user,
+                                 'coin':            cc[c].unit,
+                                 'fiat':            fiat[f].unit,
+                                 'keyword':         None
+                                })
+                            lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
+                            ctb.runtime['regex'].append(entry)
+
     lg.debug("< init_regex() DONE")
     return None
 
