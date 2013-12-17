@@ -39,7 +39,7 @@ bitstamp:
     uppercase: false
 
 mtgox:
-    enabled: true
+    enabled: false
     domain: 'data.mtgox.com'
     https: true
     urlpaths: ['/api/2/{THING_FROM}{THING_TO}/money/ticker_fast']
@@ -64,7 +64,7 @@ cryptsy:
     https: false
     urlpaths: ['/api.php?method=marketdatav2']
     jsonpaths: ['return.markets.{THING_FROM}/{THING_TO}.lasttradeprice']
-    coinlist: ['btc','alf','amc','anc','arg','bqc','bte','btg','buk','cap','cgb','clr','cmc','crc','csc','dgc','dmd','elc','emd','frc','frk','fst','ftc','gdc','glc','glx','hbn','ixc','kgc','lk7','lky','ltc','mec','mnc','nbl','nec','nmc','nrb','nvc,',phs','ppc','pts','pxc','pyc','qrk','sbc','spt','src','tag','tek','trc','wdc','xjo','xpm','yac','zet']
+    coinlist: ['btc','alf','amc','anc','arg','bqc','bte','btg','buk','cap','cgb','clr','cmc','crc','csc','dgc','dmd','elc','emd','frc','frk','fst','ftc','gdc','glc','glx','hbn','ifc','ixc','kgc','lk7','lky','ltc','mec','mnc','nbl','nec','nmc','nrb','nvc,',phs','ppc','pts','pxc','pyc','qrk','sbc','spt','src','tag','tek','trc','wdc','xjo','xpm','yac','zet']
     fiatlist: []
     uppercase: true
 
@@ -74,7 +74,7 @@ bter:
     https: true
     urlpaths: ['/api/1/ticker/{THING_FROM}_{THING_TO}']
     jsonpaths: ['avg']
-    coinlist: ['btc','ltc','ppc','frc','ftc','cnc','bqc','btb','wdc']
+    coinlist: ['btc','ltc','ppc','frc','ftc','cnc','bqc','btb','wdc','ifc','yac','xpm','pts','zcc','dtc','red','cent','zet','src','mec','qrk']
     fiatlist: ['cny']
     uppercase: false
 
@@ -85,7 +85,7 @@ cryptotrade:
     urlpaths: ['/api/1/ticker/{THING_FROM}_{THING_TO}']
     jsonpaths: ['data.min_ask', 'data.max_bid']
     coinlist: ['btc','ltc','nmc','xpm','ppc','trc','ftc','dvc','wdc','dgc']
-    fiatlist: ['usd','eur'] 
+    fiatlist: ['usd','eur']
     uppercase: false
 
 coinse:
@@ -94,6 +94,6 @@ coinse:
     https: true
     urlpaths: ['/api/v2/markets/data/']
     jsonpaths: ['markets.{THING_FROM}_{THING_TO}.marketstat.24h.avg_rate']
-    coinlist: ['btc','alp','amc','anc','bet','bqc','cgb','cin','crc','dem','dtc','elc','elp','emd','frk','ftc','gdc','glc','kgc','ltc','mec','nan','net','nrb','nvc','orb','ppc','pts','qrk','rec','red','spt','tag','trc','uno','wdc','xnc','xpm','zet']
+    coinlist: ['btc','alp','amc','anc','bet','bqc','cgb','cin','crc','dem','dtc','elc','elp','emd','frk','ftc','gdc','glc','ifc','kgc','ltc','mec','nan','net','nrb','nvc','orb','ppc','pts','qrk','rec','red','spt','tag','trc','uno','wdc','xnc','xpm','zet']
     fiatlist: []
     uppercase: true
