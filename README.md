@@ -110,7 +110,17 @@ Here's the first few lines of INFO-level log after successful initialization:
 
 Backups are very important! The last thing you want is losing user wallets or record of transactions in the databse. 
 
-There are three simple backup scripts included that support backing up database, wallets, and configuration files to local directory and (optionally) to a remote host with `rsync`. Make sure to schedule regular backups and test whether they are actually performed.
+There are three simple backup scripts included that support backing up database, wallets, and configuration files to local directory and (optionally) to a remote host with `rsync`. Make sure to schedule regular backups with cron and test whether they are actually performed. Example cron configuration:
+
+    0 8,20 * * * cd /opt/altcointip/altcointip/src && python _backup_db.py ~/backups
+    0 9,21 * * * cd /opt/altcointip/altcointip/src && python _backup_wallets.py ~/backups
+    0 10 * * * cd /opt/altcointip/altcointip/src && python _backup_config.py ~/backups
+
+### Statistics
+
+ALTcointip bot can be configured to generate tipping statistics pages (overall and per-user) and publish them using subreddit's wiki. After you configure and enable statistics in configuration, add the following cron job to update the main statistics page periodically:
+
+    0 */3 * * * cd /opt/altcointip/altcointip/src && python _update_stats.py
     
 ### What If I Want To Enable More Cryptocoins Later?
 
