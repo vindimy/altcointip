@@ -233,8 +233,6 @@ class CointipBot(object):
                     lg.info("CointipBot::check_inbox(): %s from %s (m.id %s)", action.type, action.u_from.name, m.id)
                     lg.debug("CointipBot::check_subreddits(): <%s>", m.body)
                     action.do()
-                    if m.was_comment:
-                        ctb_misc.praw_call(m.upvote)
                 else:
                     lg.info("CointipBot::check_inbox(): no match")
                     if self.conf.reddit.messages.sorry:
@@ -346,7 +344,6 @@ class CointipBot(object):
                     lg.info("CointipBot::check_subreddits(): %s from %s (%s)", action.type, action.u_from.name, c.id)
                     lg.debug("CointipBot::check_subreddits(): <%s>", c.body)
                     action.do()
-                    ctb_misc.praw_call(c.upvote)
                 else:
                     lg.info("CointipBot::check_subreddits(): no match")
 
