@@ -1,16 +1,12 @@
-# Reddit dogetipbot
+# Reddit ALTcointip bot
 
 ## Introduction
 
-This is dogetipbot. It's based on vindimy's alcontipbot, but massively optimized and focused on dogecoin.
-And when I say focused, I mean... really focused. the volume dogetipbot pushes on the regular is absurd. :O
-
-mad props to vindimy for doing the heavy lifting. I'm hoping to contribute back as much as I can.
-
-Also I tend to be pretty damn laid back and my python isn't as good as my perl, so deal with me. :Package
---mohland
+For introduction to and use of ALTcointip bot, see __http://www.reddit.com/r/ALTcointip/wiki/index__
 
 ## Getting Started
+
+>**NEW: See [altcointip-chef](https://github.com/vindimy/altcointip-chef) for Chef-automated installation and configuration of ALTcointip bot.**
 
 ### Python Dependencies
 
