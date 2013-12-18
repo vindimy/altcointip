@@ -49,7 +49,7 @@ class CtbCoin(object):
             raise
 
         lg.info("CtbCoin::__init__():: connected to %s", self.conf.name)
-        time.sleep(2)
+        time.sleep(0.5)
 
         # set transaction fee
         lg.info("Setting tx fee of %f", self.conf.txfee)
@@ -72,7 +72,7 @@ class CtbCoin(object):
             lg.error("CtbCoin.getbalance(): error getting %s (minconf=%s) balance for %s: %s", self.conf.name, minconf, user, e)
             raise
 
-        time.sleep(1)
+        time.sleep(0.5)
         return float(balance)
 
     def sendtouser(self, _userfrom = None, _userto = None, _amount = None, _minconf = 1):
@@ -90,12 +90,12 @@ class CtbCoin(object):
         try:
             lg.info("CtbCoin::sendtouser(): moving %s %s from %s to %s", amount, self.conf.name, userfrom, userto)
             result = self.conn.move(userfrom, userto, amount)
-            time.sleep(1)
+            time.sleep(0.5)
         except Exception as e:
             lg.error("CtbCoin::sendtouser(): error sending %s %s from %s to %s: %s", amount, self.conf.name, userfrom, userto, e)
             return False
 
-        time.sleep(2)
+        time.sleep(0.5)
         return True
 
     def sendtoaddr(self, _userfrom = None, _addrto = None, _amount = None):
@@ -133,7 +133,7 @@ class CtbCoin(object):
             lg.error("CtbCoin::sendtoaddr(): error sending %s %s from %s to %s: %s", amount, self.conf.name, userfrom, addrto, e)
             raise
 
-        time.sleep(2)
+        time.sleep(0.5)
         return str(txid)
 
     def validateaddr(self, _addr = None):
@@ -145,7 +145,7 @@ class CtbCoin(object):
 
         addr = self.verify_addr(_addr=_addr)
         addr_valid = self.conn.validateaddress(addr)
-        time.sleep(1)
+        time.sleep(0.5)
 
         if not addr_valid.has_key('isvalid') or not addr_valid['isvalid']:
             lg.debug("CtbCoin::validateaddr(%s): not valid", addr)
@@ -180,7 +180,7 @@ class CtbCoin(object):
                 if not addr:
                     raise Exception("CtbCoin::getnewaddr(%s): empty addr", user)
 
-                time.sleep(2)
+                time.sleep(0.1)
                 return str(addr)
 
             except BitcoindException as e:
