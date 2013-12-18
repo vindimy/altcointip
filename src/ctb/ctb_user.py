@@ -259,6 +259,12 @@ class CtbUser(object):
         if not fiat or not self.ctb.conf.fiat.has_key(fiat):
             raise Exception("CtbUser::get_redeem_amount(%s): invalid fiat" % fiat)
 
+        # Check if we have coin's fiat value
+        coin_value = self.ctb.coin_value(coin, fiat)
+        if not coin_value or not coin_value > 0.0:
+            lg.warning("CtbUser::get_redeem_amount(%s): coin_value not available", coin)
+            return (None, None)
+
         # First, determine fiat value due to link karma
         link_mul = self.ctb.conf.reddit.redeem.multiplier.link
         if type(link_mul) in [str, unicode]:
@@ -290,7 +296,7 @@ class CtbUser(object):
             total_fiat = self.ctb.conf.reddit.redeem.maximum
 
         # Determine total coin value using exchange rate
-        total_coin = total_fiat / self.ctb.coin_value(coin, fiat)
+        total_coin = total_fiat / coin_value
 
         lg.debug("< CtbUser::get_redeem_amount(%s) DONE", coin)
         return (total_coin, total_fiat)

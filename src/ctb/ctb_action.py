@@ -761,6 +761,14 @@ class CtbAction(object):
         self.fiat = self.ctb.conf.reddit.redeem.unit
         self.coinval, self.fiatval = self.u_from.get_redeem_amount(coin=self.coin, fiat=self.fiat)
 
+        # Check if coinval and fiatval are valid
+        if not self.coinval or not self.fiatval or not self.coinval > 0.0 or not self.fiatval > 0.0:
+            msg = self.ctb.jenv.get_template('redeem-cant-compute.tpl').render(a=self, ctb=self.ctb)
+            lg.debug("CtbAction::redeem(): %s", msg)
+            ctb_misc.praw_call(self.msg.reply, msg)
+            self.save('failed')
+            return False
+
         # Check if redeem account has enough balance
         funds = self.ctb.coins[self.coin].getbalance(_user=self.ctb.conf.reddit.redeem.account, _minconf=1)
         if self.coinval > funds or abs(self.coinval - funds) < 0.000001:
