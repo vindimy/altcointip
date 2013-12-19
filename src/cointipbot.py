@@ -231,11 +231,11 @@ class CointipBot(object):
                 # Perform action, if found
                 if action:
                     lg.info("CointipBot::check_inbox(): %s from %s (m.id %s)", action.type, action.u_from.name, m.id)
-                    lg.debug("CointipBot::check_subreddits(): <%s>", m.body)
+                    lg.debug("CointipBot::check_inbox(): message body: <%s>", m.body)
                     action.do()
                 else:
                     lg.info("CointipBot::check_inbox(): no match")
-                    if self.conf.reddit.messages.sorry:
+                    if self.conf.reddit.messages.sorry and not m.subject in ['post reply', 'comment reply']:
                         user = ctb_user.CtbUser(name=m.author.name, redditobj=m.author, ctb=self)
                         tpl = self.jenv.get_template('didnt-understand.tpl')
                         msg = tpl.render(user_from=user.name, what='comment' if m.was_comment else 'message', source_link=m.permalink if hasattr(m, 'permalink') else None, ctb=self)
@@ -342,7 +342,7 @@ class CointipBot(object):
                 # Perform action, if found
                 if action:
                     lg.info("CointipBot::check_subreddits(): %s from %s (%s)", action.type, action.u_from.name, c.id)
-                    lg.debug("CointipBot::check_subreddits(): <%s>", c.body)
+                    lg.debug("CointipBot::check_subreddits(): comment body: <%s>", c.body)
                     action.do()
                 else:
                     lg.info("CointipBot::check_subreddits(): no match")
