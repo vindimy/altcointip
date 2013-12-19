@@ -313,3 +313,6 @@ keywords:
     half:
         regex: '(half|½)'
         value: 0.5
+    threequarters:
+        regex: '(threequarter|threequarters|¾)'
+        value: 0.75
