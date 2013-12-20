@@ -4,7 +4,7 @@ values:
     amount:
         regex: '([0-9]{1,9}(?:\.[0-9]{0,16})?)'
     keywords:
-        regex: '(all|flip|megaflip|gigaflip|roll|megaroll|gigaroll|sushi|random01|random05|random1|random3|random5|random10|random15|random25|random50|random100|random250|random500|random1000|upvote|pi|e|leet|quarter|half|cookie|nothing|gum|beer|nicebeer|hug|kiss|nyan)'
+        regex: '(all|flip|megaflip|gigaflip|roll|megaroll|gigaroll|sushi|random01|random05|random1|random3|random5|random10|random15|random25|random50|random100|random250|random500|random1000|upvote|pi|e|leet|quarter|half|cookie|nothing|gum|beer|nicebeer|hug|kiss|nyan|highfive|fart|coffee)'
     tip_init:
         regex: '(/u/mybotuser|mybotuser)'
 

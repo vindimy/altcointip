@@ -8,43 +8,37 @@ flip:
     value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,2)) )"
     for_fiat: true
     for_coin: true
-    message: '{USER_FROM} ^flips ^the ^table ^**(╯°□°）╯︵┻━┻** ^and {USER_TO} ^gets {AMOUNT}'
+    message: '{USER_FROM} ^flips ^the ^table ^**(╯°□°）╯︵┻━┻** ^and {USER_TO} ^wins {AMOUNT}'
 
 megaflip:
     value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,20)) )"
     for_fiat: true
     for_coin: true
-    message: '{USER_FROM} ^flips ^10 ^tables ^**(╯°□°）╯︵┻━┻** ^and {USER_TO} ^gets {AMOUNT}'
+    message: '{USER_FROM} ^flips ^10 ^tables ^**(╯°□°）╯︵┻━┻** ^and {USER_TO} ^wins {AMOUNT}'
 
 gigaflip:
     value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,200)) )"
     for_fiat: true
     for_coin: true
-    message: '{USER_FROM} ^flips ^100 ^tables ^**(╯°□°）╯︵┻━┻** ^and {USER_TO} ^gets {AMOUNT}'
+    message: '{USER_FROM} ^flips ^100 ^tables ^**(╯°□°）╯︵┻━┻** ^and {USER_TO} ^wins {AMOUNT}'
 
 roll:
     value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,6)) )"
     for_fiat: true
     for_coin: true
-    message: '{USER_FROM} ^rolls ^a ^die, ^and {USER_TO} ^gets {AMOUNT}'
+    message: '{USER_FROM} ^rolls ^around ^and {USER_TO} ^gets {AMOUNT}'
 
 megaroll:
     value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,60)) )"
     for_fiat: true
     for_coin: true
-    message: '{USER_FROM} ^rolls ^a ^mega-die, ^and {USER_TO} ^gets {AMOUNT}'
+    message: '{USER_FROM} ^rolls ^around ^and {USER_TO} ^gets {AMOUNT}'
 
 gigaroll:
     value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,600)) )"
     for_fiat: true
     for_coin: true
-    message: '{USER_FROM} ^rolls ^a ^giga-die, ^and {USER_TO} ^gets {AMOUNT}'
-
-sushi:
-    value: 3.0
-    for_fiat: true
-    for_coin: false
-    message: '{USER_FROM} ^serves {USER_TO} ^a ^roll ^of ^yummy ^sushi ^**(っ˘ڡ˘ς)** ^- ^worth {AMOUNT}'
+    message: '{USER_FROM} ^rolls ^aroun ^and {USER_TO} ^gets {AMOUNT}'
 
 random01:
     value: "float( randint(0,100) ) / 1000.0"
@@ -130,36 +124,35 @@ upvote:
     for_coin: true
     message: '{USER_FROM} ^gives {USER_TO} ^an ^upvote... _^with ^benefits_ ^**ヽ(*・ω・)ﾉ** ^- ^worth {AMOUNT}'
 
-pi:
-    value: 3.14159265
-    for_fiat: true
-    for_coin: true
-
-e:
-    value: 2.7182818
-    for_fiat: true
-    for_coin: true
-
-leet:
-    value: 1.337
-    for_fiat: true
-    for_coin: true
-
-quarter:
+highfive:
     value: 0.25
     for_fiat: true
     for_coin: true
+    message: '{USER_FROM} ^gives {USER_TO} ^a ^high ^five ^**☆☆☆** ^- ^worth {AMOUNT}'
 
-half:
-    value: 0.5
+fart:
+    value: 0.05
     for_fiat: true
     for_coin: true
+    message: '{USER_FROM} ^farts ^on {USER_TO} ^**(⊙﹏⊙)** ^- ^worth {AMOUNT}'
+
+coffee:
+    value: 1.0
+    for_fiat: true
+    for_coin: false
+    message: '{USER_TO} ^gets ^a ^delicious ^cup ^of ^coffee ^from {USER_FROM} ^**(´◠ω◠`)** ^- ^worth {AMOUNT}'
 
 cookie:
     value: 0.33
     for_fiat: true
     for_coin: false
     message: '{USER_FROM} ^gives {USER_TO} ^a ^yummy ^cookie ^**♪┏(・o･)┛♪** ^- ^worth {AMOUNT}'
+
+sushi:
+    value: 3.0
+    for_fiat: true
+    for_coin: false
+    message: '{USER_FROM} ^serves {USER_TO} ^a ^roll ^of ^yummy ^sushi ^**(っ˘ڡ˘ς)** ^- ^worth {AMOUNT}'
 
 nothing:
     value: "float (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01)"
@@ -202,3 +195,28 @@ nyan:
     for_fiat: true
     for_coin: true
     message: '^**~(=\^‥\^)ノ** {USER_FROM} ^nyan ^nyan ^にゃん {USER_TO} ^にゃん ^にゃん {AMOUNT}'
+
+pi:
+    value: 3.14159265
+    for_fiat: true
+    for_coin: true
+
+e:
+    value: 2.7182818
+    for_fiat: true
+    for_coin: true
+
+leet:
+    value: 1.337
+    for_fiat: true
+    for_coin: true
+
+quarter:
+    value: 0.25
+    for_fiat: true
+    for_coin: true
+
+half:
+    value: 0.5
+    for_fiat: true
+    for_coin: true
