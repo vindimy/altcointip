@@ -103,7 +103,7 @@ class CtbAction(object):
                     self.fiatval = self.coinval
                     self.coinval = None
                 if not self.coin and not self.fiat:
-                    # If both coin nor fiat missing, set fiat to 'usd'
+                    # If both coin and fiat missing, set fiat to 'usd'
                     self.fiat = 'usd'
 
             if self.keyword and self.fiat and not self.coin and not self.ctb.conf.keywords[self.keyword].for_fiat:
