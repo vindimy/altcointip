@@ -98,7 +98,7 @@ class CtbAction(object):
                 if not self.ctb.conf.keywords[self.keyword].for_coin and not self.fiat:
                     # If fiat-only, set fiat to 'usd' if missing
                     self.fiat = 'usd'
-                if not self.ctb.conf.keywords[self.keyword].for_coin and self.coinval and not self.fiatval:
+                if not self.ctb.conf.keywords[self.keyword].for_coin and not self.fiatval:
                     # If fiat-only, set fiatval as coinval, and clear coinval
                     self.fiatval = self.coinval
                     self.coinval = None
@@ -110,23 +110,7 @@ class CtbAction(object):
                 # If keyword is coin-only but only fiat is set, give up
                 return None
 
-            if self.keyword and self.coin and not type(self.coinval) in [float, int]:
-                # Determine coin value
-                lg.debug("CtbAction::__init__(): determining coin value given '%s'", self.keyword)
-                val = self.ctb.conf.keywords[self.keyword].value
-                if type(val) == float:
-                    self.coinval = val
-                elif type(val) == str:
-                    lg.debug("CtbAction::__init__(): evaluating '%s'", val)
-                    self.coinval = eval(val)
-                    if not type(self.coinval) == float:
-                        lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine coinval from keyword '%s' (not float)" % (self.type, self.u_from.name, self.keyword))
-                        return None
-                else:
-                    lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine coinval from keyword '%s' (not float or str)" % (self.type, self.u_from.name, self.keyword))
-                    return None
-
-            elif self.keyword and self.fiat and not type(self.fiatval) in [float, int]:
+            if self.keyword and self.fiat and not type(self.fiatval) in [float, int]:
                 # Determine fiat value
                 lg.debug("CtbAction::__init__(): determining fiat value given '%s'", self.keyword)
                 val = self.ctb.conf.keywords[self.keyword].value
@@ -140,6 +124,22 @@ class CtbAction(object):
                         return None
                 else:
                     lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine fiatval from keyword '%s' (not float or str)" % (self.type, self.u_from.name, self.keyword))
+                    return None
+
+            elif self.keyword and self.coin and not type(self.coinval) in [float, int]:
+                # Determine coin value
+                lg.debug("CtbAction::__init__(): determining coin value given '%s'", self.keyword)
+                val = self.ctb.conf.keywords[self.keyword].value
+                if type(val) == float:
+                    self.coinval = val
+                elif type(val) == str:
+                    lg.debug("CtbAction::__init__(): evaluating '%s'", val)
+                    self.coinval = eval(val)
+                    if not type(self.coinval) == float:
+                        lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine coinval from keyword '%s' (not float)" % (self.type, self.u_from.name, self.keyword))
+                        return None
+                else:
+                    lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine coinval from keyword '%s' (not float or str)" % (self.type, self.u_from.name, self.keyword))
                     return None
 
             # By this point we should have a proper coinval or fiatval
