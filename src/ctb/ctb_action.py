@@ -58,7 +58,7 @@ class CtbAction(object):
         self.fiat = fiat.lower() if fiat else None
         self.coinval = coin_val
         self.fiatval = fiat_val
-        self.keyword = keyword
+        self.keyword = keyword.lower() if keyword else None
 
         self.msg = msg
         self.ctb = ctb
@@ -78,8 +78,8 @@ class CtbAction(object):
         if self.type in ['givetip', 'withdraw']:
             if not (bool(self.u_to) ^ bool(self.addr_to)):
                 raise Exception("CtbAction::__init__(atype=%s, from_user=%s): u_to xor addr_to must be set" % (self.type, self.u_from.name))
-            if not (bool(self.coin) or bool(self.fiat)):
-                raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coin or fiat must be set" % (self.type, self.u_from.name))
+            if not (bool(self.coin) or bool(self.fiat) or bool(self.keyword)):
+                raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coin or fiat or keyword must be set" % (self.type, self.u_from.name))
             if not (bool(self.coinval) or bool(self.fiatval) or bool(self.keyword)):
                 raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coinval or fiatval or keyword must be set" % (self.type, self.u_from.name))
 
@@ -94,10 +94,26 @@ class CtbAction(object):
         # Determine coinval or fiatval, if keyword is given instead of numeric value
         if self.type in ['givetip', 'withdraw']:
 
-            if self.coin and not type(self.coinval) in [float, int] and self.keyword:
+            if self.keyword:
+                if not self.ctb.conf.keywords[self.keyword].for_coin and not self.fiat:
+                    # If fiat-only, set fiat to 'usd' if missing
+                    self.fiat = 'usd'
+                if not self.ctb.conf.keywords[self.keyword].for_coin and self.coinval and not self.fiatval:
+                    # If fiat-only, set fiatval as coinval, and clear coinval
+                    self.fiatval = self.coinval
+                    self.coinval = None
+                if not self.coin and not self.fiat:
+                    # If both coin nor fiat missing, set fiat to 'usd'
+                    self.fiat = 'usd'
+
+            if self.keyword and self.fiat and not self.coin and not self.ctb.conf.keywords[self.keyword].for_fiat:
+                # If keyword is coin-only but only fiat is set, give up
+                return None
+
+            if self.keyword and self.coin and not type(self.coinval) in [float, int]:
                 # Determine coin value
                 lg.debug("CtbAction::__init__(): determining coin value given '%s'", self.keyword)
-                val = self.ctb.conf.regex.keywords[self.keyword].value
+                val = self.ctb.conf.keywords[self.keyword].value
                 if type(val) == float:
                     self.coinval = val
                 elif type(val) == str:
@@ -110,10 +126,10 @@ class CtbAction(object):
                     lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine coinval from keyword '%s' (not float or str)" % (self.type, self.u_from.name, self.keyword))
                     return None
 
-            elif self.fiat and not type(self.fiatval) in [float, int] and self.keyword:
+            elif self.keyword and self.fiat and not type(self.fiatval) in [float, int]:
                 # Determine fiat value
                 lg.debug("CtbAction::__init__(): determining fiat value given '%s'", self.keyword)
-                val = self.ctb.conf.regex.keywords[self.keyword].value
+                val = self.ctb.conf.keywords[self.keyword].value
                 if type(val) == float:
                     self.fiatval = val
                 elif type(val) == str:
@@ -130,7 +146,7 @@ class CtbAction(object):
             if not type(self.coinval) in [float, int] and not type(self.fiatval) in [float, int]:
                 raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coinval or fiatval isn't determined" % (self.type, self.u_from.name))
 
-        # Determine coin, if applicable
+        # Determine coin, if given only fiat, using exchange rates
         if self.type in ['givetip']:
             if self.fiat and not self.coin:
                 lg.debug("CtbAction::__init__(atype=%s, from_user=%s): determining coin..." % (self.type, self.u_from.name))
@@ -138,7 +154,7 @@ class CtbAction(object):
                     # Can't proceed, abort
                     lg.warning("CtbAction::__init__(): can't determine coin for un-registered user %s", self.u_from.name)
                     return None
-                # Set the coin based on from_user's available balance
+                # Choose a coin based on from_user's available balance (pick first one that can satisfy the amount)
                 cc = self.ctb.conf.coins
                 for c in sorted(self.ctb.coins):
                     lg.debug("CtbAction::__init__(atype=%s, from_user=%s): considering %s" % (self.type, self.u_from.name, c))
@@ -879,9 +895,12 @@ def init_regex(ctb):
                 rval1 = rval1.replace('{REGEX_TIP_INIT}', ctb.conf.regex.values.tip_init.regex)
                 rval1 = rval1.replace('{REGEX_USER}', ctb.conf.regex.values.username.regex)
                 rval1 = rval1.replace('{REGEX_AMOUNT}', ctb.conf.regex.values.amount.regex)
+                rval1 = rval1.replace('{REGEX_KEYWORD}', ctb.conf.regex.values.keywords.regex)
 
                 if actions[a].regex[r].rg_coin > 0:
+
                     for c in sorted(vars(cc)):
+
                         if not cc[c].enabled:
                             continue
                         # lg.debug("init_regex(): processing coin %s", c)
@@ -890,101 +909,14 @@ def init_regex(ctb):
                         rval2 = rval2.replace('{REGEX_ADDRESS}', cc[c].regex.address)
 
                         if actions[a].regex[r].rg_fiat > 0:
+
                             for f in sorted(vars(fiat)):
+
                                 if not fiat[f].enabled:
                                     continue
                                 # lg.debug("init_regex(): processing fiat %s", f)
 
                                 rval3 = rval2.replace('{REGEX_FIAT}', fiat[f].regex.units)
-
-                                if actions[a].regex[r].rg_keyword > 0:
-                                    for k in sorted(vars(ctb.conf.regex.keywords)):
-                                        # lg.debug("init_regex(): processing keyword %s", k)
-
-                                        rval4 = rval3.replace('{REGEX_KEYWORD}', ctb.conf.regex.keywords[k].regex)
-
-                                        entry = ctb_misc.DotDict(
-                                            {'regex':           rval4,
-                                             'action':          a,
-                                             'rg_amount':       actions[a].regex[r].rg_amount,
-                                             'rg_keyword':      actions[a].regex[r].rg_keyword,
-                                             'rg_address':      actions[a].regex[r].rg_address,
-                                             'rg_to_user':      actions[a].regex[r].rg_to_user,
-                                             'coin':            cc[c].unit,
-                                             'fiat':            fiat[f].unit,
-                                             'keyword':         k
-                                            })
-                                        lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
-                                        ctb.runtime['regex'].append(entry)
-
-                                else:
-
-                                    entry = ctb_misc.DotDict(
-                                        {'regex':           rval3,
-                                         'action':          a,
-                                         'rg_amount':       actions[a].regex[r].rg_amount,
-                                         'rg_keyword':      actions[a].regex[r].rg_keyword,
-                                         'rg_address':      actions[a].regex[r].rg_address,
-                                         'rg_to_user':      actions[a].regex[r].rg_to_user,
-                                         'coin':            cc[c].unit,
-                                         'fiat':            fiat[f].unit,
-                                         'keyword':         None
-                                        })
-                                    lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
-                                    ctb.runtime['regex'].append(entry)
-
-                        else:
-
-                            if actions[a].regex[r].rg_keyword > 0:
-                                for k in sorted(vars(ctb.conf.regex.keywords)):
-                                    # lg.debug("init_regex(): processing keyword %s", k)
-
-                                    rval3 = rval2.replace('{REGEX_KEYWORD}', ctb.conf.regex.keywords[k].regex)
-
-                                    entry = ctb_misc.DotDict(
-                                        {'regex':           rval3,
-                                         'action':          a,
-                                         'rg_amount':       actions[a].regex[r].rg_amount,
-                                         'rg_keyword':      actions[a].regex[r].rg_keyword,
-                                         'rg_address':      actions[a].regex[r].rg_address,
-                                         'rg_to_user':      actions[a].regex[r].rg_to_user,
-                                         'coin':            cc[c].unit,
-                                         'fiat':            None,
-                                         'keyword':         k
-                                        })
-                                    lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
-                                    ctb.runtime['regex'].append(entry)
-
-                            else:
-
-                                entry = ctb_misc.DotDict(
-                                    {'regex':           rval2,
-                                     'action':          a,
-                                     'rg_amount':       actions[a].regex[r].rg_amount,
-                                     'rg_keyword':      actions[a].regex[r].rg_keyword,
-                                     'rg_address':      actions[a].regex[r].rg_address,
-                                     'rg_to_user':      actions[a].regex[r].rg_to_user,
-                                     'coin':            cc[c].unit,
-                                     'fiat':            None,
-                                     'keyword':         None
-                                    })
-                                lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
-                                ctb.runtime['regex'].append(entry)
-
-                elif actions[a].regex[r].rg_fiat > 0:
-                    for f in sorted(vars(fiat)):
-                        if not fiat[f].enabled:
-                            continue
-                        # lg.debug("init_regex(): processing fiat %s", f)
-
-                        rval2 = rval1.replace('{REGEX_FIAT}', fiat[f].regex.units)
-
-                        if actions[a].regex[r].rg_keyword > 0:
-                            for k in sorted(vars(ctb.conf.regex.keywords)):
-                                # lg.debug("init_regex(): processing keyword %s", k)
-
-                                rval3 = rval2.replace('{REGEX_KEYWORD}', ctb.conf.regex.keywords[k].regex)
-
                                 entry = ctb_misc.DotDict(
                                     {'regex':           rval3,
                                      'action':          a,
@@ -992,9 +924,8 @@ def init_regex(ctb):
                                      'rg_keyword':      actions[a].regex[r].rg_keyword,
                                      'rg_address':      actions[a].regex[r].rg_address,
                                      'rg_to_user':      actions[a].regex[r].rg_to_user,
-                                     'coin':            None,
-                                     'fiat':            fiat[f].unit,
-                                     'keyword':         k
+                                     'coin':            cc[c].unit,
+                                     'fiat':            fiat[f].unit
                                     })
                                 lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
                                 ctb.runtime['regex'].append(entry)
@@ -1008,14 +939,50 @@ def init_regex(ctb):
                                  'rg_keyword':      actions[a].regex[r].rg_keyword,
                                  'rg_address':      actions[a].regex[r].rg_address,
                                  'rg_to_user':      actions[a].regex[r].rg_to_user,
-                                 'coin':            None,
-                                 'fiat':            fiat[f].unit,
-                                 'keyword':         None
+                                 'coin':            cc[c].unit,
+                                 'fiat':            None
                                 })
                             lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
                             ctb.runtime['regex'].append(entry)
 
-    lg.debug("< init_regex() DONE")
+                elif actions[a].regex[r].rg_fiat > 0:
+
+                    for f in sorted(vars(fiat)):
+
+                        if not fiat[f].enabled:
+                            continue
+                        # lg.debug("init_regex(): processing fiat %s", f)
+
+                        rval2 = rval1.replace('{REGEX_FIAT}', fiat[f].regex.units)
+                        entry = ctb_misc.DotDict(
+                            {'regex':           rval2,
+                             'action':          a,
+                             'rg_amount':       actions[a].regex[r].rg_amount,
+                             'rg_keyword':      actions[a].regex[r].rg_keyword,
+                             'rg_address':      actions[a].regex[r].rg_address,
+                             'rg_to_user':      actions[a].regex[r].rg_to_user,
+                             'coin':            None,
+                             'fiat':            fiat[f].unit
+                            })
+                        lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
+                        ctb.runtime['regex'].append(entry)
+
+                elif actions[a].regex[r].rg_keyword > 0:
+
+                    entry = ctb_misc.DotDict(
+                        {'regex':           rval1,
+                         'action':          a,
+                         'rg_amount':       actions[a].regex[r].rg_amount,
+                         'rg_keyword':      actions[a].regex[r].rg_keyword,
+                         'rg_address':      actions[a].regex[r].rg_address,
+                         'rg_to_user':      actions[a].regex[r].rg_to_user,
+                         'coin':            None,
+                         'fiat':            None
+                        })
+                    lg.debug("init_regex(): ADDED %s: %s", entry.action, entry.regex)
+                    ctb.runtime['regex'].append(entry)
+
+    lg.info("< init_regex() DONE (%s expressions)", len(ctb.runtime['regex']))
     return None
 
 def eval_message(msg, ctb):
@@ -1040,7 +1007,7 @@ def eval_message(msg, ctb):
             # Extract matched fields into variables
             to_addr = m.group(r.rg_address) if r.rg_address > 0 else None
             amount = m.group(r.rg_amount) if r.rg_amount > 0 else None
-            keyword = r.keyword if r.rg_keyword > 0 else None
+            keyword = m.group(r.rg_keyword) if r.rg_keyword > 0 else None
 
             # Return CtbAction instance with given variables
             return CtbAction(   atype=r.action,
@@ -1085,7 +1052,7 @@ def eval_comment(comment, ctb):
             u_to = m.group(r.rg_to_user)[1:] if r.rg_to_user > 0 else None
             to_addr = m.group(r.rg_address) if r.rg_address > 0 else None
             amount = m.group(r.rg_amount) if r.rg_amount > 0 else None
-            keyword = r.keyword if r.rg_keyword > 0 else None
+            keyword = m.group(r.rg_keyword) if r.rg_keyword > 0 else None
 
             # If no destination mentioned, find parent submission's author
             if not u_to and not to_addr:

@@ -85,7 +85,7 @@ class CointipBot(object):
         conf = {}
         try:
             prefix='./conf/'
-            for i in ['coins', 'db', 'exchanges', 'fiat', 'logs', 'misc', 'reddit', 'regex']:
+            for i in ['coins', 'db', 'exchanges', 'fiat', 'keywords', 'logs', 'misc', 'reddit', 'regex']:
                 lg.debug("CointipBot::parse_config(): reading %s%s.yml", prefix, i)
                 conf[i] = yaml.load(open(prefix+i+'.yml'))
         except yaml.YAMLError as e:
@@ -442,7 +442,12 @@ class CointipBot(object):
         """
         Quick method to return _fiat value of _coin
         """
-        return self.runtime['ev'][_coin]['btc'] * self.runtime['ev']['btc'][_fiat]
+        try:
+            value = self.runtime['ev'][_coin]['btc'] * self.runtime['ev']['btc'][_fiat]
+        except KeyError as e:
+            lg.warning("CointipBot::coin_value(%s, %s): KeyError", _coin, _fiat)
+            value = 0.0
+        return value
 
     def notify(self, _msg=None):
         """

@@ -1,0 +1,174 @@
+all:
+    value: "float( self.u_from.get_balance(coin=self.coin, kind=('withdraw' if bool(self.addr_to) else 'givetip')) - (self.ctb.conf.coins[self.coin].txfee if bool(self.addr_to) else 0.0) ) if self.u_from.is_registered() and bool(self.coin) else None"
+    for_fiat: false
+    for_coin: true
+    message: '^**(*・_・)ノ⌒*** {USER_FROM} ^gives {USER_TO} ^_everything_!.. ^all {AMOUNT} ^now ^belong ^to {USER_TO}'
+
+flip:
+    value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,2)) )"
+    for_fiat: true
+    for_coin: true
+    message: '{USER_FROM} ^flips ^the ^table ^**(╯°□°）╯︵┻━┻** ^and {USER_TO} ^gets {AMOUNT}'
+
+megaflip:
+    value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,20)) )"
+    for_fiat: true
+    for_coin: true
+    message: '{USER_FROM} ^flips ^10 ^tables ^**(╯°□°）╯︵┻━┻** ^and {USER_TO} ^gets {AMOUNT}'
+
+gigaflip:
+    value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,200)) )"
+    for_fiat: true
+    for_coin: true
+    message: '{USER_FROM} ^flips ^100 ^tables ^**(╯°□°）╯︵┻━┻** ^and {USER_TO} ^gets {AMOUNT}'
+
+roll:
+    value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,6)) )"
+    for_fiat: true
+    for_coin: true
+    message: '{USER_FROM} ^rolls ^a ^die, ^and {USER_TO} ^gets {AMOUNT}'
+
+megaroll:
+    value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,60)) )"
+    for_fiat: true
+    for_coin: true
+    message: '{USER_FROM} ^rolls ^a ^mega-die, ^and {USER_TO} ^gets {AMOUNT}'
+
+gigaroll:
+    value: "float( (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01) * float(randint(1,600)) )"
+    for_fiat: true
+    for_coin: true
+    message: '{USER_FROM} ^rolls ^a ^giga-die, ^and {USER_TO} ^gets {AMOUNT}'
+
+sushiroll:
+    value: 3.0
+    for_fiat: true
+    for_coin: false
+    message: '{USER_FROM} ^serves {USER_TO} ^a ^roll ^of ^yummy ^sushi ^**(っ˘ڡ˘ς)** ^- ^worth {AMOUNT}'
+
+random1:
+    value: "float( randint(0,1000) ) / 1000.0"
+    for_fiat: true
+    for_coin: true
+    message: "{USER_FROM} ^asks ^randomness ^to ^decide ^luck ^of {USER_TO} ^and ^result ^is {AMOUNT}"
+
+random10:
+    value: "float( randint(0,10000) ) / 1000.0"
+    for_fiat: true
+    for_coin: true
+    message: "{USER_FROM} ^asks ^randomness ^to ^decide ^luck ^of {USER_TO} ^and ^result ^is {AMOUNT}"
+
+random25:
+    value: "float( randint(0,25000) ) / 1000.0"
+    for_fiat: true
+    for_coin: true
+    message: "{USER_FROM} ^asks ^randomness ^to ^decide ^luck ^of {USER_TO} ^and ^result ^is {AMOUNT}"
+
+random50:
+    value: "float( randint(0,50000) ) / 1000.0"
+    for_fiat: true
+    for_coin: true
+    message: "{USER_FROM} ^asks ^randomness ^to ^decide ^luck ^of {USER_TO} ^and ^result ^is {AMOUNT}"
+
+random100:
+    value: "float( randint(0,100000) ) / 1000.0"
+    for_fiat: true
+    for_coin: true
+    message: "{USER_FROM} ^asks ^randomness ^to ^decide ^luck ^of {USER_TO} ^and ^result ^is {AMOUNT}"
+
+random250:
+    value: "float( randint(0,250000) ) / 1000.0"
+    for_fiat: true
+    for_coin: true
+    message: "{USER_FROM} ^asks ^randomness ^to ^decide ^luck ^of {USER_TO} ^and ^result ^is {AMOUNT}"
+
+random500:
+    value: "float( randint(0,500000) ) / 1000.0"
+    for_fiat: true
+    for_coin: true
+    message: "{USER_FROM} ^asks ^randomness ^to ^decide ^luck ^of {USER_TO} ^and ^result ^is {AMOUNT}"
+
+random1000:
+    value: "float( randint(0,1000000) ) / 1000.0"
+    for_fiat: true
+    for_coin: true
+    message: "{USER_FROM} ^asks ^randomness ^to ^decide ^luck ^of {USER_TO} ^and ^result ^is {AMOUNT}"
+
+upvote:
+    value: 0.1
+    for_fiat: true
+    for_coin: true
+    message: '{USER_FROM} ^gives {USER_TO} ^an ^upvote... _^with ^benefits_ ^**ヽ(*・ω・)ﾉ** ^- ^worth {AMOUNT}'
+
+pi:
+    value: 3.14159265
+    for_fiat: true
+    for_coin: true
+
+e:
+    value: 2.7182818
+    for_fiat: true
+    for_coin: true
+
+leet:
+    value: 1.337
+    for_fiat: true
+    for_coin: true
+
+quarter:
+    value: 0.25
+    for_fiat: true
+    for_coin: true
+
+half:
+    value: 0.5
+    for_fiat: true
+    for_coin: true
+
+cookie:
+    value: 0.33
+    for_fiat: true
+    for_coin: false
+    message: '{USER_FROM} ^gives {USER_TO} ^a ^yummy ^cookie ^**♪┏(・o･)┛♪** ^- ^worth {AMOUNT}'
+
+nothing:
+    value: "float (self.ctb.conf.coins[self.coin].txmin.givetip if bool(self.coin) else 0.01)"
+    for_fiat: true
+    for_coin: true
+    message: '^**(″･ิ_･ิ)っ** {USER_FROM} ^gives ^almost ^nothing ^to {USER_TO} ^- {AMOUNT}'
+
+gum:
+    value: 1.5
+    for_fiat: true
+    for_coin: false
+    message: '{USER_FROM} ^gives ^a ^pack ^of ^gum ^to {USER_TO} ^- ^worth {AMOUNT}'
+
+beer:
+    value: 3.5
+    for_fiat: true
+    for_coin: false
+    message: '{USER_FROM} ^gives ^a ^beer ^to {USER_TO} ^- ^worth {AMOUNT}'
+
+nicebeer:
+    value: 5.0
+    for_fiat: true
+    for_coin: false
+    message: '{USER_FROM} ^gives ^a ^nice ^beer ^**(〃･ิ‿･ิ)ゞ** ^to {USER_TO}  ^- ^worth {AMOUNT}) ^**ƪ(˘▽˘ƪ)**'
+
+hug:
+    value: 0.5
+    for_fiat: true
+    for_coin: true
+    message: '^**(っ⌒‿⌒)っ** {USER_FROM} ^gives ^a ^nice ^hug ^**ヽ(*⌒∇⌒*)ﾉ** ^to {USER_TO} ^along ^with {AMOUNT}'
+
+kiss:
+    value: 1.0
+    for_fiat: true
+    for_coin: true
+    message: '{USER_TO} ^gets ^a ^kiss ^**(˘⌣˘)ε˘`)** ^from {USER_FROM} ^along ^with {AMOUNT}'
+
+nyan:
+    value: 1.111111
+    for_fiat: true
+    for_coin: true
+    message: '^**[^._.^]ﾉ彡** {USER_FROM} ^nyan ^nyan ^にゃん {USER_TO} ^にゃん ^にゃん {AMOUNT} ^**＼(＾O＾)／**'
