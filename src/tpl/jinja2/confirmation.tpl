@@ -13,15 +13,25 @@
 {%   set arrow_fmt = " ^[->](%s%s)" % (ex.transaction, a.txid) %}
 {% endif %}
 {% if a.coinval: %}
-{%   set coin_amount = a.coinval %}
+{%   if a.coinval < 1.0 %}
+{%     set coin_amount = ( a.coinval * 1000.0 ) %}
+{%     set amount_prefix_short = "m" %}
+{%     set amount_prefix_long = "milli" %}
+{%   elif a.coinval >= 1000.0 %}
+{%     set coin_amount = ( a.coinval / 1000.0 ) %}
+{%     set amount_prefix_short = "M" %}
+{%     set amount_prefix_long = "Mega" %}
+{%   else %}
+{%     set coin_amount = a.coinval %}
+{%   endif %}
 {%   set coin_name = ctb.conf.coins[a.coin].name %}
 {%   set coin_symbol = ctb.conf.coins[a.coin].symbol %}
-{%   set coin_amount_fmt = " __^%s%.8g ^%s(s)__" % (coin_symbol, coin_amount, coin_name) %}
+{%   set coin_amount_fmt = " __^%s%s%.6g ^%s%ss__" % (amount_prefix_short, coin_symbol, coin_amount, amount_prefix_long, coin_name) %}
 {% endif %}
 {% if a.fiatval: %}
 {%   set fiat_amount = a.fiatval %}
 {%   set fiat_symbol = ctb.conf.fiat[a.fiat].symbol %}
-{%   set fiat_amount_fmt = "&nbsp;^__(%s%.8g)__" % (fiat_symbol, fiat_amount) %}
+{%   set fiat_amount_fmt = "&nbsp;^__(%s%.6g)__" % (fiat_symbol, fiat_amount) %}
 {% endif %}
 {% if ctb.conf.reddit.stats.enabled: %}
 {%   set stats_user_from_fmt = " ^^[[stats]](%s_%s)" % (ctb.conf.reddit.stats.url, a.u_from.name) %}
