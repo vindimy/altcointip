@@ -10,7 +10,7 @@ btc:
         givetip: 1
         withdraw: 144
     txmin:
-        givetip: 0.00005
+        givetip: 0.00001
         withdraw: 0.0005
     txfee: 0.0001
     walletpassphrase: 'mypass1'
@@ -33,7 +33,7 @@ ltc:
         givetip: 4
         withdraw: 576
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.001
     walletpassphrase: 'mypass1'
@@ -56,7 +56,7 @@ ppc:
         givetip: 1
         withdraw: 144
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.01
     walletpassphrase: 'mypass1'
@@ -79,7 +79,7 @@ nmc:
         givetip: 1
         withdraw: 144
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.01
     explorer:
@@ -101,7 +101,7 @@ nvc:
         givetip: 1
         withdraw: 144
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.01
     walletpassphrase: 'mypass1'
@@ -124,7 +124,7 @@ trc:
         givetip: 5
         withdraw: 720
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.01
     walletpassphrase: 'mypass1'
@@ -147,8 +147,8 @@ dvc:
         givetip: 1
         withdraw: 144
     txmin:
-        givetip: 1
-        withdraw: 5
+        givetip: 0.1
+        withdraw: 0.5
     txfee: 0.5
     explorer:
         address: 'http://darkgamex.ch:2751/address/'
@@ -169,7 +169,7 @@ xpm:
         givetip: 10
         withdraw: 1440
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.01
     walletpassphrase: 'mypass1'
@@ -192,7 +192,7 @@ ftc:
         givetip: 4
         withdraw: 576
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.01
     walletpassphrase: 'mypass1'
@@ -215,7 +215,7 @@ mec:
         givetip: 4
         withdraw: 576
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.01
     walletpassphrase: 'mypass1'
@@ -238,7 +238,7 @@ qrk:
         givetip: 20
         withdraw: 2880
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.0001
     walletpassphrase: 'mypass1'
@@ -261,7 +261,7 @@ zet:
         givetip: 20
         withdraw: 2880
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.0001
     walletpassphrase: 'mypass1'
@@ -284,7 +284,7 @@ dgc:
         givetip: 15
         withdraw: 2160
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.0001
     walletpassphrase: 'mypass1'
@@ -307,7 +307,7 @@ ifc:
         givetip: 20
         withdraw: 2880
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.0001
     walletpassphrase: 'mypass1'
@@ -330,7 +330,7 @@ ixc:
         givetip: 1
         withdraw: 144
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.01
     walletpassphrase: 'mypass1'
@@ -353,7 +353,7 @@ bqc:
         givetip: 10
         withdraw: 1440
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.0001
     walletpassphrase: 'mypass1'
@@ -376,7 +376,7 @@ sbc:
         givetip: 15
         withdraw: 2160
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.0001
     walletpassphrase: 'mypass1'
@@ -399,7 +399,7 @@ i0c:
         givetip: 1
         withdraw: 144
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.0001
     walletpassphrase: 'mypass1'
@@ -422,7 +422,7 @@ mnc:
         givetip: 10
         withdraw: 1440
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.0001
     walletpassphrase: 'mypass1'
@@ -445,7 +445,7 @@ src:
         givetip: 10
         withdraw: 1440
     txmin:
-        givetip: 0.001
+        givetip: 0.0001
         withdraw: 0.05
     txfee: 0.0001
     walletpassphrase: 'mypass1'
