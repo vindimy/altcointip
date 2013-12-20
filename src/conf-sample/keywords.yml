@@ -171,4 +171,4 @@ nyan:
     value: 1.111111
     for_fiat: true
     for_coin: true
-    message: '^**[^._.^]ﾉ彡** {USER_FROM} ^nyan ^nyan ^にゃん {USER_TO} ^にゃん ^にゃん {AMOUNT} ^**＼(＾O＾)／**'
+    message: '^**~(=\^‥\^)ノ** {USER_FROM} ^nyan ^nyan ^にゃん {USER_TO} ^にゃん ^にゃん {AMOUNT}'
