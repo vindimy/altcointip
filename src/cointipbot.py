@@ -103,7 +103,7 @@ class CointipBot(object):
         """
         lg.debug('CointipBot::connect_db(): connecting to database...')
 
-        dsn = "mysql+mysqldb://%s:%s@%s:%s/%s" % (self.conf.db.auth.user, self.conf.db.auth.password, self.conf.db.auth.host, self.conf.db.auth.port, self.conf.db.auth.dbname)
+        dsn = "mysql+mysqldb://%s:%s@%s:%s/%s?charset=utf8" % (self.conf.db.auth.user, self.conf.db.auth.password, self.conf.db.auth.host, self.conf.db.auth.port, self.conf.db.auth.dbname)
         dbobj = ctb_db.CointipBotDatabase(dsn)
 
         try:
