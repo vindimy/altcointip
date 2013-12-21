@@ -205,6 +205,12 @@ class CointipBot(object):
 
                 lg.info("CointipBot::check_inbox(): %s from %s", "comment" if m.was_comment else "message", m.author.name)
 
+                # Ignore duplicate messages (sometimes Reddit fails to mark messages as read)
+                if ctb_action.check_action(msg_id=m.id, ctb=self):
+                    lg.warning("CointipBot::check_inbox(): duplicate action detected (msg.id %s), ignoring", m.id)
+                    ctb_misc.praw_call(m.mark_as_read)
+                    continue
+
                 # Ignore self messages
                 if m.author and m.author.name.lower() == self.conf.reddit.auth.user.lower():
                     lg.debug("CointipBot::check_inbox(): ignoring message from self")
@@ -327,6 +333,11 @@ class CointipBot(object):
                 counter += 1
                 if c.created_utc > updated_last_processed_time:
                     updated_last_processed_time = c.created_utc
+
+                # Ignore duplicate comments (may happen when bot is restarted)
+                if ctb_action.check_action(msg_id=c.id, ctb=self):
+                    lg.warning("CointipBot::check_inbox(): duplicate action detected (comment.id %s), ignoring", c.id)
+                    continue
 
                 # Ignore comments from banned users
                 if c.author and self.conf.reddit.banned_users:

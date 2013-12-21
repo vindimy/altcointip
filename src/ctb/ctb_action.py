@@ -256,10 +256,6 @@ class CtbAction(object):
         """
         lg.debug("> CtbAction::do()")
 
-        if check_action(msg_id=self.msg.id, ctb=self.ctb):
-            lg.warning("CtbAction::do(): duplicate action %s (msg.id %s), ignoring", self.type, self.msg.id)
-            return False
-
         if not self.ctb.conf.regex.actions[self.type].enabled:
 	        msg = self.ctb.jenv.get_template('command-disabled.tpl').render(a=self, ctb=self.ctb)
 	        lg.info("CtbAction::do(): action %s is disabled", self.type)
