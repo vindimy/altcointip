@@ -102,13 +102,13 @@ class CtbExchange(object):
 
                 except urllib2.URLError as e:
                     lg.error("CtbExchange::get_ticker_value(%s, %s, %s): %s", self.conf.domain, _name1, _name2, e)
-                    return None
+                    return 0.0
                 except urllib2.HTTPError as e:
                     lg.error("CtbExchange::get_ticker_value(%s, %s, %s): %s", self.conf.domain, _name1, _name2, e)
-                    return None
+                    return 0.0
                 except Exception as e:
                     lg.error("CtbExchange::get_ticker_value(%s, %s, %s): %s", self.conf.domain, _name1, _name2, e)
-                    return None
+                    return 0.0
 
         # Return average of all responses
         return ( sum(results) / float(len(results)) )
@@ -125,5 +125,4 @@ def xpath_get(mydict, path):
                 elem = elem.get(x)
     except:
         pass
-
     return elem

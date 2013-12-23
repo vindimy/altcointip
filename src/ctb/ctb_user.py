@@ -73,8 +73,8 @@ class CtbUser(object):
         """
         Return string representation of self
         """
-        me = "<CtbUser: name=%s, giftamnt=%s, joindate=%s, addr=%s, redditobj=%s, ctb=%s, banned=%s>"
-        me = me % (self.name, self.giftamount, self.joindate, self.addr, self.prawobj, self.ctb, self.banned)
+        me = "<CtbUser: name=%s, giftamnt=%s, joindate=%s, addr=%s, redditobj=%s, banned=%s>"
+        me = me % (self.name, self.giftamount, self.joindate, self.addr, self.prawobj, self.banned)
         return me
 
     def get_balance(self, coin=None, kind=None):

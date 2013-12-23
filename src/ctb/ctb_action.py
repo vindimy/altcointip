@@ -22,6 +22,9 @@ from random import randint
 
 lg = logging.getLogger('cointipbot')
 
+class CtbActionExc(Exception):
+    pass
+
 class CtbAction(object):
     """
     Action class for cointip bot
@@ -50,7 +53,7 @@ class CtbAction(object):
         """
         Initialize CtbAction object with given parameters and run basic checks
         """
-        lg.debug("> CtbAction::__init__(type=%s)", atype)
+        lg.debug("> CtbAction::__init__(%s)", vars())
 
         self.type = atype
 
@@ -82,6 +85,8 @@ class CtbAction(object):
                 raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coin or fiat or keyword must be set" % (self.type, self.u_from.name))
             if not (bool(self.coinval) or bool(self.fiatval) or bool(self.keyword)):
                 raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coinval or fiatval or keyword must be set" % (self.type, self.u_from.name))
+            if (not self.coinval or not float(self.coinval) > 0.0) and (not self.fiatval or not float(self.fiatval) > 0.0) and (not self.keyword):
+                raise CtbActionExc("CtbAction::__init__(type=%s, from_user=%s, to_user=%s): no (coinval or fiatval or keyword) given" % (self.type, self.u_from, self.u_to))
 
         # Convert coinval and fiat to float, if necesary
         if self.coinval and type(self.coinval) == unicode and self.coinval.replace('.', '').isnumeric():
@@ -108,7 +113,7 @@ class CtbAction(object):
 
             if self.keyword and self.fiat and not self.coin and not self.ctb.conf.keywords[self.keyword].for_fiat:
                 # If keyword is coin-only but only fiat is set, give up
-                return None
+                raise CtbActionExc("CtbAction::__init__(type=%s): keyword is coin-only, but only fiat is set")
 
             if self.keyword and self.fiat and not type(self.fiatval) in [float, int]:
                 # Determine fiat value
@@ -120,11 +125,9 @@ class CtbAction(object):
                     lg.debug("CtbAction::__init__(): evaluating '%s'", val)
                     self.fiatval = eval(val)
                     if not type(self.fiatval) == float:
-                        lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine fiatval from keyword '%s' (not float)" % (self.type, self.u_from.name, self.keyword))
-                        return None
+                        raise CtbActionExc("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine fiatval from keyword '%s' (not float)" % (self.type, self.u_from.name, self.keyword))
                 else:
-                    lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine fiatval from keyword '%s' (not float or str)" % (self.type, self.u_from.name, self.keyword))
-                    return None
+                    raise CtbActionExc("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine fiatval from keyword '%s' (not float or str)" % (self.type, self.u_from.name, self.keyword))
 
             elif self.keyword and self.coin and not type(self.coinval) in [float, int]:
                 # Determine coin value
@@ -136,15 +139,13 @@ class CtbAction(object):
                     lg.debug("CtbAction::__init__(): evaluating '%s'", val)
                     self.coinval = eval(val)
                     if not type(self.coinval) == float:
-                        lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine coinval from keyword '%s' (not float)" % (self.type, self.u_from.name, self.keyword))
-                        return None
+                        raise CtbActionExc("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine coinval from keyword '%s' (not float)" % (self.type, self.u_from.name, self.keyword))
                 else:
-                    lg.warning("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine coinval from keyword '%s' (not float or str)" % (self.type, self.u_from.name, self.keyword))
-                    return None
+                    raise CtbActionExc("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine coinval from keyword '%s' (not float or str)" % (self.type, self.u_from.name, self.keyword))
 
             # By this point we should have a proper coinval or fiatval
             if not type(self.coinval) in [float, int] and not type(self.fiatval) in [float, int]:
-                raise Exception("CtbAction::__init__(atype=%s, from_user=%s): coinval or fiatval isn't determined" % (self.type, self.u_from.name))
+                raise CtbActionExc("CtbAction::__init__(atype=%s, from_user=%s): coinval or fiatval isn't determined" % (self.type, self.u_from.name))
 
         # Determine coin, if given only fiat, using exchange rates
         if self.type in ['givetip']:
@@ -152,8 +153,7 @@ class CtbAction(object):
                 lg.debug("CtbAction::__init__(atype=%s, from_user=%s): determining coin..." % (self.type, self.u_from.name))
                 if not self.u_from.is_registered():
                     # Can't proceed, abort
-                    lg.warning("CtbAction::__init__(): can't determine coin for un-registered user %s", self.u_from.name)
-                    return None
+                    raise CtbActionExc("CtbAction::__init__(): can't determine coin for un-registered user %s", self.u_from.name)
                 # Choose a coin based on from_user's available balance (pick first one that can satisfy the amount)
                 cc = self.ctb.conf.coins
                 for c in sorted(self.ctb.coins):
@@ -170,8 +170,7 @@ class CtbAction(object):
                         break
             if not self.coin:
                 # Couldn't deteremine coin, abort
-                lg.warning("CtbAction::__init__(): can't determine coin for user %s", self.u_from.name)
-                return None
+                raise CtbActionExc("CtbAction::__init__(): can't determine coin for user %s" % self.u_from.name)
 
         # Calculate fiat or coin value with exchange rates
         if self.type in ['givetip', 'withdraw']:
@@ -185,14 +184,19 @@ class CtbAction(object):
                 # Determine coin value
                 self.coinval = self.fiatval / self.ctb.coin_value(self.ctb.conf.coins[self.coin].unit, self.fiat)
 
+        # Check that values are positive
+        if self.type in ['givetip', 'withdraw']:
+            if not self.coinval or not self.coinval > 0.0:
+                raise CtbActionExc("CtbAction::__init__(): couldn't determine coin value, giving up")
+
         lg.debug("< CtbAction::__init__(atype=%s, from_user=%s) DONE", self.type, self.u_from.name)
 
     def __str__(self):
         """""
         Return string representation of self
         """
-        me = "<CtbAction: type=%s, msg=%s, from_user=%s, to_user=%s, to_addr=%s, coin=%s, fiat=%s, coin_val=%s, fiat_val=%s, subr=%s, ctb=%s>"
-        me = me % (self.type, self.msg.body, self.u_from, self.u_to, self.addr_to, self.coin, self.fiat, self.coinval, self.fiatval, self.subreddit, self.ctb)
+        me = "<CtbAction: type=%s, msg=%s, from_user=%s, to_user=%s, to_addr=%s, coin=%s, fiat=%s, coin_val=%s, fiat_val=%s, subreddit=%s>"
+        me = me % (self.type, self.msg.body, self.u_from, self.u_to, self.addr_to, self.coin, self.fiat, self.coinval, self.fiatval, self.subreddit)
         return me
 
     def save(self, state=None):
@@ -1001,22 +1005,30 @@ def eval_message(msg, ctb):
             lg.debug("eval_message(): match found")
 
             # Extract matched fields into variables
+            u_from = msg.author
             to_addr = m.group(r.rg_address) if r.rg_address > 0 else None
             amount = m.group(r.rg_amount) if r.rg_amount > 0 else None
             keyword = m.group(r.rg_keyword) if r.rg_keyword > 0 else None
 
             # Return CtbAction instance with given variables
-            return CtbAction(   atype=r.action,
-                                msg=msg,
-                                from_user=msg.author,
-                                to_user=None,
-                                to_addr=to_addr,
-                                coin=r.coin,
-                                coin_val=amount if not r.fiat else None,
-                                fiat=r.fiat,
-                                fiat_val=amount if r.fiat else None,
-                                keyword=keyword,
-                                ctb=ctb)
+            lg.debug("eval_message(): creating action %s: from_user=%s, to_addr=%s, amount=%s, coin=%s, fiat=%s" % (r.action, u_from, to_addr, amount, r.coin, r.fiat))
+            try:
+                action = CtbAction(
+                    atype=r.action,
+                    msg=msg,
+                    from_user=u_from,
+                    to_user=None,
+                    to_addr=to_addr,
+                    coin=r.coin,
+                    coin_val=amount if not r.fiat else None,
+                    fiat=r.fiat,
+                    fiat_val=amount if r.fiat else None,
+                    keyword=keyword,
+                    ctb=ctb)
+                return action
+            except CtbActionExc as e:
+                lg.warning("eval_message(): " + str(e))
+                return None
 
     # No match found
     lg.debug("eval_message(): no match found")
@@ -1056,6 +1068,7 @@ def eval_comment(comment, ctb):
                 u_to = ctb_misc.reddit_get_parent_author(comment, ctb.reddit, ctb)
                 if not u_to:
                     # couldn't determine u_to, giving up
+                    lg.warning("eval_comment(): couldn't determine u_to, giving up")
                     return None
 
             # Check if from_user == to_user
@@ -1065,18 +1078,23 @@ def eval_comment(comment, ctb):
 
             # Return CtbAction instance with given variables
             lg.debug("eval_comment(): creating action %s: to_user=%s, to_addr=%s, amount=%s, coin=%s, fiat=%s" % (r.action, u_to, to_addr, amount, r.coin, r.fiat))
-            #lg.debug("< eval_comment() DONE (yes)")
-            return CtbAction(   atype=r.action,
-                                msg=comment,
-                                to_user=u_to,
-                                to_addr=to_addr,
-                                coin=r.coin,
-                                coin_val=amount if not r.fiat else None,
-                                fiat=r.fiat,
-                                fiat_val=amount if r.fiat else None,
-                                keyword=keyword,
-                                subr=comment.subreddit,
-                                ctb=ctb)
+            try:
+                action = CtbAction(
+                    atype=r.action,
+                    msg=comment,
+                    to_user=u_to,
+                    to_addr=to_addr,
+                    coin=r.coin,
+                    coin_val=amount if not r.fiat else None,
+                    fiat=r.fiat,
+                    fiat_val=amount if r.fiat else None,
+                    keyword=keyword,
+                    subr=comment.subreddit,
+                    ctb=ctb)
+                return action
+            except CtbActionExc as e:
+                lg.warning("eval_comment(): " + str(e))
+                return None
 
     # No match found
     lg.debug("< eval_comment() DONE (no match)")
