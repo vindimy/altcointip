@@ -19,8 +19,8 @@
 {%     set amount_prefix_long = "milli" %}
 {%   elif a.coinval >= 1000.0 %}
 {%     set coin_amount = ( a.coinval / 1000.0 ) %}
-{%     set amount_prefix_short = "M" %}
-{%     set amount_prefix_long = "Mega" %}
+{%     set amount_prefix_short = "K" %}
+{%     set amount_prefix_long = "kilo" %}
 {%   else %}
 {%     set coin_amount = a.coinval %}
 {%   endif %}
