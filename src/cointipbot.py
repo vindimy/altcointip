@@ -251,10 +251,15 @@ class CointipBot(object):
                 # Mark message as read
                 ctb_misc.praw_call(m.mark_as_read)
 
-        except (HTTPError, ConnectionError, Timeout, RateLimitExceeded, timeout) as e:
+        except (HTTPError, ConnectionError, Timeout, timeout) as e:
             lg.warning("CointipBot::check_inbox(): Reddit is down (%s), sleeping", e)
             time.sleep(self.conf.misc.times.sleep_seconds)
             pass
+        except RateLimitExceeded as e:
+             lg.warning("CointipBot::check_inbox(): rate limit exceeded, sleeping for %s seconds", e.sleep_time) 
+             time.sleep(e.sleep_time)
+             time.sleep(1)
+             pass
         except Exception as e:
             lg.error("CointipBot::check_inbox(): %s", e)
             raise

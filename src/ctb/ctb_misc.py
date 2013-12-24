@@ -38,7 +38,10 @@ def praw_call(prawFunc, *extraArgs, **extraKwArgs):
             res = prawFunc(*extraArgs, **extraKwArgs)
             return res
 
-        except (HTTPError, ConnectionError, Timeout, RateLimitExceeded, timeout) as e:
+        except (HTTPError, ConnectionError, Timeout, timeout) as e:
+            if str(e) == "400 Client Error: Bad Request":
+                lg.warning("praw_call(): 400 Bad Request")
+                return False
             if str(e) == "403 Client Error: Forbidden":
                 lg.warning("praw_call(): 403 forbidden")
                 return False
@@ -47,6 +50,11 @@ def praw_call(prawFunc, *extraArgs, **extraKwArgs):
                 return False
             lg.warning("praw_call(): Reddit is down (%s), sleeping...", e)
             time.sleep(30)
+            pass
+        except RateLimitExceeded as e:
+            lg.warning("praw_call(): rate limit exceeded, sleeping for %s seconds", e.sleep_time)
+            time.sleep(e.sleep_time)
+            time.sleep(1)
             pass
         except Exception as e:
             raise
