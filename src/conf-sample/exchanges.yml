@@ -1,5 +1,5 @@
 blockchaininfo:
-    enabled: false
+    enabled: true
     domain: 'blockchain.info'
     https: true
     urlpaths: ['/ticker']
@@ -64,7 +64,7 @@ cryptsy:
     https: false
     urlpaths: ['/api.php?method=marketdatav2']
     jsonpaths: ['return.markets.{THING_FROM}/{THING_TO}.lasttradeprice']
-    coinlist: ['btc','alf','amc','anc','arg','bqc','bte','btg','buk','cap','cgb','clr','cmc','crc','csc','dgc','dmd','elc','emd','frc','frk','fst','ftc','gdc','glc','glx','hbn','ifc','ixc','kgc','lk7','lky','ltc','mec','mnc','nbl','nec','nmc','nrb','nvc,',phs','ppc','pts','pxc','pyc','qrk','sbc','spt','src','tag','tek','trc','wdc','xjo','xpm','yac','zet']
+    coinlist: ['btc','alf','amc','anc','arg','bqc','bte','btg','buk','cap','cgb','clr','cmc','crc','csc','dgc','dmd','elc','emd','frc','frk','fst','ftc','gdc','glc','glx','hbn','ixc','kgc','lk7','lky','ltc','mec','mnc','nbl','nec','nmc','nrb','nvc,',phs','ppc','pts','pxc','pyc','qrk','sbc','spt','src','tag','tek','trc','wdc','xjo','xpm','yac','zet']
     fiatlist: []
     uppercase: true
 
@@ -74,7 +74,7 @@ bter:
     https: true
     urlpaths: ['/api/1/ticker/{THING_FROM}_{THING_TO}']
     jsonpaths: ['avg']
-    coinlist: ['btc','ltc','ppc','frc','ftc','cnc','bqc','btb','wdc','ifc','yac','xpm','pts','zcc','dtc','red','cent','zet','src','mec','qrk']
+    coinlist: ['btc','ltc','ppc','frc','ftc','cnc','bqc','btb','wdc','yac','xpm','pts','zcc','dtc','red','cent','zet','src','mec','qrk']
     fiatlist: ['cny']
     uppercase: false
 
