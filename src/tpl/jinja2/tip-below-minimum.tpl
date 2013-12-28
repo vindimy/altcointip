@@ -1,6 +1,6 @@
 {% set user_from = a.u_from.name %}
-{% set amount_fmt = "%.8g %s" % (a.coinval, a.coin.upper()) %}
-{% set min_fmt = "%.10g" % min_value %}
+{% set amount_fmt = "%.9g %s" % (a.coinval, a.coin.upper()) %}
+{% set min_fmt = "%.9g" % min_value %}
 {% set coin_name = ctb.conf.coins[a.coin].name %}
 I'm sorry {{ user_from | replace('_', '\_') }}, your tip/withdraw of __{{ amount_fmt }}__ is below minimum of __{{ min_fmt }}__. I cannot process very small transactions because of high network fee requirement.
 
