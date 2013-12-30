@@ -312,6 +312,7 @@ class CtbAction(object):
         """
         Provide user with transaction history
         """
+        lg.debug("> CtbAction::history()")
 
         # Generate history array
         history = []
@@ -329,6 +330,8 @@ class CtbAction(object):
         msg = self.ctb.jenv.get_template('history.tpl').render(history=history, keys=mysqlexec.keys(), limit=limit, a=self, ctb=self.ctb)
         lg.debug("CtbAction::history(): %s", msg)
         ctb_misc.praw_call(self.msg.reply, msg)
+
+        lg.debug("< CtbAction::history() DONE")
         return True
 
     def accept(self):
@@ -347,20 +350,25 @@ class CtbAction(object):
         # Get pending actions
         actions = get_actions(atype='givetip', to_user=self.u_from.name, state='pending', ctb=self.ctb)
         if actions:
+
             # Accept each action
             for a in actions:
                 a.givetip(is_pending=True)
-                # Update user stats
+                # Update u_from (tip action) stats
                 ctb_stats.update_user_stats(ctb=a.ctb, username=a.u_from.name)
-                ctb_stats.update_user_stats(ctb=a.ctb, username=a.u_to.name)
+            # Update u_from (accept action) stats
+            ctb_stats.update_user_stats(ctb=a.ctb, username=self.u_from.name)
+            # Save this action
+            self.save('completed')
+
         else:
+
             # No pending actions found, reply with error message
             msg = self.ctb.jenv.get_template('no-pending-tips.tpl').render(user_from=self.u_from.name, a=self, ctb=self.ctb)
             lg.debug("CtbAction::accept(): %s", msg)
             ctb_misc.praw_call(self.msg.reply, msg)
-
-        # Save action to database
-        self.save('completed')
+            # Save this action
+            self.save('failed')
 
         lg.debug("< CtbAction::accept() DONE")
         return True
@@ -382,9 +390,8 @@ class CtbAction(object):
                 # Save transaction as declined
                 a.save('declined')
 
-                # Update user stats
+                # Update u_from (tip action) stats
                 ctb_stats.update_user_stats(ctb=a.ctb, username=a.u_from.name)
-                ctb_stats.update_user_stats(ctb=a.ctb, username=a.u_to.name)
 
                 # Respond to tip comment
                 msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Declined', a=a, ctb=a.ctb, source_link=a.msg.permalink if a.msg else None)
@@ -395,18 +402,25 @@ class CtbAction(object):
                 else:
                     a.u_from.tell(subj="+tip declined", msg=msg)
 
+            # Update u_from (decline action) stats
+            ctb_stats.update_user_stats(ctb=a.ctb, username=self.u_from.name)
+
             # Notify self.u_from
             msg = self.ctb.jenv.get_template('pending-tips-declined.tpl').render(user_from=self.u_from.name, ctb=self.ctb)
             lg.debug("CtbAction::decline(): %s", msg)
             ctb_misc.praw_call(self.msg.reply, msg)
 
+            # Save action to database
+            self.save('completed')
+
         else:
+
             msg = self.ctb.jenv.get_template('no-pending-tips.tpl').render(user_from=self.u_from.name, ctb=self.ctb)
             lg.debug("CtbAction::decline(): %s", msg)
             ctb_misc.praw_call(self.msg.reply, msg)
 
-        # Save action to database
-        self.save('completed')
+            # Save action to database
+            self.save('failed')
 
         lg.debug("< CtbAction::decline() DONE")
         return True
