@@ -88,7 +88,7 @@ def reddit_get_parent_author(comment, reddit, ctb):
             lg.debug("< reddit_get_parent_author(%s) -> %s", comment.id, parentcomment.author.name)
             return parentcomment.author.name
 
-        except IndexError as e:
+        except (IndexError, APIException) as e:
             lg.warning("reddit_get_parent_author(): couldn't get author: %s", e)
             return None
         except (HTTPError, RateLimitExceeded, timeout) as e:
