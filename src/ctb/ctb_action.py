@@ -47,9 +47,11 @@ class CtbAction(object):
     subreddit=None      # subreddit that originated the action, if applicable
 
     msg=None            # Reddit object pointing to originating message/comment
+    msg_id=None         #
     ctb=None            # CointipBot instance
 
-    def __init__(self, atype=None, msg=None, from_user=None, to_user=None, to_addr=None, coin=None, fiat=None, coin_val=None, fiat_val=None, keyword=None, subr=None, ctb=None):
+
+    def __init__(self, atype=None, msg=None, msg_id=None, from_user=None, to_user=None, to_addr=None, coin=None, fiat=None, coin_val=None, fiat_val=None, keyword=None, subr=None, ctb=None):
         """
         Initialize CtbAction object with given parameters and run basic checks
         """
@@ -66,9 +68,11 @@ class CtbAction(object):
         self.msg = msg
         self.ctb = ctb
 
+        self.msg_id = self.msg.id if self.msg else msg_id
+
         self.addr_to = to_addr
         self.u_to = ctb_user.CtbUser(name=to_user, ctb=ctb) if to_user else None
-        self.u_from = ctb_user.CtbUser(name=msg.author.name, redditobj=msg.author, ctb=ctb) if (msg and msg.author) else ctb_user.CtbUser(name=from_user, ctb=ctb)
+        self.u_from = ctb_user.CtbUser(name=msg.author.name, redditobj=msg.author, ctb=ctb) if (msg and hasattr(msg, 'author')) else ctb_user.CtbUser(name=from_user, ctb=ctb)
         self.subreddit = subr
 
         # Do some checks
@@ -76,8 +80,8 @@ class CtbAction(object):
             raise Exception("CtbAction::__init__(type=?): type not set")
         if not self.ctb:
             raise Exception("CtbAction::__init__(type=%s): no reference to CointipBot", self.type)
-        if not self.msg:
-            raise Exception("CtbAction::__init__(type=%s): no reference to Reddit message/comment", self.type)
+        #if not self.msg:
+        #    raise Exception("CtbAction::__init__(type=%s): no reference to Reddit message/comment", self.type)
         if self.type in ['givetip', 'withdraw']:
             if not (bool(self.u_to) ^ bool(self.addr_to)):
                 raise Exception("CtbAction::__init__(atype=%s, from_user=%s): u_to xor addr_to must be set" % (self.type, self.u_from.name))
@@ -195,9 +199,34 @@ class CtbAction(object):
         """""
         Return string representation of self
         """
-        me = "<CtbAction: type=%s, msg=%s, from_user=%s, to_user=%s, to_addr=%s, coin=%s, fiat=%s, coin_val=%s, fiat_val=%s, subreddit=%s>"
-        me = me % (self.type, self.msg.body, self.u_from, self.u_to, self.addr_to, self.coin, self.fiat, self.coinval, self.fiatval, self.subreddit)
+        me = "<CtbAction: type=%s, msg.body=%s, from_user=%s, to_user=%s, to_addr=%s, coin=%s, fiat=%s, coin_val=%s, fiat_val=%s, subreddit=%s>"
+        me = me % (self.type, self.msg.body if self.msg else '', self.u_from, self.u_to, self.addr_to, self.coin, self.fiat, self.coinval, self.fiatval, self.subreddit)
         return me
+
+    def update(self, state=None):
+        """
+        Update action state in database
+        """
+        lg.debug("> CtbAction::update(%s)", state)
+
+        if not state:
+            raise Exception("CtbAction::update(): state is null")
+        if not self.type or not self.msg_id:
+            raise Exception("CtbAction::update(): type or msg_id missing")
+
+        conn = self.ctb.db
+        sql = "UPDATE t_action SET state=%s WHERE type=%s AND msg_id=%s"
+
+        try:
+            mysqlexec = conn.execute(sql, (state, self.type, self.msg_id))
+            if mysqlexec.rowcount <= 0:
+                raise Exception("query didn't affect any rows")
+        except Exception as e:
+            lg.error("CtbAction::update(%s): error executing query <%s>: %s", state, sql % (state, self.type, self.msg_id))
+            raise
+
+        lg.debug("< CtbAction::update() DONE")
+        return True
 
     def save(self, state=None):
         """
@@ -212,7 +241,7 @@ class CtbAction(object):
             self.fiatval = 0.0
 
         conn = self.ctb.db
-        sql = "REPLACE INTO t_action (type, state, created_utc, from_user, to_user, to_addr, coin_val, fiat_val, txid, coin, fiat, subreddit, msg_id, msg_link)"
+        sql = "INSERT INTO t_action (type, state, created_utc, from_user, to_user, to_addr, coin_val, fiat_val, txid, coin, fiat, subreddit, msg_id, msg_link)"
         sql += " values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
         try:
@@ -267,11 +296,7 @@ class CtbAction(object):
 	        return False
 
         if self.type == 'accept':
-            if self.accept():
-                self.type = 'info'
-                return self.info()
-            else:
-                return False
+            return self.accept()
 
         if self.type == 'decline':
             return self.decline()
@@ -290,11 +315,7 @@ class CtbAction(object):
             return self.info()
 
         if self.type == 'register':
-            if self.register():
-                self.type = 'info'
-                return self.info()
-            else:
-                return False
+            return self.register()
 
         if self.type == 'withdraw':
             return self.givetip()
@@ -387,8 +408,8 @@ class CtbAction(object):
                 if not self.ctb.coins[a.coin].sendtouser(_userfrom=self.ctb.conf.reddit.auth.user, _userto=a.u_from.name, _amount=a.coinval):
                     raise Exception("CtbAction::decline(): failed to sendtouser()")
 
-                # Save transaction as declined
-                a.save('declined')
+                # Update transaction as declined
+                a.update('declined')
 
                 # Update u_from (tip action) stats
                 ctb_stats.update_user_stats(ctb=a.ctb, username=a.u_from.name)
@@ -436,8 +457,8 @@ class CtbAction(object):
         if not self.ctb.coins[self.coin].sendtouser(_userfrom=self.ctb.conf.reddit.auth.user, _userto=self.u_from.name, _amount=self.coinval):
             raise Exception("CtbAction::expire(): sendtouser() failed")
 
-        # Save transaction as expired
-        self.save('expired')
+        # Update transaction as expired
+        self.update('expired')
 
         # Update user stats
         ctb_stats.update_user_stats(ctb=self.ctb, username=self.u_from.name)
@@ -467,14 +488,14 @@ class CtbAction(object):
                 msg = self.ctb.jenv.get_template('not-registered.tpl').render(a=self, ctb=self.ctb)
                 lg.debug("CtbAction::validate(): %s", msg)
                 self.u_from.tell(subj="+tip failed", msg=msg)
-                self.save('failed')
+                self.save('failed') if not is_pending else self.update('failed')
                 return False
 
             if self.u_to and not self.u_to.is_on_reddit():
                 msg = self.ctb.jenv.get_template('not-on-reddit.tpl').render(a=self, ctb=self.ctb)
                 lg.debug("CtbAction::validate(): %s", msg)
                 self.u_from.tell(subj="+tip failed", msg=msg)
-                self.save('failed')
+                self.save('failed') if not is_pending else self.update('failed')
                 return False
 
             # Verify that coin type is set
@@ -482,13 +503,13 @@ class CtbAction(object):
                 msg = self.ctb.jenv.get_template('no-coin-balances.tpl').render(a=self, ctb=self.ctb)
                 lg.debug("CtbAction::validate(): %s", msg)
                 self.u_from.tell(subj="+tip failed", msg=msg)
-                self.save('failed')
+                self.save('failed') if not is_pending else self.update('failed')
                 return False
 
             # Verify that u_from has coin address
             if not self.u_from.get_addr(coin=self.coin):
                 lg.error("CtbAction::validate(): user %s doesn't have %s address", self.u_from.name, self.coin.upper())
-                self.save('failed')
+                self.save('failed') if not is_pending else self.update('failed')
                 raise Exception
 
             # Verify minimum transaction size
@@ -497,7 +518,7 @@ class CtbAction(object):
                 msg = self.ctb.jenv.get_template('tip-below-minimum.tpl').render(min_value=self.ctb.conf.coins[self.coin].txmin[txkind], a=self, ctb=self.ctb)
                 lg.debug("CtbAction::validate(): " + msg)
                 self.u_from.tell(subj="+tip failed", msg=msg)
-                self.save('failed')
+                self.save('failed') if not is_pending else self.update('failed')
                 return False
 
             # Verify balance (unless it's a pending transaction being processed, in which case coins have been already moved to pending acct)
@@ -508,7 +529,7 @@ class CtbAction(object):
                     msg = self.ctb.jenv.get_template('tip-low-balance.tpl').render(balance=balance_avail, action_name='tip', a=self, ctb=self.ctb)
                     lg.debug("CtbAction::validate(): " + msg)
                     self.u_from.tell(subj="+tip failed", msg=msg)
-                    self.save('failed')
+                    self.save('failed') if not is_pending else self.update('failed')
                     return False
             elif self.addr_to:
                 # Tip/withdrawal to address (requires more confirmations)
@@ -520,7 +541,7 @@ class CtbAction(object):
                     msg = self.ctb.jenv.get_template('tip-low-balance.tpl').render(balance=balance_avail, action_name='withdraw', a=self, ctb=self.ctb)
                     lg.debug("CtbAction::validate(): " + msg)
                     self.u_from.tell(subj="+tip failed", msg=msg)
-                    self.save('failed')
+                    self.save('failed') if not is_pending else self.update('failed')
                     return False
 
             # Check if u_to has any pending coin tips from u_from
@@ -530,7 +551,7 @@ class CtbAction(object):
                     msg = self.ctb.jenv.get_template('tip-already-pending.tpl').render(a=self, ctb=self.ctb)
                     lg.debug("CtbAction::validate(): " + msg)
                     self.u_from.tell(subj="+tip failed", msg=msg)
-                    self.save('failed')
+                    self.save('failed') if not is_pending else self.update('failed')
                     return False
 
             # Check if u_to has registered, if applicable
@@ -572,7 +593,7 @@ class CtbAction(object):
                     msg = self.ctb.jenv.get_template('address-invalid.tpl').render(a=self, ctb=self.ctb)
                     lg.debug("CtbAction::validate(): " + msg)
                     self.u_from.tell(subj="+tip failed", msg=msg)
-                    self.save('failed')
+                    self.save('failed') if not is_pending else self.update('failed')
                     return False
 
         # Action is valid
@@ -586,7 +607,7 @@ class CtbAction(object):
         lg.debug("> CtbAction::givetip()")
 
         # Check if action has been processed
-        if check_action(atype=self.type, msg_id=self.msg.id, ctb=self.ctb, is_pending=is_pending):
+        if check_action(atype=self.type, msg_id=self.msg_id, ctb=self.ctb, is_pending=is_pending):
             # Found action in database, returning
             lg.warning("CtbAction::givetipt(): duplicate action %s (msg.id %s), ignoring", self.type, self.msg.id)
             return False
@@ -610,8 +631,9 @@ class CtbAction(object):
                 res = self.ctb.coins[self.coin].sendtouser(_userfrom=self.u_from.name, _userto=self.u_to.name, _amount=self.coinval)
 
             if not res:
-                # Transaction failed
-                self.save('failed')
+                # Tx failed
+                # Save/update action as failed
+                self.save('failed') if not is_pending else self.update('failed')
 
                 # Send notice to u_from
                 msg = self.ctb.jenv.get_template('tip-went-wrong.tpl').render(a=self, ctb=self.ctb)
@@ -620,7 +642,7 @@ class CtbAction(object):
                 raise Exception("CtbAction::givetip(): sendtouser() failed")
 
             # Transaction succeeded
-            self.save('completed')
+            self.save('completed') if not is_pending else self.update('completed')
 
             # Send confirmation to u_to
             msg = self.ctb.jenv.get_template('tip-received.tpl').render(a=self, ctb=self.ctb)
@@ -649,7 +671,7 @@ class CtbAction(object):
             except Exception as e:
 
                 # Transaction failed
-                self.save('failed')
+                self.save('failed') if not is_pending else self.update('failed')
                 lg.error("CtbAction::givetip(): sendtoaddr() failed")
 
                 # Send notice to u_from
@@ -659,7 +681,7 @@ class CtbAction(object):
                 raise
 
             # Transaction succeeded
-            self.save('completed')
+            self.save('completed') if not is_pending else self.update('completed')
 
             # Post verification comment
             msg = self.ctb.jenv.get_template('confirmation.tpl').render(title='Verified', a=self, ctb=self.ctb)
@@ -1202,17 +1224,22 @@ def get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=None
                 return r
 
             for m in mysqlexec:
-                lg.debug("get_actions(): found %s", m['msg_link'])
+                lg.debug("get_actions(): found %s / %s", m['msg_link'], m['msg_id'])
 
-                # Get PRAW message (msg) and author (msg.author) objects
-                submission = ctb_misc.praw_call(ctb.reddit.get_submission, m['msg_link'])
+                # Get PRAW message/comment pointer (msg)
                 msg = None
-                if not len(submission.comments) > 0:
-                    lg.warning("get_actions(): could not fetch msg (deleted?) from msg_link %s", m['msg_link'])
-                else:
-                    msg = submission.comments[0]
-                    if not msg.author:
-                        lg.warning("get_actions(): could not fetch msg.author (deleted?) from msg_link %s", m['msg_link'])
+                if m['msg_link']:
+                    submission = ctb_misc.praw_call(ctb.reddit.get_submission, m['msg_link'])
+                    if not len(submission.comments) > 0:
+                        lg.warning("get_actions(): could not fetch msg (deleted?) from msg_link %s", m['msg_link'])
+                    else:
+                        # msg points to comment that initiated the action
+                        msg = submission.comments[0]
+                        # check if msg.author is present
+                        if not msg.author:
+                            lg.warning("get_actions(): could not fetch msg.author (deleted?) from msg_link %s", m['msg_link'])
+                #elif m['msg_id']:
+                #    msg = praw.objects.Message(ctb.reddit, {'id': m['msg_id']})
 
                 r.append( CtbAction( atype=atype,
                                      msg=msg,
@@ -1224,7 +1251,8 @@ def get_actions(atype=None, state=None, coin=None, msg_id=None, created_utc=None
                                      coin_val=float(m['coin_val']) if m['coin_val'] else None,
                                      fiat_val=float(m['fiat_val']) if m['fiat_val'] else None,
                                      subr=m['subreddit'],
-                                     ctb=ctb))
+                                     ctb=ctb,
+                                     msg_id=m['msg_id']))
 
             lg.debug("< get_actions() DONE (yes)")
             return r
