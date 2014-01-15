@@ -759,14 +759,24 @@ class CtbAction(object):
 
         # If user exists, do nothing
         if self.u_from.is_registered():
-            lg.debug("CtbAction::register(%s): user already exists; ignoring request", self.u_from.name)
+            lg.debug("CtbAction::register(%s): user already exists", self.u_from.name)
+            msg = self.ctb.jenv.get_template('already-registered.tpl').render(a=self, ctb=self.ctb)
+            ctb_misc.praw_call(self.msg.reply, msg)
             self.save('failed')
-            return True
+            return False
 
         result = self.u_from.register()
 
         # Save action to database
-        self.save('completed')
+        if result:
+            self.save('completed')
+        else:
+            self.save('failed')
+
+        # Send welcome message to user
+        if result:
+            msg = self.ctb.jenv.get_template('welcome.tpl').render(a=self, ctb=self.ctb)
+            ctb_misc.praw_call(self.msg.reply, msg)
 
         lg.debug("< CtbAction::register() DONE")
         return result
