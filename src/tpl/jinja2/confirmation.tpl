@@ -40,7 +40,7 @@
 {% if ctb.conf.reddit.help.enabled: %}
 {%   set help_link_fmt = " ^[[help]](%s)" % ctb.conf.reddit.help.url %}
 {% endif %}
-{% if a.keyword and ctb.conf.keywords[a.keyword].message %}
+{% if a.type == 'givetip' and a.keyword and ctb.conf.keywords[a.keyword].message %}
 {%   set txt = ctb.conf.keywords[a.keyword].message %}
 {%   if stats_user_from_fmt %}
 {%     set txt = txt | replace("{USER_FROM}", user_from_fmt + stats_user_from_fmt) %}
