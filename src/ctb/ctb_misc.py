@@ -85,8 +85,12 @@ def reddit_get_parent_author(comment, reddit, ctb):
             else:
                 parentcomment = reddit.get_submission(parentpermalink).comments[0]
 
-            lg.debug("< reddit_get_parent_author(%s) -> %s", comment.id, parentcomment.author.name)
-            return parentcomment.author.name
+            if parentcomment and hasattr(parentcomment, 'author') and parentcomment.author:
+                lg.debug("< reddit_get_parent_author(%s) -> %s", comment.id, parentcomment.author.name)
+                return parentcomment.author.name
+            else:
+                lg.debug("< reddit_get_parent_author(%s) -> NONE", comment.id)
+                return None
 
         except (IndexError, APIException) as e:
             lg.warning("reddit_get_parent_author(): couldn't get author: %s", e)
