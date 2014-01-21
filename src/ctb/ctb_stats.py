@@ -88,7 +88,7 @@ def update_tips(ctb=None):
     for t in tips:
         values = []
         for k in tips.keys():
-            values.append(format_value(t, k, '', ctb))
+            values.append(format_value(t, k, '', ctb, compact=True))
         tip_list += ("|".join(values)) + "\n"
 
     lg.debug("update_tips(): updating subreddit '%s', page '%s'" % (ctb.conf.reddit.stats.subreddit, ctb.conf.reddit.stats.page_tips))

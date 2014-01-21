@@ -106,5 +106,5 @@ sql:
     limit: 75
   tips:
     sql_set: "SET @rank=0"
-    sql_list: "SELECT @rank :=@rank+1 AS num, created_utc, from_user, to_user, coin_val, coin, fiat_val, fiat, subreddit, msg_link FROM t_action WHERE type='givetip' AND state='completed' ORDER BY created_utc ASC LIMIT %s"
+    sql_list: "SELECT @rank :=@rank+1 AS num, created_utc, from_user, to_user, coin_val, coin, fiat_val, fiat, subreddit FROM t_action WHERE type='givetip' AND state='completed' ORDER BY created_utc ASC LIMIT %s"
     limit: 10000
