@@ -425,7 +425,7 @@ keywords:
         value: 5.0
         for_fiat: true
         for_coin: false
-        message: '{USER_FROM} ^gives ^a ^nice ^beer ^**(〃･ิ‿･ิ)ゞ** ^to {USER_TO}  ^- ^worth {AMOUNT}) ^**ƪ(˘▽˘ƪ)**'
+        message: '{USER_FROM} ^gives ^a ^nice ^beer ^**(〃･ิ‿･ิ)ゞ** ^to {USER_TO}  ^- ^worth {AMOUNT} ^**ƪ(˘▽˘ƪ)**'
     hug:
         value: 0.5
         for_fiat: true
