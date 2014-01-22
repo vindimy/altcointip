@@ -104,7 +104,7 @@ class CtbUser(object):
 
         sql = "SELECT address from t_addrs WHERE username = %s AND coin = %s"
         mysqlrow = self.ctb.db.execute(sql, (self.name.lower(), coin.lower())).fetchone()
-        if mysqlrow == None:
+        if not mysqlrow:
             lg.debug("< CtbUser::get_addr(%s, %s) DONE (no)", self.name, coin)
             return None
         else:
@@ -151,7 +151,7 @@ class CtbUser(object):
             sql = "SELECT * FROM t_users WHERE username = %s"
             mysqlrow = self.ctb.db.execute(sql, (self.name.lower())).fetchone()
 
-            if mysqlrow == None:
+            if not mysqlrow:
                 lg.debug("< CtbUser::is_registered(%s) DONE (no)", self.name)
                 return False
 
