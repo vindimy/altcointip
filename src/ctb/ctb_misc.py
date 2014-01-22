@@ -89,7 +89,7 @@ def reddit_get_parent_author(comment, reddit, ctb):
                 lg.debug("< reddit_get_parent_author(%s) -> %s", comment.id, parentcomment.author.name)
                 return parentcomment.author.name
             else:
-                lg.debug("< reddit_get_parent_author(%s) -> NONE", comment.id)
+                lg.warning("< reddit_get_parent_author(%s) -> NONE", comment.id)
                 return None
 
         except (IndexError, APIException) as e:
