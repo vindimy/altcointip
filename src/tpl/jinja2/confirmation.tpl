@@ -35,7 +35,7 @@
 {% endif %}
 {% if ctb.conf.reddit.stats.enabled: %}
 {%   set stats_user_from_fmt = " ^^[[stats]](%s_%s)" % (ctb.conf.reddit.stats.url, a.u_from.name) %}
-{%   set stats_link_fmt = " ^[[stats]](%s)" % ctb.conf.reddit.stats.url %}
+{%   set stats_link_fmt = " ^[[global_stats]](%s)" % ctb.conf.reddit.stats.url %}
 {% endif %}
 {% if ctb.conf.reddit.help.enabled: %}
 {%   set help_link_fmt = " ^[[help]](%s)" % ctb.conf.reddit.help.url %}
