@@ -1,5 +1,5 @@
 {% set user_from = a.u_from.name %}
-{% set balance_fmt = "%.6g %s" % (balance, a.coin.upper()) %}
+{% set balance_fmt = "%.9f %s" % (balance, a.coin.upper()) %}
 I'm sorry {{ user_from | replace('_', '\_') }}, your {{ action_name }} balance of **{{ balance_fmt }}** is insufficient for this {{ action_name }}.
 {% if action_name == 'withdraw' %}
 {%   set coin_name = ctb.conf.coins[a.coin].name %}
