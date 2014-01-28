@@ -80,7 +80,7 @@ class CtbCoin(object):
         Transfer (move) coins to user
         Returns (bool)
         """
-        lg.debug("CtbCoin::sendtouser(%s, %s, %s)", _userfrom, _userto, _amount)
+        lg.debug("CtbCoin::sendtouser(%s, %s, %.9f)", _userfrom, _userto, _amount)
 
         userfrom = self.verify_user(_user=_userfrom)
         userto = self.verify_user(_user=_userto)
@@ -88,11 +88,11 @@ class CtbCoin(object):
 
         # send request to coin daemon
         try:
-            lg.info("CtbCoin::sendtouser(): moving %s %s from %s to %s", amount, self.conf.name, userfrom, userto)
+            lg.info("CtbCoin::sendtouser(): moving %.9f %s from %s to %s", amount, self.conf.name, userfrom, userto)
             result = self.conn.move(userfrom, userto, amount)
             time.sleep(0.5)
         except Exception as e:
-            lg.error("CtbCoin::sendtouser(): error sending %s %s from %s to %s: %s", amount, self.conf.name, userfrom, userto, e)
+            lg.error("CtbCoin::sendtouser(): error moving %.9f %s from %s to %s: %s", amount, self.conf.name, userfrom, userto, e)
             return False
 
         time.sleep(0.5)
@@ -103,7 +103,7 @@ class CtbCoin(object):
         Send coins to address
         Returns (string) txid
         """
-        lg.debug("CtbCoin::sendtoaddr(%s, %s, %s)", _userfrom, _addrto, _amount)
+        lg.debug("CtbCoin::sendtoaddr(%s, %s, %.9f)", _userfrom, _addrto, _amount)
 
         userfrom = self.verify_user(_user=_userfrom)
         addrto = self.verify_addr(_addr=_addrto)
@@ -113,7 +113,7 @@ class CtbCoin(object):
 
         # send request to coin daemon
         try:
-            lg.info("CtbCoin::sendtoaddr(): sending %s %s from %s to %s", amount, self.conf.name, userfrom, addrto)
+            lg.info("CtbCoin::sendtoaddr(): sending %.9f %s from %s to %s", amount, self.conf.name, userfrom, addrto)
 
             # Unlock wallet, if applicable
             if hasattr(self.conf, 'walletpassphrase'):
@@ -130,7 +130,7 @@ class CtbCoin(object):
                 self.conn.walletlock()
 
         except Exception as e:
-            lg.error("CtbCoin::sendtoaddr(): error sending %s %s from %s to %s: %s", amount, self.conf.name, userfrom, addrto, e)
+            lg.error("CtbCoin::sendtoaddr(): error sending %.9f %s from %s to %s: %s", amount, self.conf.name, userfrom, addrto, e)
             raise
 
         time.sleep(0.5)
