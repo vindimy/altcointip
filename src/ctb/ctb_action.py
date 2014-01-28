@@ -119,7 +119,7 @@ class CtbAction(object):
                 # If keyword is coin-only but only fiat is set, give up
                 raise CtbActionExc("CtbAction::__init__(type=%s): keyword is coin-only, but only fiat is set")
 
-            if self.keyword and self.fiat and not type(self.fiatval) in [float, int]:
+            if self.keyword and self.fiat and not ( type(self.fiatval) in [float, int] and self.fiatval > 0.0 ):
                 # Determine fiat value
                 lg.debug("CtbAction::__init__(): determining fiat value given '%s'", self.keyword)
                 val = self.ctb.conf.keywords[self.keyword].value
@@ -133,7 +133,7 @@ class CtbAction(object):
                 else:
                     raise CtbActionExc("CtbAction::__init__(atype=%s, from_user=%s): couldn't determine fiatval from keyword '%s' (not float or str)" % (self.type, self.u_from.name, self.keyword))
 
-            elif self.keyword and self.coin and not type(self.coinval) in [float, int]:
+            elif self.keyword and self.coin and not ( type(self.coinval) in [float, int] and self.coinval > 0.0 ):
                 # Determine coin value
                 lg.debug("CtbAction::__init__(): determining coin value given '%s'", self.keyword)
                 val = self.ctb.conf.keywords[self.keyword].value
@@ -404,7 +404,7 @@ class CtbAction(object):
         if actions:
             for a in actions:
                 # Move coins back into a.u_from account
-                lg.info("CtbAction::decline(): moving %s %s from %s to %s", a.coinval, a.coin.upper(), self.ctb.conf.reddit.auth.user, a.u_from.name)
+                lg.info("CtbAction::decline(): moving %.9f %s from %s to %s", a.coinval, a.coin.upper(), self.ctb.conf.reddit.auth.user, a.u_from.name)
                 if not self.ctb.coins[a.coin].sendtouser(_userfrom=self.ctb.conf.reddit.auth.user, _userto=a.u_from.name, _amount=a.coinval):
                     raise Exception("CtbAction::decline(): failed to sendtouser()")
 
@@ -453,7 +453,7 @@ class CtbAction(object):
         lg.debug("> CtbAction::expire()")
 
         # Move coins back into self.u_from account
-        lg.info("CtbAction::expire(): moving %s %s from %s to %s", self.coinval, self.coin.upper(), self.ctb.conf.reddit.auth.user, self.u_from.name)
+        lg.info("CtbAction::expire(): moving %.9f %s from %s to %s", self.coinval, self.coin.upper(), self.ctb.conf.reddit.auth.user, self.u_from.name)
         if not self.ctb.coins[self.coin].sendtouser(_userfrom=self.ctb.conf.reddit.auth.user, _userto=self.u_from.name, _amount=self.coinval):
             raise Exception("CtbAction::expire(): sendtouser() failed")
 
@@ -563,7 +563,7 @@ class CtbAction(object):
 
                 # Move coins into pending account
                 minconf = self.ctb.coins[self.coin].conf.minconf.givetip
-                lg.info("CtbAction::validate(): moving %s %s from %s to %s (minconf=%s)...", self.coinval, self.coin.upper(), self.u_from.name, self.ctb.conf.reddit.auth.user, minconf)
+                lg.info("CtbAction::validate(): moving %.9f %s from %s to %s (minconf=%s)...", self.coinval, self.coin.upper(), self.u_from.name, self.ctb.conf.reddit.auth.user, minconf)
                 if not self.ctb.coins[self.coin].sendtouser(_userfrom=self.u_from.name, _userto=self.ctb.conf.reddit.auth.user, _amount=self.coinval, _minconf=minconf):
                     raise Exception("CtbAction::validate(): sendtouser() failed")
 
@@ -623,11 +623,11 @@ class CtbAction(object):
             res = False
             if is_pending:
                 # This is accept() of pending transaction, so move coins from pending account to receiver
-                lg.info("CtbAction::givetip(): moving %f %s from %s to %s...", self.coinval, self.coin.upper(), self.ctb.conf.reddit.auth.user, self.u_to.name)
+                lg.info("CtbAction::givetip(): moving %.9f %s from %s to %s...", self.coinval, self.coin.upper(), self.ctb.conf.reddit.auth.user, self.u_to.name)
                 res = self.ctb.coins[self.coin].sendtouser(_userfrom=self.ctb.conf.reddit.auth.user, _userto=self.u_to.name, _amount=self.coinval)
             else:
                 # This is not accept() of pending transaction, so move coins from tipper to receiver
-                lg.info("CtbAction::givetip(): moving %f %s from %s to %s...", self.coinval, self.coin.upper(), self.u_from.name, self.u_to.name)
+                lg.info("CtbAction::givetip(): moving %.9f %s from %s to %s...", self.coinval, self.coin.upper(), self.u_from.name, self.u_to.name)
                 res = self.ctb.coins[self.coin].sendtouser(_userfrom=self.u_from.name, _userto=self.u_to.name, _amount=self.coinval)
 
             if not res:
@@ -665,7 +665,7 @@ class CtbAction(object):
         elif self.addr_to:
             # Process tip to address
             try:
-                lg.info("CtbAction::givetip(): sending %f %s to %s...", self.coinval, self.coin, self.addr_to)
+                lg.info("CtbAction::givetip(): sending %.9f %s to %s...", self.coinval, self.coin, self.addr_to)
                 self.txid = self.ctb.coins[self.coin].sendtoaddr(_userfrom=self.u_from.name, _addrto=self.addr_to, _amount=self.coinval)
 
             except Exception as e:
