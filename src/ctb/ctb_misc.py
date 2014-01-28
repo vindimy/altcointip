@@ -51,6 +51,12 @@ def praw_call(prawFunc, *extraArgs, **extraKwArgs):
             lg.warning("praw_call(): Reddit is down (%s), sleeping...", e)
             time.sleep(30)
             pass
+        except APIException as e:
+            if str(e) == "(DELETED_COMMENT) `that comment has been deleted` on field `parent`":
+                lg.warning("praw_call(): deleted comment: %s", e)
+                return False
+            else:
+                raise
         except RateLimitExceeded as e:
             lg.warning("praw_call(): rate limit exceeded, sleeping for %s seconds", e.sleep_time)
             time.sleep(e.sleep_time)
