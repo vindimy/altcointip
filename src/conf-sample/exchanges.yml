@@ -94,6 +94,16 @@ coinse:
     https: true
     urlpaths: ['/api/v2/markets/data/']
     jsonpaths: ['markets.{THING_FROM}_{THING_TO}.marketstat.24h.avg_rate']
-    coinlist: ['btc','alp','amc','anc','bet','bqc','cgb','cin','crc','dem','dtc','elc','elp','emd','frk','ftc','gdc','glc','ifc','kgc','ltc','mec','nan','net','nrb','nvc','orb','ppc','pts','qrk','rec','red','spt','tag','trc','uno','wdc','xnc','xpm','zet']
+    coinlist: ['btc','alp','amc','anc','bet','bqc','cgb','cin','crc','dem','dtc','elc','elp','emd','frk','ftc','gdc','glc','kgc','ltc','mec','nan','net','nrb','nvc','orb','ppc','pts','qrk','rec','red','spt','tag','trc','uno','wdc','xnc','xpm','zet']
     fiatlist: []
     uppercase: true
+
+cryptocoincharts:
+    enabled: true
+    domain: 'cryptocoincharts.info'
+    https: false
+    urlpaths: ['/v2/api/tradingPair/{THING_FROM}_{THING_TO}']
+    jsonpaths: ['price']
+    coinlist: ['btc','ltc','ppc','nmc','xmp','mec','bqc','dgc','ifc','ixc','mnc','qrk','sbc','zet','doge','nxt','msc','ftc','nvc','dvc','frc','trc']
+    fiatlist: ['usd','eur']
+    uppercase: false
