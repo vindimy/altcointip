@@ -1057,6 +1057,11 @@ def eval_message(msg, ctb):
             amount = m.group(r.rg_amount) if r.rg_amount > 0 else None
             keyword = m.group(r.rg_keyword) if r.rg_keyword > 0 else None
 
+            # Ignore 'givetip' without u_to and without to_addr
+            if r.action == 'givetip' and not u_to and not to_addr:
+                lg.warning("eval_message(): givetip: no to_user and no to_addr specified, ignoring")
+                return None
+
             # Return CtbAction instance with given variables
             lg.debug("eval_message(): creating action %s: from_user=%s, to_addr=%s, amount=%s, coin=%s, fiat=%s" % (r.action, u_from, to_addr, amount, r.coin, r.fiat))
             try:
