@@ -243,8 +243,8 @@ qrk:
     txfee: 0.0001
     walletpassphrase: 'mypass1'
     explorer:
-        address: 'http://block.lowend.fm/address/'
-        transaction: 'http://block.lowend.fm/tx/'
+        address: 'http://bitinfocharts.com/quarkcoin/address/'
+        transaction: 'http://bitinfocharts.com/quarkcoin/tx/'
     regex:
         address: '(Q[1-9a-z]{20,40})'
         units: '(qrk|quark|quarks|quarkcoin|quarkcoins|Ǫ)'
