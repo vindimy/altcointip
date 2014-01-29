@@ -90,10 +90,10 @@ class CtbExchange(object):
                 try:
                     lg.debug("CtbExchange::get_ticker_value(%s, %s, %s): calling %s to get %s...", self.conf.domain, _name1, _name2, myurlpath, myjsonpath)
                     if self.conf.https:
-                        connection = httplib.HTTPSConnection(self.conf.domain)
+                        connection = httplib.HTTPSConnection(self.conf.domain, timeout=5)
                         connection.request("GET", myurlpath, {}, {})
                     else:
-                        connection = httplib.HTTPConnection(self.conf.domain)
+                        connection = httplib.HTTPConnection(self.conf.domain, timeout=5)
                         connection.request("GET", myurlpath)
                     response = json.loads(connection.getresponse().read())
                     result = xpath_get(response, myjsonpath)
