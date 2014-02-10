@@ -39,18 +39,13 @@ def praw_call(prawFunc, *extraArgs, **extraKwArgs):
             return res
 
         except (HTTPError, ConnectionError, Timeout, timeout) as e:
-            if str(e) == "400 Client Error: Bad Request":
-                lg.warning("praw_call(): 400 Bad Request")
+            if str(e) in [ "400 Client Error: Bad Request", "403 Client Error: Forbidden", "404 Client Error: Not Found" ]:
+                lg.warning("praw_call(): Reddit returned error (%s)", e)
                 return False
-            if str(e) == "403 Client Error: Forbidden":
-                lg.warning("praw_call(): 403 forbidden")
-                return False
-            if str(e) == "404 Client Error: Not Found":
-                lg.warning("praw_call(): 404 not found")
-                return False
-            lg.warning("praw_call(): Reddit is down (%s), sleeping...", e)
-            time.sleep(30)
-            pass
+            else:
+                lg.warning("praw_call(): Reddit returned error (%s), sleeping...", e)
+                time.sleep(30)
+                pass
         except APIException as e:
             if str(e) == "(DELETED_COMMENT) `that comment has been deleted` on field `parent`":
                 lg.warning("praw_call(): deleted comment: %s", e)
@@ -102,9 +97,13 @@ def reddit_get_parent_author(comment, reddit, ctb):
             lg.warning("reddit_get_parent_author(): couldn't get author: %s", e)
             return None
         except (HTTPError, RateLimitExceeded, timeout) as e:
-            lg.warning("reddit_get_parent_author(): Reddit is down (%s), sleeping...", e)
-            time.sleep(ctb.conf.misc.times.sleep_seconds)
-            pass
+            if str(e) in [ "400 Client Error: Bad Request", "403 Client Error: Forbidden", "404 Client Error: Not Found" ]:
+                lg.warning("reddit_get_parent_author(): Reddit returned error (%s)", e)
+                return None
+            else:
+                lg.warning("reddit_get_parent_author(): Reddit returned error (%s), sleeping...", e)
+                time.sleep(ctb.conf.misc.times.sleep_seconds)
+                pass
         except Exception as e:
             raise
 
