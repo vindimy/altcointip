@@ -352,6 +352,9 @@ class CtbAction(object):
         lg.debug("CtbAction::history(): %s", msg)
         ctb_misc.praw_call(self.msg.reply, msg)
 
+        # Save as completed
+        self.save('completed')
+
         lg.debug("< CtbAction::history() DONE")
         return True
 
