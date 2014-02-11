@@ -3,7 +3,7 @@ btc:
     enabled: false
     unit: btc
     name: Bitcoin
-    symbol: 'Ƀ'
+    symbol: 'B⃦'
     config_file: '~/.bitcoin/bitcoin.conf'
     config_rpcserver: '127.0.0.1'
     minconf:
