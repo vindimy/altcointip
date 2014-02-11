@@ -1,8 +1,12 @@
 # Simple script to back up active coin wallets
 
-import sys, os, datetime
+import sys, os, datetime, logging
 from distutils.spawn import find_executable
 import cointipbot
+
+logging.basicConfig()
+lg = logging.getLogger('cointipbot')
+lg.setLevel(logging.DEBUG)
 
 if not len(sys.argv) in [2, 3] or not os.access(sys.argv[1], os.W_OK):
 	print "Usage: %s DIRECTORY [RSYNC-TO]" % sys.argv[0]
