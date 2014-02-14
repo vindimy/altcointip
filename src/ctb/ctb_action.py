@@ -188,10 +188,10 @@ class CtbAction(object):
                 # Determine coin value
                 self.coinval = self.fiatval / self.ctb.coin_value(self.ctb.conf.coins[self.coin].unit, self.fiat)
 
-        # Check that values are positive
+        # Final check to make sure coin value is determined
         if self.type in ['givetip', 'withdraw']:
-            if not self.coinval or not self.coinval > 0.0:
-                raise CtbActionExc("CtbAction::__init__(): couldn't determine coin value, giving up")
+            if not self.coinval or not type(self.coinval) in [float, int]:
+                raise CtbActionExc("CtbAction::__init__(): couldn't determine coin value, giving up. CtbAction: <%s>", self)
 
         lg.debug("< CtbAction::__init__(atype=%s, from_user=%s) DONE", self.type, self.u_from.name)
 
