@@ -10,7 +10,7 @@ blockchaininfo:
 
 vircurex:
     enabled: true
-    domain: 'vircurex.com'
+    domain: 'api.vircurex.com'
     https: true
     urlpaths: ['/api/get_highest_bid.json?base={THING_FROM}&alt={THING_TO}', '/api/get_lowest_ask.json?base={THING_FROM}&alt={THING_TO}']
     jsonpaths: ['value']
