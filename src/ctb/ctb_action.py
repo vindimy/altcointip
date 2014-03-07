@@ -183,9 +183,13 @@ class CtbAction(object):
                 self.fiat = 'usd'
             if not self.fiatval:
                 # Determine fiat value
+                if self.ctb.coin_value(self.ctb.conf.coins[self.coin].unit, self.fiat) <= 0.0:
+                    raise CtbActionExc("CtbAction::__init__(): coin_value returned 0")
                 self.fiatval = self.coinval * self.ctb.coin_value(self.ctb.conf.coins[self.coin].unit, self.fiat)
             elif not self.coinval:
                 # Determine coin value
+                if self.ctb.coin_value(self.ctb.conf.coins[self.coin].unit, self.fiat) <= 0.0:
+                    raise CtbActionExc("CtbAction::__init__(): coin_value returned 0")
                 self.coinval = self.fiatval / self.ctb.coin_value(self.ctb.conf.coins[self.coin].unit, self.fiat)
 
         # Final check to make sure coin value is determined
