@@ -24,6 +24,10 @@ if hasattr(ctb.conf.misc.backup, 'encryptionpassphrase') and not find_executable
 	sys.exit(1)
 
 for c in ctb.coins:
+	if ctb.conf.coins[c].config_rpcserver != '127.0.0.1':
+		# Skip non-local coins
+		continue
+
 	filename = "%s/wallet_%s_%s.dat" % (sys.argv[1], ctb.conf.coins[c].unit, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 
 	print "Backing up %s wallet to %s..." % (ctb.conf.coins[c].name, filename)
