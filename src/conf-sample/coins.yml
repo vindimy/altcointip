@@ -137,7 +137,7 @@ trc:
 
 # Devcoin
 dvc:
-    enabled: false
+    enabled: true
     unit: dvc
     name: Devcoin
     symbol: 'Ð'
@@ -151,8 +151,8 @@ dvc:
         withdraw: 0.5
     txfee: 0.5
     explorer:
-        address: 'http://darkgamex.ch:2751/address/'
-        transaction: 'http://darkgamex.ch:2751/tx/'
+        address: 'http://devcoinblockexplorer.info/address/'
+        transaction: 'http://devcoinblockexplorer.info//tx/'
     regex:
         address: '(1[1-9a-z]{20,40})'
         units: '(dvc|devcoin|devcoins|Ð)'
