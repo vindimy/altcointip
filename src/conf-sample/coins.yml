@@ -465,8 +465,8 @@ fst:
     config_file: '~/.fastcoin/fastcoin.conf'
     config_rpcserver: '127.0.0.1'
     minconf:
-        givetip: 0.1
-        withdraw: 0.1
+        givetip: 1
+        withdraw: 144
     txmin:
         givetip: 0.00000001
         withdraw: 0.05
