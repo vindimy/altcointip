@@ -100,9 +100,9 @@ coinse:
 
 cryptocoincharts:
     enabled: true
-    domain: 'cryptocoincharts.info'
+    domain: 'api.cryptocoincharts.info'
     https: false
-    urlpaths: ['/v2/api/tradingPair/{THING_FROM}_{THING_TO}']
+    urlpaths: ['/tradingPair/{THING_FROM}_{THING_TO}']
     jsonpaths: ['price']
     coinlist: ['btc','ltc','ppc','nmc','xmp','mec','bqc','dgc','ifc','ixc','mnc','qrk','sbc','zet','doge','nxt','msc','ftc','nvc','dvc','frc','trc']
     fiatlist: ['usd','eur']
