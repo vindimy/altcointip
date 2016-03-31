@@ -573,7 +573,7 @@ class CointipBot(object):
             # Send a notification, if enabled
             if self.conf.misc.notify.enabled:
                 self.notify(_msg=tb)
-                sys.exit(1)
+            sys.exit(1)
 				
 	def secondary():
 			try:
