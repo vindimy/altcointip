@@ -575,14 +575,14 @@ class CointipBot(object):
                 self.notify(_msg=tb)
             sys.exit(1)
 				
-	def secondary():
-			try:
-			    while True:
-				    main(self)
-			except:
-				traceback.print_exc()
-				print('Resuming in 30sec...')
-				time.sleep(30)
-				print('Resumed')
+    def secondary():
+	try:
+	   while True:
+		main(self)
+	except:
+	    traceback.print_exc()
+	    print('Resuming in 30sec...')
+	    time.sleep(30)
+	    print('Resumed')
 while True:
 	secondary()
