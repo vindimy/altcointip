@@ -542,7 +542,7 @@ class CointipBot(object):
         me = me % (self.conf.misc.times.sleep_seconds, self.conf.reddit.scan.batch_limit, self.runtime['ev'])
         return me
 
-	def main(self):
+    def main(self):
         """
         Main loop
         """
