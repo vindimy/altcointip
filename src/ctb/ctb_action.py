@@ -616,7 +616,7 @@ class CtbAction(object):
         # Check if action has been processed
         if check_action(atype=self.type, msg_id=self.msg_id, ctb=self.ctb, is_pending=is_pending):
             # Found action in database, returning
-            lg.warning("CtbAction::givetipt(): duplicate action %s (msg.id %s), ignoring", self.type, self.msg.id)
+            lg.warning("CtbAction::givetip(): duplicate action %s (msg.id %s), ignoring", self.type, self.msg.id)
             return False
 
         # Validate action
