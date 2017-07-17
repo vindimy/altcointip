@@ -546,33 +546,43 @@ class CointipBot(object):
         """
         Main loop
         """
+        try:
+            lg.debug("CointipBot::main(): beginning main() iteration")
 
-        while (True):
-            try:
-                lg.debug("CointipBot::main(): beginning main() iteration")
+            # Refresh exchange rate values
+            self.refresh_ev()
 
-                # Refresh exchange rate values
-                self.refresh_ev()
+            # Check personal messages
+            self.check_inbox()
 
-                # Check personal messages
-                self.check_inbox()
+            # Expire pending tips
+            self.expire_pending_tips()
 
-                # Expire pending tips
-                self.expire_pending_tips()
-
-                # Check subreddit comments for tips
-                if self.conf.reddit.scan.my_subreddits or hasattr(self.conf.reddit.scan, 'these_subreddits'):
+            # Check subreddit comments for tips
+            if self.conf.reddit.scan.my_subreddits or hasattr(self.conf.reddit.scan, 'these_subreddits'):
                     self.check_subreddits()
 
-                # Sleep
-                lg.debug("CointipBot::main(): sleeping for %s seconds...", self.conf.misc.times.sleep_seconds)
-                time.sleep(self.conf.misc.times.sleep_seconds)
+            # Sleep
+            lg.debug("CointipBot::main(): sleeping for %s seconds...", self.conf.misc.times.sleep_seconds)
+            time.sleep(self.conf.misc.times.sleep_seconds)
 
-            except Exception as e:
-                lg.error("CointipBot::main(): exception: %s", e)
-                tb = traceback.format_exc()
-                lg.error("CointipBot::main(): traceback: %s", tb)
-                # Send a notification, if enabled
-                if self.conf.misc.notify.enabled:
-                    self.notify(_msg=tb)
-                sys.exit(1)
+        except Exception as e:
+            lg.error("CointipBot::main(): exception: %s", e)
+            tb = traceback.format_exc()
+            lg.error("CointipBot::main(): traceback: %s", tb)
+            # Send a notification, if enabled
+            if self.conf.misc.notify.enabled:
+                self.notify(_msg=tb)
+            sys.exit(1)
+				
+    def secondary():
+	try:
+	   while True:
+		main(self)
+	except:
+	    traceback.print_exc()
+	    print('Resuming in 30sec...')
+	    time.sleep(30)
+	    print('Resumed')
+while True:
+	secondary()
