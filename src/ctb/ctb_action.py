@@ -871,7 +871,7 @@ class CtbAction(object):
 
         # Get exchange rates
         for c in vars(self.ctb.conf.coins):
-            if (not self.ctb.conf.coins[c].enabled) and self.ctb.conf.coins[c].unit != 'btc':
+            if not self.ctb.conf.coins[c].enabled:
                 continue;
 
             coin = self.ctb.conf.coins[c].unit.lower()
