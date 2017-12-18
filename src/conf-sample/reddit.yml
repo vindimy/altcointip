@@ -1,6 +1,8 @@
 auth:
     user: 'mybotuser'
     password: 'mybotpass'
+    client_id: 'abcdefg'
+    client_secret: 'supersecretsecret'
 
 scan:
     batch_limit: 1000

@@ -107,3 +107,14 @@ cryptocoincharts:
     coinlist: ['btc','ltc','ppc','nmc','xmp','mec','bqc','dgc','ifc','ixc','mnc','qrk','sbc','zet','doge','nxt','msc','ftc','nvc','dvc','frc','trc']
     fiatlist: ['usd','eur']
     uppercase: false
+
+coinmarketcap:
+    enabled: true
+    domain: 'api.coinmarketcap.com'
+    https: true
+    urlpaths: ['/v1/ticker/{THING_FROM}/?convert={THING_TO}']
+    jsonpaths: ['0.price_{THING_TO}']
+    coinlist: ['dgb','btc']
+    fiatlist: ['usd','eur']
+    uppercase: false
+    longname: true

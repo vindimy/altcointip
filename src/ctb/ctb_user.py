@@ -127,7 +127,7 @@ class CtbUser(object):
             return True
 
         try:
-            self.prawobj = ctb_misc.praw_call(self.ctb.reddit.get_redditor, self.name)
+            self.prawobj = ctb_misc.praw_call(self.ctb.reddit.redditor, self.name)
             if self.prawobj:
                 return True
             else:
@@ -203,7 +203,7 @@ class CtbUser(object):
             ctb_misc.praw_call(msgobj.reply, msg)
         else:
             lg.debug("CtbUser::tell(%s): sending message", self.name)
-            ctb_misc.praw_call(self.prawobj.send_message, subj, msg)
+            ctb_misc.praw_call(self.prawobj.message, subj, msg)
 
         lg.debug("< CtbUser::tell(%s) DONE", self.name)
         return True
