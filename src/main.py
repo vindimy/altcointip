@@ -1,10 +1,10 @@
 import cointipbot, traceback, time
 
 class Main():
-	def main(self):
-		cb = cointipbot.CointipBot();
+    def main(self):
+        cb = cointipbot.CointipBot();
 
-		cb.main();
+        cb.main();
 
 def secondary(main):
     try:
