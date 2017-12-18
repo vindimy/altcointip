@@ -60,20 +60,8 @@ def reddit_get_parent_author(comment, reddit, ctb):
     while True:
 
         try:
-
-            parentpermalink = comment.permalink.replace(comment.id, comment.parent_id[3:])
-            commentlinkid = None
-            if hasattr(comment, 'link_id'):
-                commentlinkid = comment.link_id[3:]
-            else:
-                comment2 = reddit.get_submission(comment.permalink).comments[0]
-                commentlinkid = comment2.link_id[3:]
-            parentid = comment.parent_id[3:]
-
-            if commentlinkid == parentid:
-                parentcomment = reddit.get_submission(parentpermalink)
-            else:
-                parentcomment = reddit.get_submission(parentpermalink).comments[0]
+            comment = praw_call(ctb.reddit.comment, comment)
+            parentcomment = praw_call(comment.parent)
 
             if parentcomment and hasattr(parentcomment, 'author') and parentcomment.author:
                 lg.debug("< reddit_get_parent_author(%s) -> %s", comment.id, parentcomment.author.name)
