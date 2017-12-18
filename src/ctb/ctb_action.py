@@ -870,19 +870,26 @@ class CtbAction(object):
         rates = {}
 
         # Get exchange rates
-        for coin in self.ctb.coins:
+        for c in vars(self.ctb.conf.coins):
+            if (not self.ctb.conf.coins[c].enabled) and self.ctb.conf.coins[c].unit != 'btc':
+                continue;
+
+            coin = self.ctb.conf.coins[c].unit.lower()
+            longcoin = self.ctb.conf.coins[c].name.lower()
+
             coins.append(coin)
             rates[coin] = {'average': {}}
             rates[coin]['average']['btc'] = self.ctb.runtime['ev'][coin]['btc']
             rates[coin]['average'][fiat] = self.ctb.runtime['ev'][coin]['btc'] * self.ctb.runtime['ev']['btc'][fiat]
+
             for exchange in self.ctb.exchanges:
                 try:
                     rates[coin][exchange] = {}
                     if self.ctb.exchanges[exchange].supports_pair(_name1=coin, _name2='btc'):
-                        rates[coin][exchange]['btc'] = self.ctb.exchanges[exchange].get_ticker_value(_name1=coin, _name2='btc')
+                        rates[coin][exchange]['btc'] = self.ctb.exchanges[exchange].get_ticker_value(_name1=coin, _longname1=longcoin, _name2='btc')
                         if coin == 'btc' and self.ctb.exchanges[exchange].supports_pair(_name1='btc', _name2=fiat):
                             # Use exchange value to calculate btc's fiat value
-                            rates[coin][exchange][fiat] = rates[coin][exchange]['btc'] * self.ctb.exchanges[exchange].get_ticker_value(_name1='btc', _name2=fiat)
+                            rates[coin][exchange][fiat] = rates[coin][exchange]['btc'] * self.ctb.exchanges[exchange].get_ticker_value(_name1='btc', _longname1='bitcoin', _name2=fiat)
                         else:
                             # Use average value to calculate coin's fiat value
                             rates[coin][exchange][fiat] = rates[coin][exchange]['btc'] * self.ctb.runtime['ev']['btc'][fiat]
