@@ -86,7 +86,11 @@ class CointipBot(object):
             prefix='./conf/'
             for i in ['coins', 'db', 'exchanges', 'fiat', 'keywords', 'logs', 'misc', 'reddit', 'regex']:
                 lg.debug("CointipBot::parse_config(): reading %s%s.yml", prefix, i)
-                conf[i] = yaml.load(open(prefix+i+'.yml'))
+
+                file = open(prefix + i + '.yml')
+                conf[i] = yaml.load(file)
+
+                file.close()
         except yaml.YAMLError as e:
             lg.error("CointipBot::parse_config(): error reading config file: %s", e)
             if hasattr(e, 'problem_mark'):
