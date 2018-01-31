@@ -67,7 +67,7 @@ class CtbExchange(object):
 
         return self.supports(_name=_name1) and self.supports(_name=_name2)
 
-    def get_ticker_value(self, _name1 = None, _name2 = None):
+    def get_ticker_value(self, _name1 = None, _longname1 = None, _name2 = None):
         """
         Return (float) ticker value for given pair
         """
@@ -77,6 +77,9 @@ class CtbExchange(object):
 
         if not self.supports_pair(_name1=_name1, _name2=_name2):
             raise Exception("CtbExchange::get_ticker_value(%s, %s, %s): pair not supported" % (self.conf.domain, _name1, _name2))
+
+        if self.conf.longname:
+            _name1 = _longname1
 
         results = []
         for myurlpath in self.conf.urlpaths:

@@ -7,6 +7,7 @@ blockchaininfo:
     coinlist: ['btc']
     fiatlist: ['usd','cny','jpy','sgd','hkd','cad','aud','nzd','gbp','dkk','sek','brl','chf','eur','rub','sll','pln','thb']
     uppercase: true
+    longname: false
 
 vircurex:
     enabled: true
@@ -17,6 +18,7 @@ vircurex:
     coinlist: ['anc','btc','dgc','dvc','frc','ftc','i0c','ixc','ltc','nmc','nvc','ppc','trc','xpm']
     fiatlist: ['usd','eur']
     uppercase: true
+    longname: false
 
 btce:
     enabled: true
@@ -27,6 +29,7 @@ btce:
     coinlist: ['btc','ltc','nmc','nvc','trc','ppc','ftc','xpm']
     fiatlist: ['usd','eur','rur']
     uppercase: false
+    longname: false
 
 bitstamp:
     enabled: true
@@ -37,6 +40,7 @@ bitstamp:
     coinlist: ['btc']
     fiatlist: ['usd']
     uppercase: false
+    longname: false
 
 mtgox:
     enabled: false
@@ -47,6 +51,7 @@ mtgox:
     coinlist: ['btc']
     fiatlist: ['usd','eur','jpy','gbp','rub']
     uppercase: true
+    longname: false
 
 campbx:
     enabled: true
@@ -57,6 +62,7 @@ campbx:
     coinlist: ['btc']
     fiatlist: ['usd']
     uppercase: false
+    longname: false
 
 cryptsy:
     enabled: true
@@ -67,6 +73,7 @@ cryptsy:
     coinlist: ['btc','alf','amc','anc','arg','bqc','bte','btg','buk','cap','cgb','clr','cmc','crc','csc','dgc','dmd','elc','emd','frc','frk','fst','ftc','gdc','glc','glx','hbn','ixc','kgc','lk7','lky','ltc','mec','mnc','nbl','nec','nmc','nrb','nvc','phs','ppc','pts','pxc','pyc','qrk','sbc','spt','src','tag','tek','trc','wdc','xjo','xpm','yac','zet']
     fiatlist: []
     uppercase: true
+    longname: false
 
 bter:
     enabled: true
@@ -77,6 +84,7 @@ bter:
     coinlist: ['btc','ltc','ppc','frc','ftc','cnc','bqc','btb','wdc','yac','xpm','pts','zcc','dtc','red','cent','zet','src','mec','qrk']
     fiatlist: ['cny']
     uppercase: false
+    longname: false
 
 cryptotrade:
     enabled: true
@@ -87,6 +95,7 @@ cryptotrade:
     coinlist: ['btc','ltc','nmc','xpm','ppc','trc','ftc','dvc','wdc','dgc']
     fiatlist: ['usd','eur']
     uppercase: false
+    longname: false
 
 coinse:
     enabled: true
@@ -97,6 +106,7 @@ coinse:
     coinlist: ['btc','alp','amc','anc','bet','bqc','cgb','cin','crc','dem','dtc','elc','elp','emd','frk','ftc','gdc','glc','kgc','ltc','mec','nan','net','nrb','nvc','orb','ppc','pts','qrk','rec','red','spt','tag','trc','uno','wdc','xnc','xpm','zet']
     fiatlist: []
     uppercase: true
+    longname: false
 
 cryptocoincharts:
     enabled: true
@@ -107,3 +117,15 @@ cryptocoincharts:
     coinlist: ['btc','ltc','ppc','nmc','xmp','mec','bqc','dgc','ifc','ixc','mnc','qrk','sbc','zet','doge','nxt','msc','ftc','nvc','dvc','frc','trc']
     fiatlist: ['usd','eur']
     uppercase: false
+    longname: false
+
+coinmarketcap:
+    enabled: true
+    domain: 'api.coinmarketcap.com'
+    https: true
+    urlpaths: ['/v1/ticker/{THING_FROM}/?convert={THING_TO}']
+    jsonpaths: ['0.price_{THING_TO}']
+    coinlist: ['dgb','btc']
+    fiatlist: ['usd','eur']
+    uppercase: false
+    longname: true

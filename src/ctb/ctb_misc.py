@@ -20,7 +20,7 @@ import ctb_user
 import logging, time
 
 from requests.exceptions import HTTPError, ConnectionError, Timeout
-from praw.errors import ExceptionList, APIException, InvalidCaptcha, InvalidUser, RateLimitExceeded
+from praw.exceptions import APIException, ClientException
 from socket import timeout
 
 lg = logging.getLogger('cointipbot')
@@ -46,17 +46,6 @@ def praw_call(prawFunc, *extraArgs, **extraKwArgs):
                 lg.warning("praw_call(): Reddit returned error (%s), sleeping...", e)
                 time.sleep(30)
                 pass
-        except APIException as e:
-            if str(e) == "(DELETED_COMMENT) `that comment has been deleted` on field `parent`":
-                lg.warning("praw_call(): deleted comment: %s", e)
-                return False
-            else:
-                raise
-        except RateLimitExceeded as e:
-            lg.warning("praw_call(): rate limit exceeded, sleeping for %s seconds", e.sleep_time)
-            time.sleep(e.sleep_time)
-            time.sleep(1)
-            pass
         except Exception as e:
             raise
 
@@ -71,20 +60,8 @@ def reddit_get_parent_author(comment, reddit, ctb):
     while True:
 
         try:
-
-            parentpermalink = comment.permalink.replace(comment.id, comment.parent_id[3:])
-            commentlinkid = None
-            if hasattr(comment, 'link_id'):
-                commentlinkid = comment.link_id[3:]
-            else:
-                comment2 = reddit.get_submission(comment.permalink).comments[0]
-                commentlinkid = comment2.link_id[3:]
-            parentid = comment.parent_id[3:]
-
-            if commentlinkid == parentid:
-                parentcomment = reddit.get_submission(parentpermalink)
-            else:
-                parentcomment = reddit.get_submission(parentpermalink).comments[0]
+            comment = praw_call(ctb.reddit.comment, comment)
+            parentcomment = praw_call(comment.parent)
 
             if parentcomment and hasattr(parentcomment, 'author') and parentcomment.author:
                 lg.debug("< reddit_get_parent_author(%s) -> %s", comment.id, parentcomment.author.name)
@@ -93,10 +70,10 @@ def reddit_get_parent_author(comment, reddit, ctb):
                 lg.warning("< reddit_get_parent_author(%s) -> NONE", comment.id)
                 return None
 
-        except (IndexError, APIException, AttributeError) as e:
+        except (IndexError, AttributeError) as e:
             lg.warning("reddit_get_parent_author(): couldn't get author: %s", e)
             return None
-        except (HTTPError, RateLimitExceeded, timeout) as e:
+        except (HTTPError, timeout) as e:
             if str(e) in [ "400 Client Error: Bad Request", "403 Client Error: Forbidden", "404 Client Error: Not Found" ]:
                 lg.warning("reddit_get_parent_author(): Reddit returned error (%s)", e)
                 return None
